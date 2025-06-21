@@ -1,24 +1,28 @@
-# Hướng Dẫn Chạy Dự Án Spring Boot + ReactJS
+# DATN
 
-## 1. Giới thiệu
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+## Hướng Dẫn Chạy Dự Án Spring Boot + ReactJS
+
+### 1. Giới thiệu
 
 Đây là dự án kết hợp **Spring Boot** và **ReactJS**. Dưới đây là hướng dẫn đầy đủ để bạn chạy dự án này trên máy cá nhân.
 
 ---
 
-## 2. Yêu cầu hệ thống
+### 2. Yêu cầu hệ thống
 
 - **Java** JDK 21 trở lên
-- **Maven** 
+- **Maven**
 - **Node.js**
-- **npm** 
+- **npm**
 - **Git**
 
 ---
 
-## 3. Chuẩn bị project
+### 3. Chuẩn bị project
 
-cấu trúc như sau:
+Cấu trúc như sau:
 ```text
 DATN/
 ├── src/
@@ -35,29 +39,29 @@ DATN/
 
 ---
 
-## 4. Hướng dẫn chạy Backend (Spring Boot)
+### 4. Hướng dẫn chạy Backend (Spring Boot)
 
 1. **Cài đặt dependencies:**
-    - Dùng Maven:
-      ```bash
-      cd backend
-      mvn clean install
-      ```
-    - Hoặc dùng Gradle (nếu dùng Gradle):
-      ```bash
-      cd backend
-      ./gradlew build
-      ```
+   - Dùng Maven:
+     ```bash
+     cd backend
+     mvn clean install
+     ```
+   - Hoặc dùng Gradle (nếu dùng Gradle):
+     ```bash
+     cd backend
+     ./gradlew build
+     ```
 
 2. **Chạy ứng dụng:**
-    - Với Maven:
-      ```bash
-      mvn spring-boot:run
-      ```
-    - Hoặc chạy file jar:
-      ```bash
-      java -jar target/ten-file.jar
-      ```
+   - Với Maven:
+     ```bash
+     mvn spring-boot:run
+     ```
+   - Hoặc chạy file jar:
+     ```bash
+     java -jar target/ten-file.jar
+     ```
 
 3. **Kiểm tra:**  
    Mặc định Spring Boot chạy ở cổng `8080`, kiểm tra tại:  
@@ -65,7 +69,7 @@ DATN/
 
 ---
 
-## 5. Hướng dẫn chạy Frontend (ReactJS)
+### 5. Hướng dẫn chạy Frontend (ReactJS)
 
 1. **Cài đặt dependencies:**
     ```bash
@@ -88,7 +92,7 @@ DATN/
 
 ---
 
-## 6. Kết nối Frontend và Backend
+### 6. Kết nối Frontend và Backend
 
 - Kiểm tra file cấu hình API URL ở React (thường là `.env` hoặc file cấu hình riêng).
 - Đảm bảo các API gọi đúng địa chỉ backend, ví dụ:
@@ -98,7 +102,7 @@ DATN/
 
 ---
 
-## 7. Build sản phẩm
+### 7. Build sản phẩm
 
 - **Backend**:
   ```bash
@@ -113,7 +117,7 @@ DATN/
 
 ---
 
-## 8. Một số lỗi thường gặp
+### 8. Một số lỗi thường gặp
 
 - **Port bị chiếm**: Đổi port trong file `application.properties` (backend) hoặc `.env` (frontend).
 - **Không gọi được API**: Kiểm tra CORS trong Spring Boot, hoặc cấu hình đúng API URL ở React.
@@ -121,8 +125,6 @@ DATN/
 
 ---
 
-## 9. Liên hệ
+### 9. Liên hệ
 
 Nếu có vấn đề, vui lòng tạo issue hoặc liên hệ trực tiếp với tác giả.
-
----# DATN
