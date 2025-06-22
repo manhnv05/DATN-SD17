@@ -26,8 +26,16 @@ import CloseIcon from "@mui/icons-material/Close";
 const statusList = ["Tất cả", "Hiển thị", "Ẩn"];
 const viewOptions = [5, 10, 20];
 
-const statusToInt = (val) => (val === "Hiển thị" || val === 1 ? 1 : 0);
-const intToStatus = (val) => (val === 1 ? "Hiển thị" : "Ẩn");
+const getTrangThaiText = (val) =>
+    val === 1 || val === "1" || val === "Hiển thị" ? "Hiển thị" : "Ẩn";
+
+// Pagination helper: 2 đầu, 2 cuối, luôn nổi bật trang hiện tại nếu ở giữa
+function getPaginationItems(current, total) {
+  if (total <= 5) return Array.from({ length: total }, (_, i) => i);
+  if (current <= 1) return [0, 1, "...", total - 2, total - 1];
+  if (current >= total - 2) return [0, 1, "...", total - 2, total - 1];
+  return [0, 1, "...", current, "...", total - 2, total - 1];
+}
 
 const normalizeUrl = (url) =>
     url?.startsWith("http") ? url : `http://localhost:8080${url?.startsWith("/") ? "" : "/"}${url || ""}`;
@@ -45,7 +53,6 @@ function ImageTable() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Chú ý: field theo entity BE là camelCase
   const [formData, setFormData] = useState({
     maAnh: "",
     duongDanAnh: null, // file
@@ -76,7 +83,7 @@ function ImageTable() {
           (data.content || []).map((img) => ({
             ...img,
             anhMacDinh: img.anhMacDinh === 1,
-            trangThai: intToStatus(img.trangThai),
+            trangThai: getTrangThaiText(img.trangThai),
           }))
       );
       setTotalPages(data.totalPages || 0);
@@ -112,9 +119,9 @@ function ImageTable() {
     setFormData({
       maAnh: img.maAnh || "",
       duongDanAnh: null,
-      anhMacDinh: img.anhMacDinh === 1,
+      anhMacDinh: img.anhMacDinh === 1 || img.anhMacDinh === true,
       moTa: img.moTa || "",
-      trangThai: intToStatus(img.trangThai),
+      trangThai: getTrangThaiText(img.trangThai),
     });
     setPreviewImg(normalizeUrl(img.duongDanAnh));
     setShowModal(true);
@@ -285,15 +292,17 @@ function ImageTable() {
     actions: "",
   }));
 
-  // Pagination (material)
+  // Pagination (cải tiến đẹp)
+  const paginationItems = getPaginationItems(page, totalPages);
+
   const handlePageChange = (newPage) => {
     if (newPage >= 0 && newPage < totalPages) setPage(newPage);
   };
 
   // Menu actions
-  const [anchorEl, setAnchorEl] = useState(null);
   const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
+  const [anchorEl, setAnchorEl] = useState(null);
 
   return (
       <DashboardLayout>
@@ -389,6 +398,7 @@ function ImageTable() {
             <SoftBox>
               <Table columns={columns} rows={rows} loading={loading} />
             </SoftBox>
+            {/* Pagination + View */}
             <SoftBox display="flex" justifyContent="space-between" alignItems="center" mt={2} flexWrap="wrap" gap={2}>
               <SoftBox>
                 <FormControl sx={{ minWidth: 120 }}>
@@ -418,23 +428,41 @@ function ImageTable() {
                 >
                   Trước
                 </Button>
-                {Array.from({ length: totalPages }, (_, i) => (
-                    <Button
-                        key={i + 1}
-                        variant={page === i ? "contained" : "text"}
-                        color={page === i ? "info" : "inherit"}
-                        size="small"
-                        onClick={() => handlePageChange(i)}
-                        sx={{
-                          minWidth: 32,
-                          borderRadius: 2,
-                          color: page === i ? "#fff" : "#495057",
-                          background: page === i ? "#49a3f1" : "transparent",
-                        }}
-                    >
-                      {i + 1}
-                    </Button>
-                ))}
+                {paginationItems.map((item, idx) =>
+                    item === "..." ? (
+                        <Button
+                            key={`ellipsis-${idx}`}
+                            variant="text"
+                            size="small"
+                            disabled
+                            sx={{
+                              minWidth: 32,
+                              borderRadius: 2,
+                              color: "#bdbdbd",
+                              pointerEvents: "none",
+                              fontWeight: 700,
+                            }}
+                        >
+                          ...
+                        </Button>
+                    ) : (
+                        <Button
+                            key={item}
+                            variant={page === item ? "contained" : "text"}
+                            color={page === item ? "info" : "inherit"}
+                            size="small"
+                            onClick={() => handlePageChange(item)}
+                            sx={{
+                              minWidth: 32,
+                              borderRadius: 2,
+                              color: page === item ? "#fff" : "#495057",
+                              background: page === item ? "#49a3f1" : "transparent",
+                            }}
+                        >
+                          {item + 1}
+                        </Button>
+                    )
+                )}
                 <Button
                     variant="text"
                     size="small"
@@ -450,7 +478,22 @@ function ImageTable() {
 
           {/* Modal Thêm/Sửa hình ảnh */}
           <Dialog open={showModal} onClose={handleCloseModal} maxWidth="xs" fullWidth>
-            <DialogTitle>{editingImage ? "Sửa hình ảnh" : "Thêm hình ảnh"}</DialogTitle>
+            <DialogTitle>
+              {editingImage ? "Sửa hình ảnh" : "Thêm hình ảnh"}
+              <IconButton
+                  aria-label="close"
+                  onClick={handleCloseModal}
+                  sx={{
+                    position: "absolute",
+                    right: 8,
+                    top: 8,
+                    color: (theme) => theme.palette.grey[500],
+                  }}
+                  size="large"
+              >
+                <CloseIcon />
+              </IconButton>
+            </DialogTitle>
             <DialogContent>
               <FormControl fullWidth sx={{ mb: 2, mt: 2 }}>
                 <Input

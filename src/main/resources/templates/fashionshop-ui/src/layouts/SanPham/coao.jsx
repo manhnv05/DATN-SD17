@@ -32,6 +32,14 @@ const getTrangThaiText = (val) => {
     return val;
 };
 
+// Improved pagination: always shows 2 first, 2 last, and current page if in the middle
+function getPaginationItems(current, total) {
+    if (total <= 5) return Array.from({ length: total }, (_, i) => i);
+    if (current <= 1) return [0, 1, "...", total - 2, total - 1];
+    if (current >= total - 2) return [0, 1, "...", total - 2, total - 1];
+    return [0, 1, "...", current, "...", total - 2, total - 1];
+}
+
 function CollarTable() {
     // Query params state
     const [queryParams, setQueryParams] = useState({
@@ -79,7 +87,7 @@ function CollarTable() {
         if (queryParams.tenCoAo)
             url += `&tenCoAo=${encodeURIComponent(queryParams.tenCoAo)}`;
         if (queryParams.trangThai !== "Tất cả")
-            url += `&trangThai=${queryParams.trangThai}`; // integer
+            url += `&trangThai=${queryParams.trangThai}`;
         fetch(url)
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi tải dữ liệu cổ áo");
@@ -102,7 +110,7 @@ function CollarTable() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 ...newCollar,
-                trangThai: Number(newCollar.trangThai), // always integer
+                trangThai: Number(newCollar.trangThai),
             }),
         })
             .then((res) => {
@@ -135,7 +143,7 @@ function CollarTable() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 ...editCollar,
-                trangThai: Number(editCollar.trangThai), // always integer
+                trangThai: Number(editCollar.trangThai),
             }),
         })
             .then((res) => {
@@ -145,7 +153,7 @@ function CollarTable() {
             .then(() => {
                 setShowEditModal(false);
                 setEditCollar(null);
-                setQueryParams({ ...queryParams }); // reload
+                setQueryParams({ ...queryParams });
             })
             .catch((err) => setError(err.message || "Lỗi không xác định"))
             .finally(() => setLoading(false));
@@ -165,7 +173,7 @@ function CollarTable() {
                 if (!res.ok) throw new Error("Lỗi khi xóa cổ áo");
                 setShowDeleteDialog(false);
                 setDeleteId(null);
-                setQueryParams({ ...queryParams }); // reload
+                setQueryParams({ ...queryParams });
             })
             .catch((err) => setError(err.message || "Lỗi không xác định"))
             .finally(() => setLoading(false));
@@ -195,7 +203,9 @@ function CollarTable() {
                     style={{
                         background: getTrangThaiText(value) === "Hiển thị" ? "#e6f4ea" : "#f4f6fb",
                         color: getTrangThaiText(value) === "Hiển thị" ? "#219653" : "#bdbdbd",
-                        border: `1px solid ${getTrangThaiText(value) === "Hiển thị" ? "#219653" : "#bdbdbd"}`,
+                        border: `1px solid ${
+                            getTrangThaiText(value) === "Hiển thị" ? "#219653" : "#bdbdbd"
+                        }`,
                         borderRadius: 6,
                         fontWeight: 500,
                         padding: "2px 12px",
@@ -205,8 +215,8 @@ function CollarTable() {
                         textAlign: "center",
                     }}
                 >
-                    {getTrangThaiText(value)}
-                </span>
+          {getTrangThaiText(value)}
+        </span>
             ),
         },
         {
@@ -427,6 +437,9 @@ function CollarTable() {
         </Dialog>
     );
 
+    // Pagination rendering
+    const paginationItems = getPaginationItems(collarsData.number, collarsData.totalPages || 1);
+
     return (
         <DashboardLayout>
             <DashboardNavbar />
@@ -569,23 +582,41 @@ function CollarTable() {
                             >
                                 Trước
                             </Button>
-                            {Array.from({ length: collarsData.totalPages || 1 }, (_, i) => (
-                                <Button
-                                    key={i + 1}
-                                    variant={collarsData.number === i ? "contained" : "text"}
-                                    color={collarsData.number === i ? "info" : "inherit"}
-                                    size="small"
-                                    onClick={() => handlePageChange(i)}
-                                    sx={{
-                                        minWidth: 32,
-                                        borderRadius: 2,
-                                        color: collarsData.number === i ? "#fff" : "#495057",
-                                        background: collarsData.number === i ? "#49a3f1" : "transparent",
-                                    }}
-                                >
-                                    {i + 1}
-                                </Button>
-                            ))}
+                            {paginationItems.map((item, idx) =>
+                                item === "..." ? (
+                                    <Button
+                                        key={`ellipsis-${idx}`}
+                                        variant="text"
+                                        size="small"
+                                        disabled
+                                        sx={{
+                                            minWidth: 32,
+                                            borderRadius: 2,
+                                            color: "#bdbdbd",
+                                            pointerEvents: "none",
+                                            fontWeight: 700,
+                                        }}
+                                    >
+                                        ...
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        key={item}
+                                        variant={collarsData.number === item ? "contained" : "text"}
+                                        color={collarsData.number === item ? "info" : "inherit"}
+                                        size="small"
+                                        onClick={() => handlePageChange(item)}
+                                        sx={{
+                                            minWidth: 32,
+                                            borderRadius: 2,
+                                            color: collarsData.number === item ? "#fff" : "#495057",
+                                            background: collarsData.number === item ? "#49a3f1" : "transparent",
+                                        }}
+                                    >
+                                        {item + 1}
+                                    </Button>
+                                )
+                            )}
                             <Button
                                 variant="text"
                                 size="small"

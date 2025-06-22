@@ -29,8 +29,15 @@ const viewOptions = [5, 10, 20];
 const getTrangThaiText = (val) =>
     val === 1 || val === "1" || val === "Hiển thị" ? "Hiển thị" : "Ẩn";
 
+// Hàm phân trang đẹp: luôn có 2 đầu, 2 cuối, và trang hiện tại nổi bật nếu ở giữa
+function getPaginationItems(current, total) {
+    if (total <= 5) return Array.from({ length: total }, (_, i) => i);
+    if (current <= 1) return [0, 1, "...", total - 2, total - 1];
+    if (current >= total - 2) return [0, 1, "...", total - 2, total - 1];
+    return [0, 1, "...", current, "...", total - 2, total - 1];
+}
+
 function CategoryTable() {
-    // Query params state
     const [queryParams, setQueryParams] = useState({
         tenDanhMuc: "",
         trangThai: "Tất cả",
@@ -38,7 +45,6 @@ function CategoryTable() {
         size: 5,
     });
 
-    // Data/loading/error states
     const [categoriesData, setCategoriesData] = useState({
         content: [],
         totalPages: 1,
@@ -75,10 +81,8 @@ function CategoryTable() {
         let url = `http://localhost:8080/danhMuc?page=${queryParams.page}&size=${queryParams.size}`;
         if (queryParams.tenDanhMuc)
             url += `&tenDanhMuc=${encodeURIComponent(queryParams.tenDanhMuc)}`;
-        // Always send integer if filtering, don't send param if "Tất cả"
         if (queryParams.trangThai !== "Tất cả")
             url += `&trangThai=${queryParams.trangThai === "Hiển thị" ? 1 : 0}`;
-
         fetch(url)
             .then((res) => {
                 if (!res.ok) throw new Error("Không thể tải dữ liệu. Vui lòng thử lại sau.");
@@ -111,7 +115,7 @@ function CategoryTable() {
             .then(() => {
                 setShowModal(false);
                 setNewCategory({ maDanhMuc: "", tenDanhMuc: "", trangThai: "Hiển thị" });
-                setQueryParams({ ...queryParams, page: 0 }); // Về trang đầu
+                setQueryParams({ ...queryParams, page: 0 });
             })
             .catch((err) => setError(err.message || "Lỗi không xác định"))
             .finally(() => setLoading(false));
@@ -147,7 +151,7 @@ function CategoryTable() {
             .then(() => {
                 setShowEditModal(false);
                 setEditCategory(null);
-                setQueryParams({ ...queryParams }); // reload lại danh sách
+                setQueryParams({ ...queryParams });
             })
             .catch((err) => setError(err.message || "Lỗi không xác định"))
             .finally(() => setLoading(false));
@@ -167,7 +171,7 @@ function CategoryTable() {
                 if (!res.ok) throw new Error("Có lỗi xảy ra khi xóa danh mục!");
                 setShowDeleteDialog(false);
                 setDeleteId(null);
-                setQueryParams({ ...queryParams }); // reload lại danh sách
+                setQueryParams({ ...queryParams });
             })
             .catch((err) => setError(err.message || "Lỗi không xác định"))
             .finally(() => setLoading(false));
@@ -207,8 +211,8 @@ function CategoryTable() {
                         textAlign: "center",
                     }}
                 >
-                    {getTrangThaiText(value)}
-                </span>
+          {getTrangThaiText(value)}
+        </span>
             ),
         },
         {
@@ -247,7 +251,7 @@ function CategoryTable() {
             }))
             : [];
 
-    // Modal Thêm danh mục (có nút X góc phải)
+    // Modal Thêm danh mục
     const renderAddCategoryModal = () => (
         <Dialog open={showModal} onClose={() => setShowModal(false)} maxWidth="xs" fullWidth>
             <DialogTitle>
@@ -304,7 +308,7 @@ function CategoryTable() {
         </Dialog>
     );
 
-    // Modal sửa danh mục (có nút X góc phải)
+    // Modal sửa danh mục
     const renderEditCategoryModal = () => (
         <Dialog open={showEditModal} onClose={() => setShowEditModal(false)} maxWidth="xs" fullWidth>
             <DialogTitle>
@@ -429,6 +433,9 @@ function CategoryTable() {
         </Dialog>
     );
 
+    // Pagination
+    const paginationItems = getPaginationItems(categoriesData.number, categoriesData.totalPages || 1);
+
     return (
         <DashboardLayout>
             <DashboardNavbar />
@@ -531,7 +538,6 @@ function CategoryTable() {
                     <SoftBox>
                         <Table columns={columns} rows={rows} loading={loading} />
                     </SoftBox>
-                    {/* Pagination + View */}
                     <SoftBox
                         display="flex"
                         justifyContent="space-between"
@@ -561,6 +567,7 @@ function CategoryTable() {
                                 </Select>
                             </FormControl>
                         </SoftBox>
+                        {/* Pagination đẹp */}
                         <SoftBox display="flex" alignItems="center" gap={1}>
                             <Button
                                 variant="text"
@@ -571,23 +578,41 @@ function CategoryTable() {
                             >
                                 Trước
                             </Button>
-                            {Array.from({ length: categoriesData.totalPages || 1 }, (_, i) => (
-                                <Button
-                                    key={i + 1}
-                                    variant={categoriesData.number === i ? "contained" : "text"}
-                                    color={categoriesData.number === i ? "info" : "inherit"}
-                                    size="small"
-                                    onClick={() => handlePageChange(i)}
-                                    sx={{
-                                        minWidth: 32,
-                                        borderRadius: 2,
-                                        color: categoriesData.number === i ? "#fff" : "#495057",
-                                        background: categoriesData.number === i ? "#49a3f1" : "transparent",
-                                    }}
-                                >
-                                    {i + 1}
-                                </Button>
-                            ))}
+                            {paginationItems.map((item, idx) =>
+                                item === "..." ? (
+                                    <Button
+                                        key={`ellipsis-${idx}`}
+                                        variant="text"
+                                        size="small"
+                                        disabled
+                                        sx={{
+                                            minWidth: 32,
+                                            borderRadius: 2,
+                                            color: "#bdbdbd",
+                                            pointerEvents: "none",
+                                            fontWeight: 700,
+                                        }}
+                                    >
+                                        ...
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        key={item}
+                                        variant={categoriesData.number === item ? "contained" : "text"}
+                                        color={categoriesData.number === item ? "info" : "inherit"}
+                                        size="small"
+                                        onClick={() => handlePageChange(item)}
+                                        sx={{
+                                            minWidth: 32,
+                                            borderRadius: 2,
+                                            color: categoriesData.number === item ? "#fff" : "#495057",
+                                            background: categoriesData.number === item ? "#49a3f1" : "transparent",
+                                        }}
+                                    >
+                                        {item + 1}
+                                    </Button>
+                                )
+                            )}
                             <Button
                                 variant="text"
                                 size="small"

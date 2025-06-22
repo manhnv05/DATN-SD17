@@ -29,6 +29,14 @@ const viewOptions = [5, 10, 20];
 const getTrangThaiText = (val) =>
     val === 1 || val === "1" || val === "Hiển thị" ? "Hiển thị" : "Ẩn";
 
+// Pagination helper: 2 đầu, 2 cuối, luôn nổi bật trang hiện tại nếu ở giữa
+function getPaginationItems(current, total) {
+    if (total <= 5) return Array.from({ length: total }, (_, i) => i);
+    if (current <= 1) return [0, 1, "...", total - 2, total - 1];
+    if (current >= total - 2) return [0, 1, "...", total - 2, total - 1];
+    return [0, 1, "...", current, "...", total - 2, total - 1];
+}
+
 function ColorTable() {
     // Query params state
     const [queryParams, setQueryParams] = useState({
@@ -146,7 +154,7 @@ function ColorTable() {
             .then(() => {
                 setShowEditModal(false);
                 setEditColor(null);
-                setQueryParams({ ...queryParams }); // reload lại danh sách
+                setQueryParams({ ...queryParams });
             })
             .catch((err) => setError(err.message || "Lỗi không xác định"))
             .finally(() => setLoading(false));
@@ -166,7 +174,7 @@ function ColorTable() {
                 if (!res.ok) throw new Error("Lỗi khi xóa màu sắc");
                 setShowDeleteDialog(false);
                 setDeleteId(null);
-                setQueryParams({ ...queryParams }); // reload lại danh sách
+                setQueryParams({ ...queryParams });
             })
             .catch((err) => setError(err.message || "Lỗi không xác định"))
             .finally(() => setLoading(false));
@@ -176,10 +184,6 @@ function ColorTable() {
     const handlePageChange = (newPage) => {
         setQueryParams({ ...queryParams, page: newPage });
     };
-
-    // Menu actions
-    const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
-    const handleMenuClose = () => setAnchorEl(null);
 
     // Table columns
     const columns = [
@@ -246,7 +250,10 @@ function ColorTable() {
             }))
             : [];
 
-    // Modal Thêm màu sắc (có nút X góc phải)
+    // Pagination items
+    const paginationItems = getPaginationItems(colorsData.number, colorsData.totalPages || 1);
+
+    // Modal Add
     const renderAddColorModal = () => (
         <Dialog open={showModal} onClose={() => setShowModal(false)} maxWidth="xs" fullWidth>
             <DialogTitle>
@@ -303,7 +310,7 @@ function ColorTable() {
         </Dialog>
     );
 
-    // Modal sửa màu sắc (có nút X góc phải)
+    // Modal Edit
     const renderEditColorModal = () => (
         <Dialog open={showEditModal} onClose={() => setShowEditModal(false)} maxWidth="xs" fullWidth>
             <DialogTitle>
@@ -487,11 +494,11 @@ function ColorTable() {
                             <IconButton onClick={handleMenuOpen} sx={{ color: "#495057" }}>
                                 <Icon fontSize="small">menu</Icon>
                             </IconButton>
-                            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-                                <MenuItem onClick={handleMenuClose} sx={{ color: "#384D6C" }}>
+                            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
+                                <MenuItem onClick={() => setAnchorEl(null)} sx={{ color: "#384D6C" }}>
                                     <FaQrcode className="me-2" style={{ color: "#0d6efd" }} /> Quét mã
                                 </MenuItem>
-                                <MenuItem onClick={handleMenuClose} sx={{ color: "#384D6C" }}>
+                                <MenuItem onClick={() => setAnchorEl(null)} sx={{ color: "#384D6C" }}>
                                     <span style={{ color: "#27ae60", marginRight: 8 }}>📥</span> Export Excel
                                 </MenuItem>
                             </Menu>
@@ -560,6 +567,7 @@ function ColorTable() {
                                 </Select>
                             </FormControl>
                         </SoftBox>
+                        {/* Pagination đẹp */}
                         <SoftBox display="flex" alignItems="center" gap={1}>
                             <Button
                                 variant="text"
@@ -570,23 +578,41 @@ function ColorTable() {
                             >
                                 Trước
                             </Button>
-                            {Array.from({ length: colorsData.totalPages || 1 }, (_, i) => (
-                                <Button
-                                    key={i + 1}
-                                    variant={colorsData.number === i ? "contained" : "text"}
-                                    color={colorsData.number === i ? "info" : "inherit"}
-                                    size="small"
-                                    onClick={() => handlePageChange(i)}
-                                    sx={{
-                                        minWidth: 32,
-                                        borderRadius: 2,
-                                        color: colorsData.number === i ? "#fff" : "#495057",
-                                        background: colorsData.number === i ? "#49a3f1" : "transparent",
-                                    }}
-                                >
-                                    {i + 1}
-                                </Button>
-                            ))}
+                            {paginationItems.map((item, idx) =>
+                                item === "..." ? (
+                                    <Button
+                                        key={`ellipsis-${idx}`}
+                                        variant="text"
+                                        size="small"
+                                        disabled
+                                        sx={{
+                                            minWidth: 32,
+                                            borderRadius: 2,
+                                            color: "#bdbdbd",
+                                            pointerEvents: "none",
+                                            fontWeight: 700,
+                                        }}
+                                    >
+                                        ...
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        key={item}
+                                        variant={colorsData.number === item ? "contained" : "text"}
+                                        color={colorsData.number === item ? "info" : "inherit"}
+                                        size="small"
+                                        onClick={() => handlePageChange(item)}
+                                        sx={{
+                                            minWidth: 32,
+                                            borderRadius: 2,
+                                            color: colorsData.number === item ? "#fff" : "#495057",
+                                            background: colorsData.number === item ? "#49a3f1" : "transparent",
+                                        }}
+                                    >
+                                        {item + 1}
+                                    </Button>
+                                )
+                            )}
                             <Button
                                 variant="text"
                                 size="small"

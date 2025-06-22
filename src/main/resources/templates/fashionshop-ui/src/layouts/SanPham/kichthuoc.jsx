@@ -29,8 +29,15 @@ const viewOptions = [5, 10, 20];
 const getTrangThaiText = (val) =>
     val === 1 || val === "1" || val === "Hiển thị" ? "Hiển thị" : "Ẩn";
 
+// Phân trang đẹp: luôn có 2 đầu, 2 cuối, và nổi bật trang hiện tại
+function getPaginationItems(current, total) {
+    if (total <= 5) return Array.from({ length: total }, (_, i) => i);
+    if (current <= 1) return [0, 1, "...", total - 2, total - 1];
+    if (current >= total - 2) return [0, 1, "...", total - 2, total - 1];
+    return [0, 1, "...", current, "...", total - 2, total - 1];
+}
+
 function SizeTable() {
-    // Query params state
     const [queryParams, setQueryParams] = useState({
         tenKichCo: "",
         trangThai: "Tất cả",
@@ -38,7 +45,6 @@ function SizeTable() {
         size: 5,
     });
 
-    // Data/loading/error states
     const [sizesData, setSizesData] = useState({
         content: [],
         totalPages: 1,
@@ -110,7 +116,7 @@ function SizeTable() {
             .then(() => {
                 setShowModal(false);
                 setNewSize({ ma: "", tenKichCo: "", trangThai: "Hiển thị" });
-                setQueryParams({ ...queryParams, page: 0 }); // Về trang đầu
+                setQueryParams({ ...queryParams, page: 0 });
             })
             .catch((err) => setError(err.message || "Lỗi không xác định"))
             .finally(() => setLoading(false));
@@ -146,7 +152,7 @@ function SizeTable() {
             .then(() => {
                 setShowEditModal(false);
                 setEditSize(null);
-                setQueryParams({ ...queryParams }); // reload lại danh sách
+                setQueryParams({ ...queryParams });
             })
             .catch((err) => setError(err.message || "Lỗi không xác định"))
             .finally(() => setLoading(false));
@@ -166,7 +172,7 @@ function SizeTable() {
                 if (!res.ok) throw new Error("Có lỗi xảy ra khi xóa kích thước!");
                 setShowDeleteDialog(false);
                 setDeleteId(null);
-                setQueryParams({ ...queryParams }); // reload lại danh sách
+                setQueryParams({ ...queryParams });
             })
             .catch((err) => setError(err.message || "Lỗi không xác định"))
             .finally(() => setLoading(false));
@@ -196,7 +202,9 @@ function SizeTable() {
                     style={{
                         background: getTrangThaiText(value) === "Hiển thị" ? "#e6f4ea" : "#f4f6fb",
                         color: getTrangThaiText(value) === "Hiển thị" ? "#219653" : "#bdbdbd",
-                        border: `1px solid ${getTrangThaiText(value) === "Hiển thị" ? "#219653" : "#bdbdbd"}`,
+                        border: `1px solid ${
+                            getTrangThaiText(value) === "Hiển thị" ? "#219653" : "#bdbdbd"
+                        }`,
                         borderRadius: 6,
                         fontWeight: 500,
                         padding: "2px 12px",
@@ -246,7 +254,7 @@ function SizeTable() {
             }))
             : [];
 
-    // Modal Thêm kích thước (có nút X góc phải)
+    // Modal Thêm kích thước
     const renderAddSizeModal = () => (
         <Dialog open={showModal} onClose={() => setShowModal(false)} maxWidth="xs" fullWidth>
             <DialogTitle>
@@ -303,7 +311,7 @@ function SizeTable() {
         </Dialog>
     );
 
-    // Modal sửa kích thước (có nút X góc phải)
+    // Modal sửa kích thước
     const renderEditSizeModal = () => (
         <Dialog open={showEditModal} onClose={() => setShowEditModal(false)} maxWidth="xs" fullWidth>
             <DialogTitle>
@@ -428,6 +436,9 @@ function SizeTable() {
         </Dialog>
     );
 
+    // Pagination Items
+    const paginationItems = getPaginationItems(sizesData.number, sizesData.totalPages || 1);
+
     return (
         <DashboardLayout>
             <DashboardNavbar />
@@ -530,7 +541,7 @@ function SizeTable() {
                     <SoftBox>
                         <Table columns={columns} rows={rows} loading={loading} />
                     </SoftBox>
-                    {/* Pagination + View */}
+                    {/* Pagination */}
                     <SoftBox
                         display="flex"
                         justifyContent="space-between"
@@ -560,6 +571,7 @@ function SizeTable() {
                                 </Select>
                             </FormControl>
                         </SoftBox>
+                        {/* Pagination đẹp */}
                         <SoftBox display="flex" alignItems="center" gap={1}>
                             <Button
                                 variant="text"
@@ -570,23 +582,41 @@ function SizeTable() {
                             >
                                 Trước
                             </Button>
-                            {Array.from({ length: sizesData.totalPages || 1 }, (_, i) => (
-                                <Button
-                                    key={i + 1}
-                                    variant={sizesData.number === i ? "contained" : "text"}
-                                    color={sizesData.number === i ? "info" : "inherit"}
-                                    size="small"
-                                    onClick={() => handlePageChange(i)}
-                                    sx={{
-                                        minWidth: 32,
-                                        borderRadius: 2,
-                                        color: sizesData.number === i ? "#fff" : "#495057",
-                                        background: sizesData.number === i ? "#49a3f1" : "transparent",
-                                    }}
-                                >
-                                    {i + 1}
-                                </Button>
-                            ))}
+                            {paginationItems.map((item, idx) =>
+                                item === "..." ? (
+                                    <Button
+                                        key={`ellipsis-${idx}`}
+                                        variant="text"
+                                        size="small"
+                                        disabled
+                                        sx={{
+                                            minWidth: 32,
+                                            borderRadius: 2,
+                                            color: "#bdbdbd",
+                                            pointerEvents: "none",
+                                            fontWeight: 700,
+                                        }}
+                                    >
+                                        ...
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        key={item}
+                                        variant={sizesData.number === item ? "contained" : "text"}
+                                        color={sizesData.number === item ? "info" : "inherit"}
+                                        size="small"
+                                        onClick={() => handlePageChange(item)}
+                                        sx={{
+                                            minWidth: 32,
+                                            borderRadius: 2,
+                                            color: sizesData.number === item ? "#fff" : "#495057",
+                                            background: sizesData.number === item ? "#49a3f1" : "transparent",
+                                        }}
+                                    >
+                                        {item + 1}
+                                    </Button>
+                                )
+                            )}
                             <Button
                                 variant="text"
                                 size="small"

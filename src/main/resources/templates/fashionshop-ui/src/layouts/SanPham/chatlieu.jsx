@@ -23,7 +23,7 @@ import CircularProgress from "@mui/material/CircularProgress";
 import { Alert } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
-const statusList = ["Tất cả", 1, 0]; // integer
+const statusList = ["Tất cả", 1, 0];
 const viewOptions = [5, 10, 20];
 
 const getTrangThaiText = (val) => {
@@ -32,8 +32,16 @@ const getTrangThaiText = (val) => {
     return val;
 };
 
+// Hàm phân trang: luôn có 2 đầu, 2 cuối, luôn nổi bật trang hiện tại
+function getPaginationItems(current, total) {
+    if (total <= 5) return Array.from({ length: total }, (_, i) => i);
+    if (current <= 1) return [0, 1, "...", total - 2, total - 1];
+    if (current >= total - 2) return [0, 1, "...", total - 2, total - 1];
+    // current ở giữa
+    return [0, 1, "...", current, "...", total - 2, total - 1];
+}
+
 function MaterialTable() {
-    // Query params state
     const [queryParams, setQueryParams] = useState({
         tenChatLieu: "",
         trangThai: "Tất cả",
@@ -41,7 +49,6 @@ function MaterialTable() {
         size: 5,
     });
 
-    // Data/loading/error states
     const [materialsData, setMaterialsData] = useState({
         content: [],
         totalPages: 1,
@@ -52,7 +59,6 @@ function MaterialTable() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    // Modal states
     const [showModal, setShowModal] = useState(false);
     const [newMaterial, setNewMaterial] = useState({
         maChatLieu: "",
@@ -60,18 +66,14 @@ function MaterialTable() {
         trangThai: 1,
     });
 
-    // Edit states
     const [editMaterial, setEditMaterial] = useState(null);
     const [showEditModal, setShowEditModal] = useState(false);
 
-    // Delete states
     const [deleteId, setDeleteId] = useState(null);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-    // Menu states
     const [anchorEl, setAnchorEl] = useState(null);
 
-    // Fetch materials from API
     useEffect(() => {
         setLoading(true);
         setError("");
@@ -79,7 +81,7 @@ function MaterialTable() {
         if (queryParams.tenChatLieu)
             url += `&tenChatLieu=${encodeURIComponent(queryParams.tenChatLieu)}`;
         if (queryParams.trangThai !== "Tất cả")
-            url += `&trangThai=${queryParams.trangThai}`; // integer
+            url += `&trangThai=${queryParams.trangThai}`;
         fetch(url)
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi tải dữ liệu chất liệu");
@@ -90,7 +92,6 @@ function MaterialTable() {
             .finally(() => setLoading(false));
     }, [queryParams]);
 
-    // Handler for Add Material
     const handleAddMaterial = () => {
         if (!newMaterial.maChatLieu || !newMaterial.tenChatLieu) {
             alert("Vui lòng nhập đầy đủ thông tin");
@@ -102,23 +103,22 @@ function MaterialTable() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 ...newMaterial,
-                trangThai: Number(newMaterial.trangThai), // always integer
+                trangThai: Number(newMaterial.trangThai),
             }),
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi thêm chất liệu");
-                return res.text(); // phòng trường hợp response rỗng
+                return res.text();
             })
             .then(() => {
                 setShowModal(false);
                 setNewMaterial({ maChatLieu: "", tenChatLieu: "", trangThai: 1 });
-                setQueryParams({ ...queryParams, page: 0 }); // Về trang đầu
+                setQueryParams({ ...queryParams, page: 0 });
             })
             .catch((err) => setError(err.message || "Lỗi không xác định"))
             .finally(() => setLoading(false));
     };
 
-    // Handler for Edit Material
     const handleEditClick = (material) => {
         setEditMaterial({ ...material });
         setShowEditModal(true);
@@ -135,7 +135,7 @@ function MaterialTable() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 ...editMaterial,
-                trangThai: Number(editMaterial.trangThai), // always integer
+                trangThai: Number(editMaterial.trangThai),
             }),
         })
             .then((res) => {
@@ -145,13 +145,12 @@ function MaterialTable() {
             .then(() => {
                 setShowEditModal(false);
                 setEditMaterial(null);
-                setQueryParams({ ...queryParams }); // reload lại danh sách
+                setQueryParams({ ...queryParams });
             })
             .catch((err) => setError(err.message || "Lỗi không xác định"))
             .finally(() => setLoading(false));
     };
 
-    // Handler for Delete Material
     const handleDelete = (id) => {
         setDeleteId(id);
         setShowDeleteDialog(true);
@@ -165,22 +164,19 @@ function MaterialTable() {
                 if (!res.ok) throw new Error("Lỗi khi xóa chất liệu");
                 setShowDeleteDialog(false);
                 setDeleteId(null);
-                setQueryParams({ ...queryParams }); // reload lại danh sách
+                setQueryParams({ ...queryParams });
             })
             .catch((err) => setError(err.message || "Lỗi không xác định"))
             .finally(() => setLoading(false));
     };
 
-    // Pagination
     const handlePageChange = (newPage) => {
         setQueryParams({ ...queryParams, page: newPage });
     };
 
-    // Menu actions
     const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
     const handleMenuClose = () => setAnchorEl(null);
 
-    // Table columns
     const columns = [
         { name: "stt", label: "STT", align: "center", width: "60px" },
         { name: "maChatLieu", label: "Mã", align: "left", width: "100px" },
@@ -245,7 +241,6 @@ function MaterialTable() {
             }))
             : [];
 
-    // Modal Thêm chất liệu
     const renderAddMaterialModal = () => (
         <Dialog open={showModal} onClose={() => setShowModal(false)} maxWidth="xs" fullWidth>
             <DialogTitle>
@@ -302,7 +297,6 @@ function MaterialTable() {
         </Dialog>
     );
 
-    // Modal sửa chất liệu
     const renderEditMaterialModal = () => (
         <Dialog open={showEditModal} onClose={() => setShowEditModal(false)} maxWidth="xs" fullWidth>
             <DialogTitle>
@@ -356,7 +350,6 @@ function MaterialTable() {
         </Dialog>
     );
 
-    // Dialog xác nhận xóa chất liệu
     const renderDeleteDialog = () => (
         <Dialog open={showDeleteDialog} onClose={() => setShowDeleteDialog(false)}>
             <DialogTitle
@@ -425,6 +418,11 @@ function MaterialTable() {
                 </Button>
             </DialogActions>
         </Dialog>
+    );
+
+    const paginationItems = getPaginationItems(
+        materialsData.number,
+        materialsData.totalPages || 1
     );
 
     return (
@@ -559,6 +557,7 @@ function MaterialTable() {
                                 </Select>
                             </FormControl>
                         </SoftBox>
+                        {/* Cải tiến phân trang giống ProductTable */}
                         <SoftBox display="flex" alignItems="center" gap={1}>
                             <Button
                                 variant="text"
@@ -569,23 +568,41 @@ function MaterialTable() {
                             >
                                 Trước
                             </Button>
-                            {Array.from({ length: materialsData.totalPages || 1 }, (_, i) => (
-                                <Button
-                                    key={i + 1}
-                                    variant={materialsData.number === i ? "contained" : "text"}
-                                    color={materialsData.number === i ? "info" : "inherit"}
-                                    size="small"
-                                    onClick={() => handlePageChange(i)}
-                                    sx={{
-                                        minWidth: 32,
-                                        borderRadius: 2,
-                                        color: materialsData.number === i ? "#fff" : "#495057",
-                                        background: materialsData.number === i ? "#49a3f1" : "transparent",
-                                    }}
-                                >
-                                    {i + 1}
-                                </Button>
-                            ))}
+                            {paginationItems.map((item, idx) =>
+                                item === "..." ? (
+                                    <Button
+                                        key={`ellipsis-${idx}`}
+                                        variant="text"
+                                        size="small"
+                                        disabled
+                                        sx={{
+                                            minWidth: 32,
+                                            borderRadius: 2,
+                                            color: "#bdbdbd",
+                                            pointerEvents: "none",
+                                            fontWeight: 700,
+                                        }}
+                                    >
+                                        ...
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        key={item}
+                                        variant={materialsData.number === item ? "contained" : "text"}
+                                        color={materialsData.number === item ? "info" : "inherit"}
+                                        size="small"
+                                        onClick={() => handlePageChange(item)}
+                                        sx={{
+                                            minWidth: 32,
+                                            borderRadius: 2,
+                                            color: materialsData.number === item ? "#fff" : "#495057",
+                                            background: materialsData.number === item ? "#49a3f1" : "transparent",
+                                        }}
+                                    >
+                                        {item + 1}
+                                    </Button>
+                                )
+                            )}
                             <Button
                                 variant="text"
                                 size="small"

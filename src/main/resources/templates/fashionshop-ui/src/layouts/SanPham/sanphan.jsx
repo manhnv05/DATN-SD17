@@ -39,6 +39,15 @@ const getPriceRangeText = (min, max) => {
     return `${formatPrice(min)} - ${formatPrice(max)}`;
 };
 
+// Pagination: luôn có 2 đầu, 2 cuối, luôn nổi bật trang hiện tại
+function getPaginationItems(current, total) {
+    if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1);
+    if (current <= 2) return [1, 2, "...", total - 1, total];
+    if (current >= total - 1) return [1, 2, "...", total - 1, total];
+    // current ở giữa
+    return [1, 2, "...", current, "...", total - 1, total];
+}
+
 function ProductTable() {
     const [productsData, setProductsData] = useState({
         content: [],
@@ -144,7 +153,13 @@ function ProductTable() {
 
     // Pagination change
     const handlePageChange = (newPage) => {
-        if (newPage >= 1 && newPage <= productsData.totalPages) setPage(newPage);
+        if (
+            newPage >= 1 &&
+            newPage <= productsData.totalPages &&
+            newPage !== page &&
+            typeof newPage === "number"
+        )
+            setPage(newPage);
     };
 
     // Menu actions
@@ -231,6 +246,9 @@ function ProductTable() {
         quantity: item.quantity,
         actions: "",
     }));
+
+    // Pagination rendering
+    const paginationItems = getPaginationItems(page, productsData.totalPages);
 
     return (
         <DashboardLayout>
@@ -379,23 +397,41 @@ function ProductTable() {
                             >
                                 Trước
                             </Button>
-                            {Array.from({ length: productsData.totalPages }, (_, i) => (
-                                <Button
-                                    key={i + 1}
-                                    variant={page === i + 1 ? "contained" : "text"}
-                                    color={page === i + 1 ? "info" : "inherit"}
-                                    size="small"
-                                    onClick={() => handlePageChange(i + 1)}
-                                    sx={{
-                                        minWidth: 32,
-                                        borderRadius: 2,
-                                        color: page === i + 1 ? "#fff" : "#495057",
-                                        background: page === i + 1 ? "#49a3f1" : "transparent",
-                                    }}
-                                >
-                                    {i + 1}
-                                </Button>
-                            ))}
+                            {paginationItems.map((item, idx) =>
+                                item === "..." ? (
+                                    <Button
+                                        key={`ellipsis-${idx}`}
+                                        variant="text"
+                                        size="small"
+                                        disabled
+                                        sx={{
+                                            minWidth: 32,
+                                            borderRadius: 2,
+                                            color: "#bdbdbd",
+                                            pointerEvents: "none",
+                                            fontWeight: 700,
+                                        }}
+                                    >
+                                        ...
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        key={item}
+                                        variant={page === item ? "contained" : "text"}
+                                        color={page === item ? "info" : "inherit"}
+                                        size="small"
+                                        onClick={() => handlePageChange(item)}
+                                        sx={{
+                                            minWidth: 32,
+                                            borderRadius: 2,
+                                            color: page === item ? "#fff" : "#495057",
+                                            background: page === item ? "#49a3f1" : "transparent",
+                                        }}
+                                    >
+                                        {item}
+                                    </Button>
+                                )
+                            )}
                             <Button
                                 variant="text"
                                 size="small"

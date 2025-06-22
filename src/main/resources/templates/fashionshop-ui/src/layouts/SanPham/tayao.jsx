@@ -29,8 +29,15 @@ const viewOptions = [5, 10, 20];
 const getTrangThaiText = (val) =>
     val === 1 || val === "1" || val === "Hiển thị" ? "Hiển thị" : "Ẩn";
 
+// Pagination helper: 2 đầu, 2 cuối, luôn nổi bật trang hiện tại nếu ở giữa
+function getPaginationItems(current, total) {
+    if (total <= 5) return Array.from({ length: total }, (_, i) => i);
+    if (current <= 1) return [0, 1, "...", total - 2, total - 1];
+    if (current >= total - 2) return [0, 1, "...", total - 2, total - 1];
+    return [0, 1, "...", current, "...", total - 2, total - 1];
+}
+
 function SleeveTable() {
-    // Query params state
     const [queryParams, setQueryParams] = useState({
         tenTayAo: "",
         trangThai: "Tất cả",
@@ -38,7 +45,6 @@ function SleeveTable() {
         size: 5,
     });
 
-    // Data/loading/error states
     const [sleevesData, setSleevesData] = useState({
         content: [],
         totalPages: 1,
@@ -110,7 +116,7 @@ function SleeveTable() {
             .then(() => {
                 setShowModal(false);
                 setNewSleeve({ ma: "", tenTayAo: "", trangThai: "Hiển thị" });
-                setQueryParams({ ...queryParams, page: 0 }); // Về trang đầu
+                setQueryParams({ ...queryParams, page: 0 });
             })
             .catch((err) => setError(err.message || "Lỗi không xác định"))
             .finally(() => setLoading(false));
@@ -146,7 +152,7 @@ function SleeveTable() {
             .then(() => {
                 setShowEditModal(false);
                 setEditSleeve(null);
-                setQueryParams({ ...queryParams }); // reload lại danh sách
+                setQueryParams({ ...queryParams });
             })
             .catch((err) => setError(err.message || "Lỗi không xác định"))
             .finally(() => setLoading(false));
@@ -166,7 +172,7 @@ function SleeveTable() {
                 if (!res.ok) throw new Error("Lỗi khi xóa tay áo");
                 setShowDeleteDialog(false);
                 setDeleteId(null);
-                setQueryParams({ ...queryParams }); // reload lại danh sách
+                setQueryParams({ ...queryParams });
             })
             .catch((err) => setError(err.message || "Lỗi không xác định"))
             .finally(() => setLoading(false));
@@ -176,10 +182,6 @@ function SleeveTable() {
     const handlePageChange = (newPage) => {
         setQueryParams({ ...queryParams, page: newPage });
     };
-
-    // Menu actions
-    const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
-    const handleMenuClose = () => setAnchorEl(null);
 
     // Table columns
     const columns = [
@@ -196,7 +198,9 @@ function SleeveTable() {
                     style={{
                         background: getTrangThaiText(value) === "Hiển thị" ? "#e6f4ea" : "#f4f6fb",
                         color: getTrangThaiText(value) === "Hiển thị" ? "#219653" : "#bdbdbd",
-                        border: `1px solid ${getTrangThaiText(value) === "Hiển thị" ? "#219653" : "#bdbdbd"}`,
+                        border: `1px solid ${
+                            getTrangThaiText(value) === "Hiển thị" ? "#219653" : "#bdbdbd"
+                        }`,
                         borderRadius: 6,
                         fontWeight: 500,
                         padding: "2px 12px",
@@ -246,7 +250,10 @@ function SleeveTable() {
             }))
             : [];
 
-    // Modal Thêm tay áo (có nút X góc phải)
+    // Pagination items
+    const paginationItems = getPaginationItems(sleevesData.number, sleevesData.totalPages || 1);
+
+    // Modal Thêm tay áo
     const renderAddSleeveModal = () => (
         <Dialog open={showModal} onClose={() => setShowModal(false)} maxWidth="xs" fullWidth>
             <DialogTitle>
@@ -303,7 +310,7 @@ function SleeveTable() {
         </Dialog>
     );
 
-    // Modal sửa tay áo (có nút X góc phải)
+    // Modal sửa tay áo
     const renderEditSleeveModal = () => (
         <Dialog open={showEditModal} onClose={() => setShowEditModal(false)} maxWidth="xs" fullWidth>
             <DialogTitle>
@@ -487,11 +494,11 @@ function SleeveTable() {
                             <IconButton onClick={handleMenuOpen} sx={{ color: "#495057" }}>
                                 <Icon fontSize="small">menu</Icon>
                             </IconButton>
-                            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-                                <MenuItem onClick={handleMenuClose} sx={{ color: "#384D6C" }}>
+                            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
+                                <MenuItem onClick={() => setAnchorEl(null)} sx={{ color: "#384D6C" }}>
                                     <FaQrcode className="me-2" style={{ color: "#0d6efd" }} /> Quét mã
                                 </MenuItem>
-                                <MenuItem onClick={handleMenuClose} sx={{ color: "#384D6C" }}>
+                                <MenuItem onClick={() => setAnchorEl(null)} sx={{ color: "#384D6C" }}>
                                     <span style={{ color: "#27ae60", marginRight: 8 }}>📥</span> Export Excel
                                 </MenuItem>
                             </Menu>
@@ -528,20 +535,9 @@ function SleeveTable() {
                         </Alert>
                     )}
                     <SoftBox>
-                        <Table
-                            columns={columns}
-                            rows={
-                                sleevesData.content && sleevesData.content.length
-                                    ? sleevesData.content.map((sleeve, idx) => ({
-                                        ...sleeve,
-                                        stt: queryParams.page * queryParams.size + idx + 1,
-                                    }))
-                                    : []
-                            }
-                            loading={loading}
-                        />
+                        <Table columns={columns} rows={rows} loading={loading} />
                     </SoftBox>
-                    {/* Pagination + View */}
+                    {/* Pagination đẹp */}
                     <SoftBox
                         display="flex"
                         justifyContent="space-between"
@@ -581,23 +577,41 @@ function SleeveTable() {
                             >
                                 Trước
                             </Button>
-                            {Array.from({ length: sleevesData.totalPages || 1 }, (_, i) => (
-                                <Button
-                                    key={i + 1}
-                                    variant={sleevesData.number === i ? "contained" : "text"}
-                                    color={sleevesData.number === i ? "info" : "inherit"}
-                                    size="small"
-                                    onClick={() => handlePageChange(i)}
-                                    sx={{
-                                        minWidth: 32,
-                                        borderRadius: 2,
-                                        color: sleevesData.number === i ? "#fff" : "#495057",
-                                        background: sleevesData.number === i ? "#49a3f1" : "transparent",
-                                    }}
-                                >
-                                    {i + 1}
-                                </Button>
-                            ))}
+                            {paginationItems.map((item, idx) =>
+                                item === "..." ? (
+                                    <Button
+                                        key={`ellipsis-${idx}`}
+                                        variant="text"
+                                        size="small"
+                                        disabled
+                                        sx={{
+                                            minWidth: 32,
+                                            borderRadius: 2,
+                                            color: "#bdbdbd",
+                                            pointerEvents: "none",
+                                            fontWeight: 700,
+                                        }}
+                                    >
+                                        ...
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        key={item}
+                                        variant={sleevesData.number === item ? "contained" : "text"}
+                                        color={sleevesData.number === item ? "info" : "inherit"}
+                                        size="small"
+                                        onClick={() => handlePageChange(item)}
+                                        sx={{
+                                            minWidth: 32,
+                                            borderRadius: 2,
+                                            color: sleevesData.number === item ? "#fff" : "#495057",
+                                            background: sleevesData.number === item ? "#49a3f1" : "transparent",
+                                        }}
+                                    >
+                                        {item + 1}
+                                    </Button>
+                                )
+                            )}
                             <Button
                                 variant="text"
                                 size="small"

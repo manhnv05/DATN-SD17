@@ -29,6 +29,14 @@ const viewOptions = [5, 10, 20];
 const getTrangThaiText = (val) =>
     val === 1 || val === "1" || val === "Hiển thị" ? "Hiển thị" : "Ẩn";
 
+// Pagination helper: 2 đầu, 2 cuối, luôn nổi bật trang hiện tại nếu ở giữa
+function getPaginationItems(current, total) {
+    if (total <= 5) return Array.from({ length: total }, (_, i) => i);
+    if (current <= 1) return [0, 1, "...", total - 2, total - 1];
+    if (current >= total - 2) return [0, 1, "...", total - 2, total - 1];
+    return [0, 1, "...", current, "...", total - 2, total - 1];
+}
+
 function BrandTable() {
     // Query params state
     const [queryParams, setQueryParams] = useState({
@@ -38,7 +46,6 @@ function BrandTable() {
         size: 5,
     });
 
-    // Data/loading/error states
     const [brandsData, setBrandsData] = useState({
         content: [],
         totalPages: 1,
@@ -49,7 +56,6 @@ function BrandTable() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
-    // Modal states
     const [showModal, setShowModal] = useState(false);
     const [newBrand, setNewBrand] = useState({
         maThuongHieu: "",
@@ -57,15 +63,12 @@ function BrandTable() {
         trangThai: "Hiển thị",
     });
 
-    // Edit states
     const [editBrand, setEditBrand] = useState(null);
     const [showEditModal, setShowEditModal] = useState(false);
 
-    // Delete states
     const [deleteId, setDeleteId] = useState(null);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-    // Menu states
     const [anchorEl, setAnchorEl] = useState(null);
 
     // Fetch brands from API
@@ -146,7 +149,7 @@ function BrandTable() {
             .then(() => {
                 setShowEditModal(false);
                 setEditBrand(null);
-                setQueryParams({ ...queryParams }); // reload lại danh sách
+                setQueryParams({ ...queryParams });
             })
             .catch((err) => setError(err.message || "Lỗi không xác định"))
             .finally(() => setLoading(false));
@@ -166,7 +169,7 @@ function BrandTable() {
                 if (!res.ok) throw new Error("Lỗi khi xóa thương hiệu");
                 setShowDeleteDialog(false);
                 setDeleteId(null);
-                setQueryParams({ ...queryParams }); // reload lại danh sách
+                setQueryParams({ ...queryParams });
             })
             .catch((err) => setError(err.message || "Lỗi không xác định"))
             .finally(() => setLoading(false));
@@ -177,9 +180,8 @@ function BrandTable() {
         setQueryParams({ ...queryParams, page: newPage });
     };
 
-    // Menu actions
-    const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
-    const handleMenuClose = () => setAnchorEl(null);
+    // Pagination items
+    const paginationItems = getPaginationItems(brandsData.number, brandsData.totalPages || 1);
 
     // Table columns
     const columns = [
@@ -246,7 +248,7 @@ function BrandTable() {
             }))
             : [];
 
-    // Modal Thêm thương hiệu (có nút X góc phải)
+    // Modal Thêm thương hiệu
     const renderAddBrandModal = () => (
         <Dialog open={showModal} onClose={() => setShowModal(false)} maxWidth="xs" fullWidth>
             <DialogTitle>
@@ -303,7 +305,7 @@ function BrandTable() {
         </Dialog>
     );
 
-    // Modal sửa thương hiệu (có nút X góc phải)
+    // Modal sửa thương hiệu
     const renderEditBrandModal = () => (
         <Dialog open={showEditModal} onClose={() => setShowEditModal(false)} maxWidth="xs" fullWidth>
             <DialogTitle>
@@ -484,14 +486,14 @@ function BrandTable() {
                             </FormControl>
                         </SoftBox>
                         <SoftBox display="flex" alignItems="center" gap={1}>
-                            <IconButton onClick={handleMenuOpen} sx={{ color: "#495057" }}>
+                            <IconButton onClick={(e) => setAnchorEl(e.currentTarget)} sx={{ color: "#495057" }}>
                                 <Icon fontSize="small">menu</Icon>
                             </IconButton>
-                            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-                                <MenuItem onClick={handleMenuClose} sx={{ color: "#384D6C" }}>
+                            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
+                                <MenuItem onClick={() => setAnchorEl(null)} sx={{ color: "#384D6C" }}>
                                     <FaQrcode className="me-2" style={{ color: "#0d6efd" }} /> Quét mã
                                 </MenuItem>
-                                <MenuItem onClick={handleMenuClose} sx={{ color: "#384D6C" }}>
+                                <MenuItem onClick={() => setAnchorEl(null)} sx={{ color: "#384D6C" }}>
                                     <span style={{ color: "#27ae60", marginRight: 8 }}>📥</span> Export Excel
                                 </MenuItem>
                             </Menu>
@@ -570,23 +572,41 @@ function BrandTable() {
                             >
                                 Trước
                             </Button>
-                            {Array.from({ length: brandsData.totalPages || 1 }, (_, i) => (
-                                <Button
-                                    key={i + 1}
-                                    variant={brandsData.number === i ? "contained" : "text"}
-                                    color={brandsData.number === i ? "info" : "inherit"}
-                                    size="small"
-                                    onClick={() => handlePageChange(i)}
-                                    sx={{
-                                        minWidth: 32,
-                                        borderRadius: 2,
-                                        color: brandsData.number === i ? "#fff" : "#495057",
-                                        background: brandsData.number === i ? "#49a3f1" : "transparent",
-                                    }}
-                                >
-                                    {i + 1}
-                                </Button>
-                            ))}
+                            {paginationItems.map((item, idx) =>
+                                item === "..." ? (
+                                    <Button
+                                        key={`ellipsis-${idx}`}
+                                        variant="text"
+                                        size="small"
+                                        disabled
+                                        sx={{
+                                            minWidth: 32,
+                                            borderRadius: 2,
+                                            color: "#bdbdbd",
+                                            pointerEvents: "none",
+                                            fontWeight: 700,
+                                        }}
+                                    >
+                                        ...
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        key={item}
+                                        variant={brandsData.number === item ? "contained" : "text"}
+                                        color={brandsData.number === item ? "info" : "inherit"}
+                                        size="small"
+                                        onClick={() => handlePageChange(item)}
+                                        sx={{
+                                            minWidth: 32,
+                                            borderRadius: 2,
+                                            color: brandsData.number === item ? "#fff" : "#495057",
+                                            background: brandsData.number === item ? "#49a3f1" : "transparent",
+                                        }}
+                                    >
+                                        {item + 1}
+                                    </Button>
+                                )
+                            )}
                             <Button
                                 variant="text"
                                 size="small"
