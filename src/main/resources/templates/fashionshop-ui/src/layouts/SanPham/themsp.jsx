@@ -83,8 +83,10 @@ function ProductForm() {
     const [sizeOptions, setSizeOptions] = useState([]);
     const [sizes, setSizes] = useState([]);
     const [showImageModal, setShowImageModal] = useState(false);
-    const [modalColor, setModalColor] = useState("");
-    const [selectedImages, setSelectedImages] = useState([]);
+    const [modalColor, setModalColor] = useState(""); // dùng để lưu colorId
+    // Đổi selectedImages thành map: colorId -> [imageId, ...]
+    const [selectedImages, setSelectedImages] = useState({}); // { [colorId]: [imageId, ...] }
+    const [tempImages, setTempImages] = useState([]); // Tạm thời cho dialog
     const [imageOptions, setImageOptions] = useState([]);
     const [showAttributes, setShowAttributes] = useState(false);
     const [addLoading, setAddLoading] = useState(false);
@@ -99,9 +101,7 @@ function ProductForm() {
     const [quickQty, setQuickQty] = useState({});
     const [quickPrice, setQuickPrice] = useState({});
 
-    const closeImageModal = () => setShowImageModal(false);
-
-    // Fetch options for all fields
+    // Fetch options cho các trường
     useEffect(() => {
         fetch("http://localhost:8080/danhMuc/all")
             .then((res) => res.json())
@@ -375,10 +375,30 @@ function ProductForm() {
         return Number.isNaN(n) ? 0 : n;
     };
 
-    const openImageModal = (color) => {
-        setModalColor(color);
+    // --- mở modal: truyền colorId, gán tempImages từ selectedImages[colorId] ---
+    const openImageModal = (colorId) => {
+        setModalColor(colorId);
         setShowImageModal(true);
-        setSelectedImages([]);
+        setTempImages(selectedImages[colorId] || []);
+    };
+    const closeImageModal = () => setShowImageModal(false);
+
+    // --- khi lưu chọn ảnh: cập nhật selectedImages cho colorId, không gọi API ---
+    const handleSaveImages = () => {
+        setSelectedImages(prev => ({
+            ...prev,
+            [modalColor]: [...tempImages],
+        }));
+        closeImageModal();
+    };
+
+    // --- khi chọn/huỷ chọn ảnh trong modal ---
+    const toggleTempImage = (imgId) => {
+        setTempImages(sel =>
+            sel.includes(imgId)
+                ? sel.filter(id => id !== imgId)
+                : [...sel, imgId]
+        );
     };
 
     const findId = (arr, value) => {
@@ -423,14 +443,17 @@ function ProductForm() {
         setAddLoading(false);
     };
 
+    // --- khi ấn thêm chi tiết sản phẩm ---
     const handleAddProductDetail = async () => {
         setAddError("");
         setAddSuccess("");
         setAddLoading(true);
 
         const chiTietSanPhams = [];
-        productVariants.forEach((variant) => {
-            variant.products.forEach((prod) => {
+        const chiTietSanPhamIndexMap = [];
+
+        productVariants.forEach((variant, colorIdx) => {
+            variant.products.forEach((prod, prodIdx) => {
                 chiTietSanPhams.push({
                     idSanPham: createdSanPhamId,
                     idMauSac: findId(colorOptions, variant.colorId),
@@ -447,11 +470,17 @@ function ProductForm() {
                     moTa: "",
                     trangThai: 1,
                 });
+                chiTietSanPhamIndexMap.push({
+                    colorId: variant.colorId,
+                    sizeId: prod.sizeId,
+                    idxInVariants: { colorIdx, prodIdx },
+                });
             });
         });
 
         try {
-            const promises = chiTietSanPhams.map((ctsp) =>
+            // POST chi tiết sản phẩm, nhận về danh sách id chi tiết
+            const addDetailPromises = chiTietSanPhams.map((ctsp) =>
                 fetch("http://localhost:8080/chiTietSanPham", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -461,8 +490,38 @@ function ProductForm() {
                     return res.json();
                 })
             );
-            await Promise.all(promises);
+            const chiTietSanPhamResults = await Promise.all(addDetailPromises);
             setAddSuccess("Thêm chi tiết sản phẩm thành công!");
+
+            // Gọi cập nhật ảnh (PUT) sau khi đã có id chi tiết sản phẩm
+            const saveImagePromises = [];
+            chiTietSanPhamResults.forEach((ctspResult, idx) => {
+                const { colorId } = chiTietSanPhamIndexMap[idx];
+                const imgList = selectedImages[colorId] || [];
+                imgList.forEach((imgId) => {
+                    const img = imageOptions.find((i) => i.value === imgId);
+                    if (!img) return;
+                    // Giả sử ảnh đã tồn tại (từ /hinhAnh/all), update nó với id ảnh = img.value
+                    // Lưu ý: nếu muốn tạo mới ảnh thì dùng POST, nếu cập nhật thì PUT
+                    saveImagePromises.push(
+                        fetch(`http://localhost:8080/hinhAnh/${img.value}`, {
+                            method: "PUT",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({
+                                maAnh: img.label || `Ảnh ${img.value}`,
+                                duongDanAnh: img.url,
+                                anhMacDinh: 0,
+                                moTa: img.label || "",
+                                trangThai: 1,
+                                idSanPhamChiTiet: ctspResult.id || ctspResult, // chỉ cần id sản phẩm chi tiết
+                            }),
+                        })
+                    );
+                });
+            });
+            await Promise.all(saveImagePromises);
         } catch (err) {
             setAddError("Thêm chi tiết sản phẩm thất bại!");
         }
@@ -1163,7 +1222,7 @@ function ProductForm() {
                                                             sx={{ minWidth: 60 }}
                                                             onClick={() =>
                                                                 openImageModal(
-                                                                    getLabelById(colorOptions, variant.colorId)
+                                                                    variant.colorId
                                                                 )
                                                             }
                                                         >
@@ -1193,7 +1252,7 @@ function ProductForm() {
                     maxWidth="md"
                     fullWidth
                 >
-                    <DialogTitle>Chọn ảnh cho màu {modalColor}</DialogTitle>
+                    <DialogTitle>Chọn ảnh cho màu {getLabelById(colorOptions, modalColor)}</DialogTitle>
                     <DialogContent>
                         <SoftBox mb={2} fontWeight="bold">
                             Danh sách ảnh đã chọn
@@ -1212,7 +1271,7 @@ function ProductForm() {
                                 background: "#f9fafc",
                             }}
                         >
-                            {selectedImages.length === 0 ? (
+                            {tempImages.length === 0 ? (
                                 <SoftBox textAlign="center" color="secondary" width="100%">
                                     <img
                                         src="https://cdn-icons-png.flaticon.com/512/4076/4076549.png"
@@ -1222,7 +1281,7 @@ function ProductForm() {
                                     <div style={{ fontSize: 14, opacity: 0.7 }}>No Data Found</div>
                                 </SoftBox>
                             ) : (
-                                selectedImages.map((id) => {
+                                tempImages.map((id) => {
                                     const img = imageOptions.find((i) => i.value === id);
                                     if (!img) return null;
                                     return (
@@ -1277,7 +1336,7 @@ function ProductForm() {
                                     <SoftBox
                                         key={img.value}
                                         sx={{
-                                            border: selectedImages.includes(img.value)
+                                            border: tempImages.includes(img.value)
                                                 ? "2px solid orange"
                                                 : "1px dashed #bbb",
                                             borderRadius: 2,
@@ -1292,21 +1351,15 @@ function ProductForm() {
                                             cursor: "pointer",
                                             background: "#fff",
                                             transition: "box-shadow 0.2s, border 0.2s",
-                                            boxShadow: selectedImages.includes(img.value)
+                                            boxShadow: tempImages.includes(img.value)
                                                 ? "0 2px 8px rgba(255,165,0,0.15)"
                                                 : "none",
                                         }}
-                                        onClick={() => {
-                                            setSelectedImages((sel) =>
-                                                sel.includes(img.value)
-                                                    ? sel.filter((v) => v !== img.value)
-                                                    : [...sel, img.value]
-                                            );
-                                        }}
+                                        onClick={() => toggleTempImage(img.value)}
                                     >
                                         <input
                                             type="checkbox"
-                                            checked={selectedImages.includes(img.value)}
+                                            checked={tempImages.includes(img.value)}
                                             readOnly
                                             style={{
                                                 position: "absolute",
@@ -1337,7 +1390,12 @@ function ProductForm() {
                         <Button variant="outlined" onClick={closeImageModal}>
                             Đóng
                         </Button>
-                        <Button variant="contained" color="info" onClick={closeImageModal}>
+                        <Button
+                            variant="contained"
+                            color="info"
+                            onClick={handleSaveImages}
+                            disabled={!tempImages.length}
+                        >
                             Lưu chọn ảnh
                         </Button>
                     </DialogActions>

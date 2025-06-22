@@ -2,6 +2,7 @@ package com.example.datn.Service;
 
 import com.example.datn.DTO.HinhAnhDTO;
 import com.example.datn.Entity.HinhAnh;
+import com.example.datn.Entity.ChiTietSanPham;
 import com.example.datn.Repository.HinhAnhRepository;
 import com.example.datn.Repository.ChiTietSanPhamRepository;
 import com.example.datn.VO.HinhAnhQueryVO;
@@ -31,7 +32,17 @@ public class HinhAnhService {
     @Value("${file.upload-dir}")
     private String uploadDir;
 
-    public Integer save(String maAnh, Integer anhMacDinh, String moTa, Integer trangThai, MultipartFile duongDanAnh) {
+    /**
+     * Sửa hàm save để nhận thêm idSanPhamChiTiet và gán vào entity
+     */
+    public Integer save(
+            String maAnh,
+            Integer anhMacDinh,
+            String moTa,
+            Integer trangThai,
+            MultipartFile duongDanAnh,
+            Integer idSanPhamChiTiet // thêm tham số này
+    ) {
         HinhAnh bean = new HinhAnh();
         bean.setMaAnh(maAnh);
         bean.setAnhMacDinh(anhMacDinh);
@@ -43,6 +54,13 @@ public class HinhAnhService {
             bean.setDuongDanAnh(fileName);
         }
 
+        // Gán id_san_pham_chi_tiet vào entity nếu được truyền lên
+        if (idSanPhamChiTiet != null) {
+            ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(idSanPhamChiTiet)
+                    .orElse(null);
+            bean.setChiTietSanPham(chiTietSanPham);
+        }
+
         bean = hinhAnhRepository.save(bean);
         return bean.getId();
     }
@@ -51,7 +69,18 @@ public class HinhAnhService {
         hinhAnhRepository.deleteById(id);
     }
 
-    public void update(Integer id, String maAnh, Integer anhMacDinh, String moTa, Integer trangThai, MultipartFile duongDanAnh) {
+    /**
+     * Sửa hàm update để nhận thêm idSanPhamChiTiet và cập nhật nếu có
+     */
+    public void update(
+            Integer id,
+            String maAnh,
+            Integer anhMacDinh,
+            String moTa,
+            Integer trangThai,
+            String duongDanAnh, // <-- sửa kiểu dữ liệu
+            Integer idSanPhamChiTiet
+    ) {
         HinhAnh bean = requireOne(id);
         bean.setMaAnh(maAnh);
         bean.setAnhMacDinh(anhMacDinh);
@@ -59,8 +88,14 @@ public class HinhAnhService {
         bean.setTrangThai(trangThai);
 
         if (duongDanAnh != null && !duongDanAnh.isEmpty()) {
-            String fileName = saveFile(duongDanAnh);
-            bean.setDuongDanAnh(fileName);
+            bean.setDuongDanAnh(duongDanAnh);
+        }
+
+        // Cập nhật chiTietSanPham nếu truyền lên
+        if (idSanPhamChiTiet != null) {
+            ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(idSanPhamChiTiet)
+                    .orElse(null);
+            bean.setChiTietSanPham(chiTietSanPham);
         }
 
         hinhAnhRepository.save(bean);

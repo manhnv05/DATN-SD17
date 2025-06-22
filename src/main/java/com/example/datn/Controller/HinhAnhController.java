@@ -29,10 +29,10 @@ public class HinhAnhController {
             @RequestParam(value = "duong_dan_anh", required = false) MultipartFile duongDanAnh,
             @RequestParam("anh_mac_dinh") Integer anhMacDinh,
             @RequestParam("mo_ta") String moTa,
-            @RequestParam("trang_thai") Integer trangThai
-            // @RequestParam(value = "id_san_pham_chi_tiet", required = false) Integer idSanPhamChiTiet
+            @RequestParam("trang_thai") Integer trangThai,
+            @RequestParam(value = "id_san_pham_chi_tiet", required = false) Integer idSanPhamChiTiet
     ) {
-        Integer id = hinhAnhService.save(maAnh, anhMacDinh, moTa, trangThai, duongDanAnh);
+        Integer id = hinhAnhService.save(maAnh, anhMacDinh, moTa, trangThai, duongDanAnh, idSanPhamChiTiet);
         return ResponseEntity.ok(id);
     }
 
@@ -47,14 +47,17 @@ public class HinhAnhController {
     @PutMapping("/{id}")
     public ResponseEntity<?> update(
             @Valid @NotNull @PathVariable("id") Integer id,
-            @RequestParam("ma_anh") String maAnh,
-            @RequestParam(value = "duong_dan_anh", required = false) MultipartFile duongDanAnh,
-            @RequestParam("anh_mac_dinh") Integer anhMacDinh,
-            @RequestParam("mo_ta") String moTa,
-            @RequestParam("trang_thai") Integer trangThai
-            // @RequestParam(value = "id_san_pham_chi_tiet", required = false) Integer idSanPhamChiTiet
+            @RequestBody @Valid HinhAnhDTO hinhAnhDTO
     ) {
-        hinhAnhService.update(id, maAnh, anhMacDinh, moTa, trangThai, duongDanAnh);
+        hinhAnhService.update(
+                id,
+                hinhAnhDTO.getMaAnh(),
+                hinhAnhDTO.getAnhMacDinh(),
+                hinhAnhDTO.getMoTa(),
+                hinhAnhDTO.getTrangThai(),
+                hinhAnhDTO.getDuongDanAnh(),
+                hinhAnhDTO.getIdSanPhamChiTiet()
+        );
         return ResponseEntity.noContent().build();
     }
 
