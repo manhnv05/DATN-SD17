@@ -54,11 +54,11 @@ function Table({ columns, rows }) {
         textAlign={align}
         fontSize={size.xxs}
         fontWeight={fontWeightBold}
-        color="secondary"
+        color="black"
         opacity={0.7}
         borderBottom={`${borderWidth[1]} solid ${light.main}`}
       >
-        {(label || name).toUpperCase()}
+        {(label || name)}
       </SoftBox>
     );
   });
@@ -70,7 +70,6 @@ function Table({ columns, rows }) {
       const { name, align, render } = col;
       let cellContent;
 
-      // Render custom content if render function is provided
       if (typeof render === "function") {
         cellContent = render(row[name], row, key);
       } else if (Array.isArray(row[name])) {
@@ -89,7 +88,7 @@ function Table({ columns, rows }) {
           <SoftTypography
             variant="button"
             fontWeight="regular"
-            color="secondary"
+            color="black"
             sx={{ display: "inline-block", width: "max-content" }}
           >
             {row[name]}
@@ -128,13 +127,12 @@ function Table({ columns, rows }) {
   );
 }
 
-// Setting default values for the props of Table
+// Setting default valus for the props of Table
 Table.defaultProps = {
   columns: [],
   rows: [{}],
 };
 
-// Typechecking props for the Table
 Table.propTypes = {
   columns: PropTypes.arrayOf(PropTypes.object),
   rows: PropTypes.arrayOf(PropTypes.object),

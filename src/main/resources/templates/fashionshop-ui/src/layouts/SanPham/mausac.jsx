@@ -46,6 +46,10 @@ function ColorTable() {
         size: 5,
     });
 
+    const handleMenuOpen = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+
     // Data/loading/error states
     const [colorsData, setColorsData] = useState({
         content: [],

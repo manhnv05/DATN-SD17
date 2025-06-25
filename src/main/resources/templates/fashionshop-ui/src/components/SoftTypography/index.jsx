@@ -48,7 +48,7 @@ SoftTypography.propTypes = {
     "white",
   ]),
   fontWeight: PropTypes.oneOf([false, "light", "regular", "medium", "bold"]),
-  textTransform: PropTypes.oneOf(["none", "capitalize", "uppercase", "lowercase"]),
+  textTransform: PropTypes.oneOf(["none", "capitalize", "lowercase"]),
   verticalAlign: PropTypes.oneOf([
     "unset",
     "baseline",

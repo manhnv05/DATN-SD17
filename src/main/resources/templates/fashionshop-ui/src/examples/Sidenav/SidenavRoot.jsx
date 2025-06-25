@@ -1,4 +1,3 @@
-
 import Drawer from "@mui/material/Drawer";
 import { styled } from "@mui/material/styles";
 
@@ -60,7 +59,7 @@ export default styled(Drawer)(({ theme, ownerState }) => {
     "& .MuiDrawer-paper": {
       boxShadow: xxl,
       border: "none",
-
+      userSelect: "none", // <--- Thêm dòng này để tắt select text cho toàn bộ sidebar
       ...(miniSidenav ? drawerCloseStyles() : drawerOpenStyles()),
     },
   };

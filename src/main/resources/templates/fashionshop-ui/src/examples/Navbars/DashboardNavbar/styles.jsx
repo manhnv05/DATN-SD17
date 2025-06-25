@@ -1,40 +1,27 @@
 function navbar(theme, ownerState) {
   const { palette, boxShadows, functions, transitions, breakpoints, borders } = theme;
-  const { transparentNavbar, absolute, light } = ownerState;
-
-  const { dark, white, text, transparent } = palette;
+  const { dark, white } = palette;
   const { navbarBoxShadow } = boxShadows;
   const { rgba, pxToRem } = functions;
   const { borderRadius } = borders;
 
   return {
-    boxShadow: transparentNavbar || absolute ? "none" : navbarBoxShadow,
-    backdropFilter: transparentNavbar || absolute ? "none" : `saturate(200%) blur(${pxToRem(30)})`,
-    backgroundColor:
-      transparentNavbar || absolute ? `${transparent.main} !important` : rgba(white.main, 0.8),
+    // Không còn phụ thuộc transparentNavbar hay absolute, luôn dùng shadow và backdropFilter nếu muốn
+    boxShadow: navbarBoxShadow,
+    backdropFilter: `saturate(200%) blur(${pxToRem(30)})`,
+    backgroundColor: rgba(white.main, 0.8), // Luôn dùng màu trắng trong suốt 80%
 
-    color: () => {
-      let color;
+    color: dark.main, // Có thể tuỳ chỉnh theo nhu cầu (giữ màu chữ tối)
 
-      if (light) {
-        color = white.main;
-      } else if (transparentNavbar) {
-        color = text.main;
-      } else {
-        color = dark.main;
-      }
-
-      return color;
-    },
-    top: absolute ? 0 : pxToRem(12),
+    top: pxToRem(12),
     minHeight: pxToRem(75),
     display: "grid",
     alignItems: "center",
     borderRadius: borderRadius.xl,
     paddingTop: pxToRem(8),
     paddingBottom: pxToRem(8),
-    paddingRight: absolute ? pxToRem(8) : 0,
-    paddingLeft: absolute ? pxToRem(16) : 0,
+    paddingRight: 0,
+    paddingLeft: pxToRem(16),
 
     "& > *": {
       transition: transitions.create("all", {

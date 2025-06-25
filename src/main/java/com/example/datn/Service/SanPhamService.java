@@ -137,7 +137,6 @@ public class SanPhamService {
         SanPhamDTO bean = new SanPhamDTO();
         BeanUtils.copyProperties(original, bean);
 
-        // Lấy giá nhỏ nhất từ bảng chi tiết sản phẩm
         List<ChiTietSanPham> chiTiets = chiTietSanPhamRepository.findBySanPhamId(original.getId());
         if (!chiTiets.isEmpty()) {
             Integer minGia = chiTiets.stream()
@@ -149,7 +148,19 @@ public class SanPhamService {
             bean.setGiaBan(null);
         }
 
-        // Nếu cần có thêm thông tin (vd. tên danh mục, tên thương hiệu...), map thêm ở đây
+        if (original.getChatLieu() != null) {
+            bean.setIdChatLieu(original.getChatLieu().getId());
+            bean.setTenChatLieu(original.getChatLieu().getTenChatLieu());
+        }
+        if (original.getThuongHieu() != null) {
+            bean.setIdThuongHieu(original.getThuongHieu().getId());
+            bean.setTenThuongHieu(original.getThuongHieu().getTenThuongHieu());
+        }
+        if (original.getDanhMuc() != null) {
+            bean.setIdDanhMuc(original.getDanhMuc().getId());
+            bean.setTenDanhMuc(original.getDanhMuc().getTenDanhMuc());
+        }
+
         return bean;
     }
 

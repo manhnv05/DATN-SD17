@@ -11,6 +11,7 @@ import TayAo from "layouts/SanPham/tayao";
 import CoAo from "layouts/SanPham/coao";
 import HinhAnh from "layouts/SanPham/hinhanh";
 import ProductForm from "layouts/SanPham/themsp";
+import ProductDetailForm from "layouts/SanPham/chitiet"; // <-- Thêm import này
 
 import RTL from "layouts/rtl";
 import Profile from "layouts/profile";
@@ -60,13 +61,12 @@ const routes = [
     name: "Quản Lý Sản Phẩm",
     key: "virtual-reality",
     icon: <Cube size="12px" />,
-    // Không dùng route + component khi có menu con!
     collapse: [
       {
         type: "item",
         name: "Sản Phẩm",
         key: "product-list",
-        route: "/SanPham", 
+        route: "/SanPham",
         component: <SanPham />,
         noCollapse: true,
       },
@@ -74,7 +74,7 @@ const routes = [
         type: "item",
         name: "Thương Hiệu",
         key: "product-category",
-        route: "/Brand",  
+        route: "/Brand",
         component: <ThuongHieu />,
         noCollapse: true,
       },
@@ -122,7 +122,7 @@ const routes = [
         type: "item",
         name: "Cổ Áo",
         key: "colar",
-        route: "/colar", 
+        route: "/colar",
         component: <CoAo />,
         noCollapse: true,
       },
@@ -146,13 +146,13 @@ const routes = [
         type: "item",
         name: "Danh Sách Giảm Giá",
         key: "discount-list",
-        route: "/rtl",   // dùng tạm route cha
+        route: "/rtl",
       },
       {
         type: "item",
         name: "Lịch Sử Giảm Giá",
         key: "discount-history",
-        route: "/rtl",   // dùng tạm route cha
+        route: "/rtl",
       },
     ],
   },
@@ -203,14 +203,23 @@ const routes = [
     noCollapse: true,
   },
   {
-        type: "item",
-        name: "Thêm Sản Phẩm",
-        key: "add-product",
-        route: "/SanPham/ThemMoi",
-        component: <ProductForm />,
-        noCollapse: true,
-        hidden: true, // ẩn khỏi menu nếu muốn
-      },
+    type: "item",
+    name: "Thêm Sản Phẩm",
+    key: "add-product",
+    route: "/SanPham/ThemMoi",
+    component: <ProductForm />,
+    noCollapse: true,
+    hidden: true,
+  },
+  {
+    type: "item",
+    name: "Chi Tiết Sản Phẩm",
+    key: "product-detail",
+    route: "/SanPham/ChiTietSanPham/:id",
+    component: <ProductDetailForm />,
+    noCollapse: true,
+    hidden: true,
+  },
 ];
 
 export default routes;
