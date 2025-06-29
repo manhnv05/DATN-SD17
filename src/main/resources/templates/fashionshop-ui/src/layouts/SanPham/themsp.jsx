@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Card from "@mui/material/Card";
 import IconButton from "@mui/material/IconButton";
 import Button from "@mui/material/Button";
@@ -14,39 +14,40 @@ import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 import Icon from "@mui/material/Icon";
 import Table from "examples/Tables/Table";
-import { FaTrash } from "react-icons/fa";
-import { Alert, CircularProgress, Grid, Tooltip, Typography, Box } from "@mui/material";
+import { CircularProgress, Grid, Tooltip, Typography, Box } from "@mui/material";
 import CreatableSelect from "react-select/creatable";
-import MuiSelect from "react-select";
+import Select from "react-select";
+import Notifications from "layouts/Notifications";
+import { FaPlus, FaTrash } from "react-icons/fa";
 
-// Helper chuẩn hóa đường dẫn ảnh (luôn trả về link từ backend, không phải FE)
+const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:8080";
+const apiUrl = (path) => `${API_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
+
 const normalizeUrl = (url) =>
     url && url.startsWith("http")
         ? url
-        : `http://localhost:8080${url?.startsWith("/") ? "" : "/"}${url || ""}`;
+        : `${API_BASE}${url?.startsWith("/") ? "" : "/"}${url || ""}`;
 
-// Helper sinh mã sản phẩm tự động theo quy tắc SP + thời gian
 const generateProductCode = () => {
     const now = new Date();
-    const yyyy = now.getFullYear().toString().slice(-2);
-    const MM = (now.getMonth() + 1).toString().padStart(2, "0");
-    const dd = now.getDate().toString().padStart(2, "0");
-    const hh = now.getHours().toString().padStart(2, "0");
-    const mm = now.getMinutes().toString().padStart(2, "0");
-    const ss = now.getSeconds().toString().padStart(2, "0");
-    return `SP${yyyy}${MM}${dd}${hh}${mm}${ss}`;
+    const year = now.getFullYear().toString().slice(-2);
+    const month = (now.getMonth() + 1).toString().padStart(2, "0");
+    const day = now.getDate().toString().padStart(2, "0");
+    const hour = now.getHours().toString().padStart(2, "0");
+    const minute = now.getMinutes().toString().padStart(2, "0");
+    const second = now.getSeconds().toString().padStart(2, "0");
+    return `SP${year}${month}${day}${hour}${minute}${second}`;
 };
 
-// Sinh danh sách sản phẩm động theo màu và size
 function getProductVariantsByColors(colors, sizes, productName) {
     const selectedColors = colors.filter(Boolean);
     const selectedSizes = sizes.filter(Boolean);
     if (!selectedColors.length || !selectedSizes.length) return [];
     return selectedColors.map((colorId) => ({
-        colorId,
+        colorId: colorId,
         products: selectedSizes.map((sizeId) => ({
             name: productName,
-            sizeId,
+            sizeId: sizeId,
             weight: "",
             qty: "",
             price: "",
@@ -56,12 +57,49 @@ function getProductVariantsByColors(colors, sizes, productName) {
     }));
 }
 
-// Helper lấy label từ id
 const getLabelById = (options, id) =>
-    options.find((opt) => `${opt.value}` === `${id}`)?.label || id;
+    options.find((option) => `${option.value}` === `${id}`)?.label || id;
+
+const selectMenuStyle = {
+    menu: (base) => ({
+        ...base,
+        borderRadius: 8,
+        marginTop: 2,
+        boxShadow: "0 8px 24px 0 rgba(34,82,168,0.11)",
+        border: "1px solid #bbdefb",
+        background: "#fff",
+        color: "#263238",
+        zIndex: 20,
+    }),
+    input: (base, state) => ({
+        ...base,
+        color: "#263238",
+        fontSize: 16,
+        background: "transparent",
+        opacity: state.isFocused ? 0.5 : 1,
+    }),
+    placeholder: (base, state) => ({
+        ...base,
+        color: "#a8b8c3",
+        fontSize: 16,
+        opacity: state.isFocused ? 0.4 : 1,
+    }),
+    option: (base, state) => ({
+        ...base,
+        backgroundColor: state.isSelected
+            ? "#e3f2fd"
+            : state.isFocused
+                ? "#f0f6fd"
+                : "#fff",
+        color: "#263238",
+        fontWeight: state.isSelected ? 600 : 400,
+        cursor: "pointer",
+        fontSize: 16,
+        padding: "10px 16px",
+    }),
+};
 
 function ProductForm() {
-    // Form states
     const [productCode, setProductCode] = useState(generateProductCode());
     const [productName, setProductName] = useState("");
     const [productNameOptions, setProductNameOptions] = useState([]);
@@ -83,10 +121,9 @@ function ProductForm() {
     const [sizeOptions, setSizeOptions] = useState([]);
     const [sizes, setSizes] = useState([]);
     const [showImageModal, setShowImageModal] = useState(false);
-    const [modalColor, setModalColor] = useState(""); // dùng để lưu colorId
-    // Đổi selectedImages thành map: colorId -> [imageId, ...]
-    const [selectedImages, setSelectedImages] = useState({}); // { [colorId]: [imageId, ...] }
-    const [tempImages, setTempImages] = useState([]); // Tạm thời cho dialog
+    const [modalColor, setModalColor] = useState("");
+    const [selectedImages, setSelectedImages] = useState({});
+    const [tempImages, setTempImages] = useState([]);
     const [imageOptions, setImageOptions] = useState([]);
     const [showAttributes, setShowAttributes] = useState(false);
     const [addLoading, setAddLoading] = useState(false);
@@ -94,16 +131,34 @@ function ProductForm() {
     const [addSuccess, setAddSuccess] = useState("");
     const [productVariants, setProductVariants] = useState([]);
     const [createdSanPhamId, setCreatedSanPhamId] = useState(null);
-
-    // Checkbox và nhập nhanh
     const [checkedRows, setCheckedRows] = useState({});
     const [quickWeight, setQuickWeight] = useState({});
     const [quickQty, setQuickQty] = useState({});
     const [quickPrice, setQuickPrice] = useState({});
+    const [notify, setNotify] = useState({
+        open: false,
+        message: "",
+        severity: "info",
+    });
+    const [showAddProductModal, setShowAddProductModal] = useState(false);
+    const [newProductName, setNewProductName] = useState("");
+    const [newProductCategory, setNewProductCategory] = useState("");
+    const [newProductDesc, setNewProductDesc] = useState("");
+    const [addProductLoading, setAddProductLoading] = useState(false);
+    const [addProductError, setAddProductError] = useState("");
+    const [addProductSuccess, setAddProductSuccess] = useState("");
+    const autoFocusRef = useRef(null);
+    const [newProductCountry, setNewProductCountry] = useState("");
+    const [addProductValidate, setAddProductValidate] = useState({});
 
-    // Fetch options cho các trường
     useEffect(() => {
-        fetch("http://localhost:8080/danhMuc/all")
+        if (showAddProductModal && autoFocusRef.current) {
+            autoFocusRef.current.focus();
+        }
+    }, [showAddProductModal]);
+
+    useEffect(() => {
+        fetch(apiUrl("/danhMuc/all"))
             .then((res) => res.json())
             .then((data) => {
                 const opts = Array.isArray(data)
@@ -111,16 +166,17 @@ function ProductForm() {
                         .sort((a, b) => b.id - a.id)
                         .map((item) => ({
                             value: item.id,
-                            label: item.tenDanhMuc ?? item,
+                            label: item.tenDanhMuc ? item.tenDanhMuc : item,
                         }))
                     : [];
                 setCategoryOptions(opts);
+                if (opts[0]) setSelectedCategory(opts[0].value);
             })
             .catch(() => setCategoryOptions([]));
     }, []);
 
     useEffect(() => {
-        fetch("http://localhost:8080/thuongHieu/all")
+        fetch(apiUrl("/thuongHieu/all"))
             .then((res) => res.json())
             .then((data) => {
                 const opts = Array.isArray(data)
@@ -128,16 +184,17 @@ function ProductForm() {
                         .sort((a, b) => b.id - a.id)
                         .map((item) => ({
                             value: item.id,
-                            label: item.tenThuongHieu ?? item,
+                            label: item.tenThuongHieu ? item.tenThuongHieu : item,
                         }))
                     : [];
                 setBrandOptions(opts);
+                if (opts[0]) setSelectedBrand(opts[0].value);
             })
             .catch(() => setBrandOptions([]));
     }, []);
 
     useEffect(() => {
-        fetch("http://localhost:8080/chatLieu/all")
+        fetch(apiUrl("/chatLieu/all"))
             .then((res) => res.json())
             .then((data) => {
                 let opts = [];
@@ -147,33 +204,34 @@ function ProductForm() {
                     } else {
                         opts = data.sort((a, b) => b.id - a.id).map((item) => ({
                             value: item.id,
-                            label: item.tenChatLieu ?? item,
+                            label: item.tenChatLieu ? item.tenChatLieu : item,
                         }));
                     }
                 }
                 setMaterialOptions(opts);
+                if (opts[0]) setSelectedMaterial(opts[0].value);
             })
             .catch(() => setMaterialOptions([]));
     }, []);
 
     useEffect(() => {
-        fetch("http://localhost:8080/xuatXu/quocGia")
+        fetch(apiUrl("/xuatXu/quocGia"))
             .then((res) => res.json())
-            .then((data) =>
-                setCountryOptions(
-                    Array.isArray(data)
-                        ? data.map((item, idx) => ({
-                            value: item.name ?? item ?? idx,
-                            label: item.name ?? item,
-                        }))
-                        : []
-                )
-            )
+            .then((data) => {
+                const opts = Array.isArray(data)
+                    ? data.map((item, idx) => ({
+                        value: item.name ? item.name : item ? item : idx,
+                        label: item.name ? item.name : item,
+                    }))
+                    : [];
+                setCountryOptions(opts);
+                if (opts[0]) setSelectedCountry(opts[0].value);
+            })
             .catch(() => setCountryOptions([]));
     }, []);
 
     useEffect(() => {
-        fetch("http://localhost:8080/coAo/all")
+        fetch(apiUrl("/coAo/all"))
             .then((res) => res.json())
             .then((data) => {
                 const opts = Array.isArray(data)
@@ -188,17 +246,18 @@ function ProductForm() {
                                 ? { value: item, label: item }
                                 : {
                                     value: item.id,
-                                    label: item.tenCoAo ?? item.label ?? item,
+                                    label: item.tenCoAo ? item.tenCoAo : item.label ? item.label : item,
                                 }
                         )
                     : [];
                 setCollarOptions(opts);
+                if (opts[0]) setSelectedCollar(opts[0].value);
             })
             .catch(() => setCollarOptions([]));
     }, []);
 
     useEffect(() => {
-        fetch("http://localhost:8080/tayAo/all")
+        fetch(apiUrl("/tayAo/all"))
             .then((res) => res.json())
             .then((data) => {
                 const opts = Array.isArray(data)
@@ -213,17 +272,18 @@ function ProductForm() {
                                 ? { value: item, label: item }
                                 : {
                                     value: item.id,
-                                    label: item.tenTayAo ?? item.label ?? item,
+                                    label: item.tenTayAo ? item.tenTayAo : item.label ? item.label : item,
                                 }
                         )
                     : [];
                 setSleeveOptions(opts);
+                if (opts[0]) setSelectedSleeve(opts[0].value);
             })
             .catch(() => setSleeveOptions([]));
     }, []);
 
     useEffect(() => {
-        fetch("http://localhost:8080/mauSac/all")
+        fetch(apiUrl("/mauSac/all"))
             .then((res) => res.json())
             .then((data) =>
                 setColorOptions(
@@ -239,7 +299,7 @@ function ProductForm() {
             )
             .catch(() => setColorOptions([]));
 
-        fetch("http://localhost:8080/kichThuoc/all")
+        fetch(apiUrl("/kichThuoc/all"))
             .then((res) => res.json())
             .then((data) =>
                 setSizeOptions(
@@ -255,7 +315,7 @@ function ProductForm() {
                                     ? { value: item, label: item }
                                     : {
                                         value: item.id,
-                                        label: item.tenKichCo || item.label || item,
+                                        label: item.tenKichCo ? item.tenKichCo : item.label ? item.label : item,
                                     }
                             )
                         : []
@@ -263,7 +323,7 @@ function ProductForm() {
             )
             .catch(() => setSizeOptions([]));
 
-        fetch("http://localhost:8080/hinhAnh/all")
+        fetch(apiUrl("/hinhAnh/all"))
             .then((res) => res.json())
             .then((data) =>
                 setImageOptions(
@@ -272,7 +332,7 @@ function ProductForm() {
                             .sort((a, b) => b.id - a.id)
                             .map((item) => ({
                                 value: item.id,
-                                label: item.moTa || `Ảnh ${item.id}`,
+                                label: item.moTa ? item.moTa : `Ảnh ${item.id}`,
                                 url: normalizeUrl(item.duongDanAnh),
                             }))
                         : []
@@ -280,18 +340,19 @@ function ProductForm() {
             )
             .catch(() => setImageOptions([]));
 
-        fetch("http://localhost:8080/sanPham/all-ten")
+        fetch(apiUrl("/sanPham/all-ten"))
             .then((res) => res.json())
-            .then((data) =>
-                setProductNameOptions(
-                    Array.isArray(data)
-                        ? [...data].reverse().map((name) => ({
-                            value: name,
-                            label: name,
-                        }))
-                        : []
-                )
-            )
+            .then((data) => {
+                const uniqueNames = Array.isArray(data)
+                    ? data.filter(Boolean).map((name) => name.trim())
+                    : [];
+                const opts = uniqueNames.map((name) => ({
+                    value: name,
+                    label: name,
+                }));
+                setProductNameOptions(opts);
+                if (opts[0]) setProductName(opts[0].value);
+            })
             .catch(() => setProductNameOptions([]));
     }, []);
 
@@ -303,8 +364,33 @@ function ProductForm() {
         setProductCode(generateProductCode());
     }, []);
 
-    const isAllFieldsSelected =
-        colors.length > 0 && sizes.length > 0 && selectedCollar && selectedSleeve;
+    useEffect(() => {
+        if (productName) {
+            fetch(apiUrl(`/sanPham/search?keyword=${encodeURIComponent(productName)}`))
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data) && data.length > 0) {
+                        const prod = data[0];
+                        setCreatedSanPhamId(prod.id);
+                        setProductDesc(prod.moTa ? prod.moTa : "");
+                        setSelectedCategory(prod.idDanhMuc ? prod.idDanhMuc : "");
+                        setSelectedCountry(prod.xuatXu ? prod.xuatXu : "");
+                        setProductCode(prod.maSanPham ? prod.maSanPham : generateProductCode());
+                    } else {
+                        setCreatedSanPhamId(null);
+                        setProductDesc("");
+                        setSelectedCategory(categoryOptions[0]?.value || "");
+                        setSelectedCountry(countryOptions[0]?.value || "");
+                        setProductCode(generateProductCode());
+                    }
+                });
+        }
+    }, [productName]);
+
+    const handleProductNameChange = (opt) => {
+        const name = opt ? opt.value : "";
+        setProductName(name);
+    };
 
     const handleVariantValueChange = (colorIdx, prodIdx, field, value) => {
         setProductVariants((prev) => {
@@ -375,15 +461,12 @@ function ProductForm() {
         return Number.isNaN(n) ? 0 : n;
     };
 
-    // --- mở modal: truyền colorId, gán tempImages từ selectedImages[colorId] ---
     const openImageModal = (colorId) => {
         setModalColor(colorId);
         setShowImageModal(true);
         setTempImages(selectedImages[colorId] || []);
     };
     const closeImageModal = () => setShowImageModal(false);
-
-    // --- khi lưu chọn ảnh: cập nhật selectedImages cho colorId, không gọi API ---
     const handleSaveImages = () => {
         setSelectedImages(prev => ({
             ...prev,
@@ -391,8 +474,6 @@ function ProductForm() {
         }));
         closeImageModal();
     };
-
-    // --- khi chọn/huỷ chọn ảnh trong modal ---
     const toggleTempImage = (imgId) => {
         setTempImages(sel =>
             sel.includes(imgId)
@@ -400,7 +481,6 @@ function ProductForm() {
                 : [...sel, imgId]
         );
     };
-
     const findId = (arr, value) => {
         const item = arr.find(
             (x) => `${x.value}` === `${value}` || x.label === value
@@ -414,40 +494,124 @@ function ProductForm() {
         setAddSuccess("");
         setAddLoading(true);
 
+        const errors = {};
+        if (!productName || !productName.trim()) errors.productName = "Tên sản phẩm không được để trống";
+        if (!selectedBrand) errors.selectedBrand = "Thương hiệu không được để trống";
+        if (!selectedMaterial) errors.selectedMaterial = "Chất liệu không được để trống";
+        if (!selectedCollar) errors.selectedCollar = "Cổ áo không được để trống";
+        if (!selectedSleeve) errors.selectedSleeve = "Tay áo không được để trống";
+        if (!colors.length) errors.colors = "Màu sắc không được để trống";
+        if (!sizes.length) errors.sizes = "Kích thước không được để trống";
+        if (!selectedCategory) errors.selectedCategory = "Danh mục không được để trống";
+        if (!selectedCountry) errors.selectedCountry = "Xuất xứ không được để trống";
+
+        if (Object.keys(errors).length > 0) {
+            setAddProductValidate(errors);
+            setAddLoading(false);
+            setNotify({
+                open: true,
+                message: Object.values(errors)[0],
+                severity: "error",
+            });
+            return;
+        }
+
+        if (createdSanPhamId) {
+            setAddSuccess("Chọn sản phẩm thành công!");
+            setShowAttributes(true);
+            setAddLoading(false);
+            setNotify({
+                open: true,
+                message: "Chọn sản phẩm thành công!",
+                severity: "success",
+            });
+            return;
+        }
+
         const data = {
-            idChatLieu: selectedMaterial,
-            idThuongHieu: selectedBrand,
-            xuatXu: selectedCountry,
-            idDanhMuc: selectedCategory,
             maSanPham: productCode,
             tenSanPham: productName,
-            moTa: productDesc,
+            xuatXu: selectedCountry,
             trangThai: 1,
-            chiTietSanPhams: [],
+            idDanhMuc: selectedCategory
         };
 
         try {
-            const res = await fetch("http://localhost:8080/sanPham", {
+            const res = await fetch(apiUrl("/sanPham"), {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data),
             });
             if (!res.ok) throw new Error("Lỗi khi thêm sản phẩm");
             const result = await res.json();
-            setCreatedSanPhamId(result.id || result);
+            setCreatedSanPhamId(result.id ? result.id : result);
             setAddSuccess("Thêm sản phẩm thành công!");
             setShowAttributes(true);
+            setNotify({
+                open: true,
+                message: "Thêm sản phẩm thành công!",
+                severity: "success",
+            });
         } catch (err) {
             setAddError("Thêm sản phẩm thất bại!");
+            setNotify({
+                open: true,
+                message: "Thêm sản phẩm thất bại!",
+                severity: "error",
+            });
         }
         setAddLoading(false);
     };
 
-    // --- khi ấn thêm chi tiết sản phẩm ---
     const handleAddProductDetail = async () => {
         setAddError("");
         setAddSuccess("");
         setAddLoading(true);
+
+        const errors = {};
+        if (!productName || !productName.trim()) errors.productName = "Tên sản phẩm không được để trống";
+        if (!selectedMaterial) errors.selectedMaterial = "Chất liệu không được để trống";
+        if (!selectedBrand) errors.selectedBrand = "Thương hiệu không được để trống";
+        if (!colors.length) errors.colors = "Màu sắc không được để trống";
+        if (!sizes.length) errors.sizes = "Kích thước không được để trống";
+        if (!selectedCollar) errors.selectedCollar = "Cổ áo không được để trống";
+        if (!selectedSleeve) errors.selectedSleeve = "Tay áo không được để trống";
+
+        for (let variant of productVariants) {
+            for (let prod of variant.products) {
+                if (!prod.weight || isNaN(prod.weight) || Number(prod.weight) <= 0) {
+                    errors.weight = "Trọng lượng phải lớn hơn 0";
+                }
+                if (prod.qty === "" || prod.qty === null || isNaN(prod.qty) || Number(prod.qty) < 0) {
+                    errors.qty = "Số lượng phải lớn hơn hoặc bằng 0";
+                }
+                if (!prod.price || isNaN(prod.price) || Number(prod.price) <= 0) {
+                    errors.price = "Giá phải lớn hơn 0";
+                }
+            }
+        }
+
+        if (Object.keys(errors).length > 0) {
+            setAddError(Object.values(errors)[0]);
+            setNotify({
+                open: true,
+                message: Object.values(errors)[0],
+                severity: "error",
+            });
+            setAddLoading(false);
+            return;
+        }
+
+        if (!createdSanPhamId) {
+            setAddError("Bạn phải thêm sản phẩm trước khi thêm chi tiết sản phẩm!");
+            setNotify({
+                open: true,
+                message: "Bạn phải thêm sản phẩm trước khi thêm chi tiết sản phẩm!",
+                severity: "error",
+            });
+            setAddLoading(false);
+            return;
+        }
 
         const chiTietSanPhams = [];
         const chiTietSanPhamIndexMap = [];
@@ -456,13 +620,15 @@ function ProductForm() {
             variant.products.forEach((prod, prodIdx) => {
                 chiTietSanPhams.push({
                     idSanPham: createdSanPhamId,
+                    idChatLieu: selectedMaterial,
+                    idThuongHieu: selectedBrand,
                     idMauSac: findId(colorOptions, variant.colorId),
                     idKichThuoc: findId(sizeOptions, prod.sizeId),
                     idCoAo: selectedCollar,
                     idTayAo: selectedSleeve,
-                    gia: safeNumber(prod.price),
-                    soLuong: safeNumber(prod.qty),
-                    trongLuong: safeNumber(prod.weight),
+                    gia: Number(prod.price),
+                    soLuong: Number(prod.qty),
+                    trongLuong: Number(prod.weight),
                     maSanPhamChiTiet: `${productCode}-${findId(
                         colorOptions,
                         variant.colorId
@@ -473,15 +639,14 @@ function ProductForm() {
                 chiTietSanPhamIndexMap.push({
                     colorId: variant.colorId,
                     sizeId: prod.sizeId,
-                    idxInVariants: { colorIdx, prodIdx },
+                    idxInVariants: { colorIdx: colorIdx, prodIdx: prodIdx },
                 });
             });
         });
 
         try {
-            // POST chi tiết sản phẩm, nhận về danh sách id chi tiết
             const addDetailPromises = chiTietSanPhams.map((ctsp) =>
-                fetch("http://localhost:8080/chiTietSanPham", {
+                fetch(apiUrl("/chiTietSanPham"), {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(ctsp),
@@ -492,8 +657,12 @@ function ProductForm() {
             );
             const chiTietSanPhamResults = await Promise.all(addDetailPromises);
             setAddSuccess("Thêm chi tiết sản phẩm thành công!");
+            setNotify({
+                open: true,
+                message: "Thêm chi tiết sản phẩm thành công!",
+                severity: "success",
+            });
 
-            // Gọi cập nhật ảnh (PUT) sau khi đã có id chi tiết sản phẩm
             const saveImagePromises = [];
             chiTietSanPhamResults.forEach((ctspResult, idx) => {
                 const { colorId } = chiTietSanPhamIndexMap[idx];
@@ -501,21 +670,20 @@ function ProductForm() {
                 imgList.forEach((imgId) => {
                     const img = imageOptions.find((i) => i.value === imgId);
                     if (!img) return;
-                    // Giả sử ảnh đã tồn tại (từ /hinhAnh/all), update nó với id ảnh = img.value
-                    // Lưu ý: nếu muốn tạo mới ảnh thì dùng POST, nếu cập nhật thì PUT
                     saveImagePromises.push(
-                        fetch(`http://localhost:8080/hinhAnh/${img.value}`, {
+                        fetch(apiUrl(`/hinhAnh/${img.value}`), {
                             method: "PUT",
                             headers: {
                                 "Content-Type": "application/json",
                             },
                             body: JSON.stringify({
-                                maAnh: img.label || `Ảnh ${img.value}`,
+                                maAnh: img.label ? img.label : `Ảnh ${img.value}`,
                                 duongDanAnh: img.url,
                                 anhMacDinh: 0,
-                                moTa: img.label || "",
+                                moTa: img.label ? img.label : "",
                                 trangThai: 1,
-                                idSanPhamChiTiet: ctspResult.id || ctspResult, // chỉ cần id sản phẩm chi tiết
+                                idSanPhamChiTiet: ctspResult.id ? ctspResult.id : ctspResult,
+                                idSanPham: createdSanPhamId,
                             }),
                         })
                     );
@@ -524,8 +692,78 @@ function ProductForm() {
             await Promise.all(saveImagePromises);
         } catch (err) {
             setAddError("Thêm chi tiết sản phẩm thất bại!");
+            setNotify({
+                open: true,
+                message: "Thêm chi tiết sản phẩm thất bại!",
+                severity: "error",
+            });
         }
         setAddLoading(false);
+    };
+
+    const handleOpenAddProductModal = () => {
+        setShowAddProductModal(true);
+        setNewProductName("");
+        setNewProductCategory(selectedCategory ? selectedCategory : "");
+        setNewProductCountry(selectedCountry ? selectedCountry : "");
+        setNewProductDesc("");
+        setAddProductError("");
+        setAddProductSuccess("");
+        setAddProductValidate({});
+    };
+
+    const handleAddNewProduct = async () => {
+        setAddProductLoading(true);
+        setAddProductError("");
+        setAddProductSuccess("");
+        const errors = {};
+        if (!newProductName || !newProductName.trim()) errors.newProductName = "Tên sản phẩm không được để trống";
+        if (!newProductCategory) errors.newProductCategory = "Vui lòng chọn danh mục";
+        if (!newProductCountry) errors.newProductCountry = "Vui lòng chọn xuất xứ";
+        setAddProductValidate(errors);
+        if (Object.keys(errors).length > 0) {
+            setAddProductLoading(false);
+            return;
+        }
+        const productData = {
+            maSanPham: generateProductCode(),
+            tenSanPham: newProductName,
+            idDanhMuc: newProductCategory,
+            xuatXu: newProductCountry,
+            moTa: newProductDesc,
+            trangThai: 1
+        };
+        try {
+            const res = await fetch(apiUrl("/sanPham"), {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(productData),
+            });
+            if (!res.ok) throw new Error("Lỗi khi thêm sản phẩm mới");
+            await res.json();
+            setAddProductSuccess("Thêm sản phẩm mới thành công!");
+
+            setTimeout(() => {
+                setShowAddProductModal(false);
+                setAddProductSuccess("");
+                fetch(apiUrl("/sanPham/all-ten"))
+                    .then((res) => res.json())
+                    .then((data) => {
+                        const uniqueNames = Array.isArray(data)
+                            ? data.filter(Boolean).map((name) => name.trim())
+                            : [];
+                        const opts = uniqueNames.map((name) => ({
+                            value: name,
+                            label: name,
+                        }));
+                        setProductNameOptions(opts);
+                        if (opts[0]) setProductName(opts[0].value);
+                    });
+            }, 1200);
+        } catch (err) {
+            setAddProductError("Thêm sản phẩm mới thất bại!");
+        }
+        setAddProductLoading(false);
     };
 
     return (
@@ -541,18 +779,18 @@ function ProductForm() {
             >
                 <Card
                     sx={{
-                        p: { xs: 2, md: 3 },
+                        p: { xs: 2, md: 4 },
                         mb: 2,
-                        maxWidth: "1100px",
+                        maxWidth: "1400px",
                         margin: "0 auto",
-                        boxShadow: 8,
-                        borderRadius: 4,
-                        background: "linear-gradient(145deg,#fff 70%,#e3f0fa 120%)",
+                        boxShadow: 12,
+                        borderRadius: 5,
+                        background: "linear-gradient(145deg,#fff 65%,#e3f0fa 130%)",
                     }}
                 >
                     <Typography
                         variant="h4"
-                        color="#38b6ff"
+                        color="#1976d2"
                         fontWeight="bold"
                         mb={3}
                         letterSpacing={1}
@@ -562,102 +800,69 @@ function ProductForm() {
                     </Typography>
                     <form onSubmit={handleAddProduct}>
                         <Grid container spacing={2}>
-                            <Grid item xs={12} md={6}>
+                            <Grid item xs={12}>
                                 <FormControl fullWidth sx={{ mb: 2 }}>
-                                    <SoftBox fontWeight="bold" mb={0.5}>
-                                        Mã sản phẩm
-                                    </SoftBox>
-                                    <Input
-                                        id="product-code-input"
-                                        fullWidth
-                                        value={productCode}
-                                        disabled
-                                        sx={{
-                                            fontWeight: 700,
-                                            color: "#1769aa",
-                                            background: "#f2f6fa",
-                                            borderRadius: 2,
-                                            pl: 1,
-                                        }}
-                                    />
-                                </FormControl>
-                            </Grid>
-                            <Grid item xs={12} md={6}>
-                                <FormControl fullWidth sx={{ mb: 2 }}>
-                                    <SoftBox fontWeight="bold" mb={0.5}>
-                                        Tên sản phẩm
-                                    </SoftBox>
-                                    <CreatableSelect
-                                        inputId="product-name-input"
-                                        options={productNameOptions}
-                                        value={
-                                            productName
-                                                ? { value: productName, label: productName }
-                                                : null
-                                        }
-                                        onChange={(opt) => setProductName(opt ? opt.value : "")}
-                                        onInputChange={(inputValue, { action }) => {
-                                            if (action === "input-change") setProductName(inputValue);
-                                        }}
-                                        placeholder="Chọn hoặc nhập tên sản phẩm"
-                                        isClearable
-                                        isSearchable
-                                        formatCreateLabel={(inputValue) => `Thêm mới: ${inputValue}`}
-                                        noOptionsMessage={() => "Không có sản phẩm, nhập tên mới để thêm"}
-                                        styles={{
-                                            control: (base, state) => ({
-                                                ...base,
-                                                borderRadius: 8,
-                                                borderColor: "#cfd8dc",
-                                                minHeight: 42,
-                                                boxShadow: state.isFocused ? "0 0 0 2px #1976d2" : "none",
-                                            }),
-                                        }}
-                                    />
-                                </FormControl>
-                            </Grid>
-                            <Grid item xs={12} md={6}>
-                                <FormControl fullWidth sx={{ mb: 2 }}>
-                                    <SoftBox fontWeight="bold" mb={0.5}>
-                                        Danh mục
-                                    </SoftBox>
-                                    <CreatableSelect
-                                        inputId="category-input"
-                                        options={categoryOptions}
-                                        value={
-                                            selectedCategory
-                                                ? {
-                                                    value: selectedCategory,
-                                                    label: getLabelById(categoryOptions, selectedCategory),
+                                    <label htmlFor="product-name" style={{ fontWeight: "bold", marginBottom: 4, display: "block" }}>
+                                        Tên sản phẩm <span style={{ color: "red" }}>*</span>
+                                    </label>
+                                    <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 2 }}>
+                                        <Box flex={1} sx={{ mr: 1 }}>
+                                            <CreatableSelect
+                                                inputId="product-name-input"
+                                                options={productNameOptions}
+                                                value={
+                                                    productName
+                                                        ? { value: productName, label: productName }
+                                                        : null
                                                 }
-                                                : null
-                                        }
-                                        onChange={(opt) => setSelectedCategory(opt ? opt.value : "")}
-                                        onInputChange={(inputValue, { action }) => {
-                                            if (action === "input-change") setSelectedCategory(inputValue);
-                                        }}
-                                        placeholder="Chọn hoặc nhập danh mục"
-                                        isClearable
-                                        isSearchable
-                                        formatCreateLabel={(inputValue) => `Thêm mới: ${inputValue}`}
-                                        noOptionsMessage={() => "Không có danh mục, nhập tên mới để thêm"}
-                                        styles={{
-                                            control: (base, state) => ({
-                                                ...base,
-                                                borderRadius: 8,
-                                                borderColor: "#cfd8dc",
-                                                minHeight: 42,
-                                                boxShadow: state.isFocused ? "0 0 0 2px #1976d2" : "none",
-                                            }),
-                                        }}
-                                    />
+                                                onChange={handleProductNameChange}
+                                                onInputChange={(inputValue, { action }) => {
+                                                    if (action === "input-change") setProductName(inputValue);
+                                                }}
+                                                placeholder="Chọn hoặc nhập tên sản phẩm"
+                                                isClearable
+                                                isSearchable
+                                                formatCreateLabel={(inputValue) => `Thêm mới: ${inputValue}`}
+                                                noOptionsMessage={() => "Không có sản phẩm, nhập tên mới để thêm"}
+                                                styles={selectMenuStyle}
+                                            />
+                                        </Box>
+                                        <Tooltip title="Tạo sản phẩm mới nhanh">
+                                            <Button
+                                                variant="outlined"
+                                                size="large"
+                                                sx={{
+                                                    borderRadius: 3,
+                                                    textTransform: "none",
+                                                    fontWeight: 500,
+                                                    color: "#1976d2",
+                                                    borderColor: "#90caf9",
+                                                    minWidth: 44,
+                                                    minHeight: 44,
+                                                    p: 0,
+                                                    boxShadow: "none",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    "&:hover": {
+                                                        borderColor: "#1769aa",
+                                                        background: "#f0f6fd",
+                                                        color: "#1769aa",
+                                                    },
+                                                }}
+                                                onClick={handleOpenAddProductModal}
+                                            >
+                                                <FaPlus size={22} />
+                                            </Button>
+                                        </Tooltip>
+                                    </Box>
                                 </FormControl>
                             </Grid>
                             <Grid item xs={12} md={6}>
                                 <FormControl fullWidth sx={{ mb: 2 }}>
-                                    <SoftBox fontWeight="bold" mb={0.5}>
+                                    <label htmlFor="brand-input" style={{ fontWeight: "bold", marginBottom: 4, display: "block" }}>
                                         Thương hiệu
-                                    </SoftBox>
+                                    </label>
                                     <CreatableSelect
                                         inputId="brand-input"
                                         options={brandOptions}
@@ -678,23 +883,15 @@ function ProductForm() {
                                         isSearchable
                                         formatCreateLabel={(inputValue) => `Thêm mới: ${inputValue}`}
                                         noOptionsMessage={() => "Không có thương hiệu, nhập tên mới để thêm"}
-                                        styles={{
-                                            control: (base, state) => ({
-                                                ...base,
-                                                borderRadius: 8,
-                                                borderColor: "#cfd8dc",
-                                                minHeight: 42,
-                                                boxShadow: state.isFocused ? "0 0 0 2px #1976d2" : "none",
-                                            }),
-                                        }}
+                                        styles={selectMenuStyle}
                                     />
                                 </FormControl>
                             </Grid>
                             <Grid item xs={12} md={6}>
                                 <FormControl fullWidth sx={{ mb: 2 }}>
-                                    <SoftBox fontWeight="bold" mb={0.5}>
+                                    <label htmlFor="material-input" style={{ fontWeight: "bold", marginBottom: 4, display: "block" }}>
                                         Chất liệu
-                                    </SoftBox>
+                                    </label>
                                     <CreatableSelect
                                         inputId="material-input"
                                         options={materialOptions}
@@ -715,60 +912,15 @@ function ProductForm() {
                                         isSearchable
                                         formatCreateLabel={(inputValue) => `Thêm mới: ${inputValue}`}
                                         noOptionsMessage={() => "Không có chất liệu, nhập tên mới để thêm"}
-                                        styles={{
-                                            control: (base, state) => ({
-                                                ...base,
-                                                borderRadius: 8,
-                                                borderColor: "#cfd8dc",
-                                                minHeight: 42,
-                                                boxShadow: state.isFocused ? "0 0 0 2px #1976d2" : "none",
-                                            }),
-                                        }}
+                                        styles={selectMenuStyle}
                                     />
                                 </FormControl>
                             </Grid>
                             <Grid item xs={12} md={6}>
                                 <FormControl fullWidth sx={{ mb: 2 }}>
-                                    <SoftBox fontWeight="bold" mb={0.5}>
-                                        Quốc gia
-                                    </SoftBox>
-                                    <CreatableSelect
-                                        inputId="country-input"
-                                        options={countryOptions}
-                                        value={
-                                            selectedCountry
-                                                ? {
-                                                    value: selectedCountry,
-                                                    label: getLabelById(countryOptions, selectedCountry),
-                                                }
-                                                : null
-                                        }
-                                        onChange={(opt) => setSelectedCountry(opt ? opt.value : "")}
-                                        onInputChange={(inputValue, { action }) => {
-                                            if (action === "input-change") setSelectedCountry(inputValue);
-                                        }}
-                                        placeholder="Chọn hoặc nhập quốc gia"
-                                        isClearable
-                                        isSearchable
-                                        formatCreateLabel={(inputValue) => `Thêm mới: ${inputValue}`}
-                                        noOptionsMessage={() => "Không có quốc gia, nhập tên mới để thêm"}
-                                        styles={{
-                                            control: (base, state) => ({
-                                                ...base,
-                                                borderRadius: 8,
-                                                borderColor: "#cfd8dc",
-                                                minHeight: 42,
-                                                boxShadow: state.isFocused ? "0 0 0 2px #1976d2" : "none",
-                                            }),
-                                        }}
-                                    />
-                                </FormControl>
-                            </Grid>
-                            <Grid item xs={12} md={6}>
-                                <FormControl fullWidth sx={{ mb: 2 }}>
-                                    <SoftBox fontWeight="bold" mb={0.5}>
+                                    <label htmlFor="collar-input" style={{ fontWeight: "bold", marginBottom: 4, display: "block" }}>
                                         Cổ áo
-                                    </SoftBox>
+                                    </label>
                                     <CreatableSelect
                                         inputId="collar-input"
                                         options={collarOptions}
@@ -789,23 +941,15 @@ function ProductForm() {
                                         isSearchable
                                         formatCreateLabel={(inputValue) => `Thêm mới: ${inputValue}`}
                                         noOptionsMessage={() => "Không có cổ áo, nhập tên mới để thêm"}
-                                        styles={{
-                                            control: (base, state) => ({
-                                                ...base,
-                                                borderRadius: 8,
-                                                borderColor: "#cfd8dc",
-                                                minHeight: 42,
-                                                boxShadow: state.isFocused ? "0 0 0 2px #1976d2" : "none",
-                                            }),
-                                        }}
+                                        styles={selectMenuStyle}
                                     />
                                 </FormControl>
                             </Grid>
                             <Grid item xs={12} md={6}>
                                 <FormControl fullWidth sx={{ mb: 2 }}>
-                                    <SoftBox fontWeight="bold" mb={0.5}>
+                                    <label htmlFor="sleeve-input" style={{ fontWeight: "bold", marginBottom: 4, display: "block" }}>
                                         Tay áo
-                                    </SoftBox>
+                                    </label>
                                     <CreatableSelect
                                         inputId="sleeve-input"
                                         options={sleeveOptions}
@@ -826,97 +970,17 @@ function ProductForm() {
                                         isSearchable
                                         formatCreateLabel={(inputValue) => `Thêm mới: ${inputValue}`}
                                         noOptionsMessage={() => "Không có tay áo, nhập tên mới để thêm"}
-                                        styles={{
-                                            control: (base, state) => ({
-                                                ...base,
-                                                borderRadius: 8,
-                                                borderColor: "#cfd8dc",
-                                                minHeight: 42,
-                                                boxShadow: state.isFocused ? "0 0 0 2px #1976d2" : "none",
-                                            }),
-                                        }}
+                                        styles={selectMenuStyle}
                                     />
                                 </FormControl>
                             </Grid>
-                            <Grid item xs={12}>
-                                <FormControl fullWidth sx={{ mb: 2 }}>
-                                    <SoftBox fontWeight="bold" mb={0.5}>
-                                        Mô tả sản phẩm
-                                    </SoftBox>
-                                    <Input
-                                        id="product-desc-input"
-                                        fullWidth
-                                        placeholder="Mô tả sản phẩm"
-                                        value={productDesc}
-                                        onChange={(e) => setProductDesc(e.target.value)}
-                                        multiline
-                                        rows={3}
-                                        sx={{
-                                            background: "#f2f6fa",
-                                            borderRadius: 2,
-                                            pl: 1,
-                                            fontSize: 15,
-                                        }}
-                                    />
-                                </FormControl>
-                            </Grid>
-                        </Grid>
-                        <SoftBox display="flex" justifyContent="flex-end" mt={2}>
-                            <Button
-                                variant="contained"
-                                color="info"
-                                type="submit"
-                                disabled={addLoading}
-                                sx={{
-                                    textTransform: "none",
-                                    fontWeight: 600,
-                                    px: 3,
-                                    py: 1.2,
-                                    fontSize: 16,
-                                    borderRadius: 2,
-                                    boxShadow: 2,
-                                }}
-                            >
-                                {addLoading && (
-                                    <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
-                                )}
-                                Thêm sản phẩm
-                            </Button>
-                        </SoftBox>
-                        {addError && (
-                            <Alert severity="error" sx={{ mt: 2 }}>
-                                {addError}
-                            </Alert>
-                        )}
-                        {addSuccess && (
-                            <Alert severity="success" sx={{ mt: 2 }}>
-                                {addSuccess}
-                            </Alert>
-                        )}
-                    </form>
-                </Card>
-
-                {/* --- Bảng cấu hình thuộc tính chi tiết --- */}
-                {showAttributes && (
-                    <Card
-                        sx={{
-                            p: { xs: 2, md: 3 },
-                            mb: 2,
-                            maxWidth: "1100px",
-                            margin: "0 auto",
-                            borderRadius: 4,
-                            boxShadow: 8,
-                            background: "linear-gradient(145deg,#fff 70%,#f4f9fd 120%)",
-                        }}
-                    >
-                        <SoftBox fontWeight="bold" mb={2} fontSize={20} color="primary.main">
-                            Cấu hình sản phẩm theo màu sắc & kích cỡ
-                        </SoftBox>
-                        <Grid container spacing={2}>
                             <Grid item xs={12} md={6}>
                                 <FormControl fullWidth sx={{ mb: 2 }}>
-                                    <SoftBox fontWeight="bold" mb={0.5}>Màu sắc</SoftBox>
-                                    <MuiSelect
+                                    <label htmlFor="color-input" style={{ fontWeight: "bold", marginBottom: 4, display: "block" }}>
+                                        Màu sắc
+                                    </label>
+                                    <Select
+                                        inputId="color-input"
                                         isMulti
                                         options={colorOptions}
                                         value={colorOptions.filter((o) => colors.includes(o.value))}
@@ -925,22 +989,17 @@ function ProductForm() {
                                         }
                                         placeholder="Chọn nhiều màu sắc"
                                         closeMenuOnSelect={false}
-                                        styles={{
-                                            control: (base, state) => ({
-                                                ...base,
-                                                borderRadius: 8,
-                                                borderColor: "#cfd8dc",
-                                                minHeight: 45,
-                                                boxShadow: state.isFocused ? "0 0 0 2px #1976d2" : "none",
-                                            }),
-                                        }}
+                                        styles={selectMenuStyle}
                                     />
                                 </FormControl>
                             </Grid>
                             <Grid item xs={12} md={6}>
                                 <FormControl fullWidth sx={{ mb: 2 }}>
-                                    <SoftBox fontWeight="bold" mb={0.5}>Kích cỡ</SoftBox>
-                                    <MuiSelect
+                                    <label htmlFor="size-input" style={{ fontWeight: "bold", marginBottom: 4, display: "block" }}>
+                                        Kích cỡ
+                                    </label>
+                                    <Select
+                                        inputId="size-input"
                                         isMulti
                                         options={sizeOptions}
                                         value={sizeOptions.filter((o) => sizes.includes(o.value))}
@@ -949,310 +1008,412 @@ function ProductForm() {
                                         }
                                         placeholder="Chọn nhiều kích cỡ"
                                         closeMenuOnSelect={false}
-                                        styles={{
-                                            control: (base, state) => ({
-                                                ...base,
-                                                borderRadius: 8,
-                                                borderColor: "#cfd8dc",
-                                                minHeight: 45,
-                                                boxShadow: state.isFocused ? "0 0 0 2px #1976d2" : "none",
-                                            }),
-                                        }}
+                                        styles={selectMenuStyle}
                                     />
                                 </FormControl>
                             </Grid>
                         </Grid>
-                        {!isAllFieldsSelected && (
-                            <SoftBox textAlign="right" mt={2}>
-                                <Button variant="contained" color="primary" disabled>
-                                    Vui lòng chọn đầy đủ thuộc tính để xem danh sách sản phẩm
+                        <SoftBox my={4}>
+                            <SoftBox textAlign="right" mb={2}>
+                                <Button
+                                    variant="contained"
+                                    color="success"
+                                    size="large"
+                                    onClick={handleAddProductDetail}
+                                    sx={{ fontWeight: 600, px: 4, fontSize: 17, borderRadius: 3, boxShadow: 3 }}
+                                >
+                                    {addLoading && (
+                                        <CircularProgress size={22} color="inherit" sx={{ mr: 1 }} />
+                                    )}
+                                    Thêm sản phẩm chi tiết
                                 </Button>
                             </SoftBox>
-                        )}
-                        {isAllFieldsSelected && (
-                            <SoftBox my={4}>
-                                <SoftBox textAlign="right" mb={2}>
-                                    <Button
-                                        variant="contained"
-                                        color="success"
-                                        size="small"
-                                        onClick={handleAddProductDetail}
-                                        disabled={addLoading || !createdSanPhamId}
-                                        sx={{ fontWeight: 600, px: 3, fontSize: 15, borderRadius: 2, boxShadow: 2 }}
+                            {productVariants.map((variant, colorIdx) => {
+                                const allChecked =
+                                    checkedRows[colorIdx]?.length === variant.products.length;
+                                return (
+                                    <Card
+                                        key={colorIdx}
+                                        sx={{
+                                            mb: 2.5,
+                                            borderRadius: 3,
+                                            boxShadow: 2,
+                                            p: 2.5,
+                                            background: "#fff",
+                                            userSelect: "none",
+                                            borderLeft: "7px solid #1976d2",
+                                        }}
                                     >
-                                        {addLoading && (
-                                            <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
-                                        )}
-                                        Thêm sản phẩm chi tiết
-                                    </Button>
-                                </SoftBox>
-                                {addError && (
-                                    <Alert severity="error" sx={{ mt: 2 }}>
-                                        {addError}
-                                    </Alert>
-                                )}
-                                {addSuccess && (
-                                    <Alert severity="success" sx={{ mt: 2 }}>
-                                        {addSuccess}
-                                    </Alert>
-                                )}
-                                {productVariants.map((variant, colorIdx) => {
-                                    const allChecked =
-                                        checkedRows[colorIdx]?.length === variant.products.length;
-                                    return (
-                                        <Card
-                                            key={colorIdx}
-                                            sx={{
-                                                mb: 2,
-                                                borderRadius: 3,
-                                                boxShadow: 1,
-                                                p: 2,
-                                                background: "#fff",
-                                                userSelect: "none",
-                                                borderLeft: "6px solid #1976d2",
-                                            }}
+                                        <Box
+                                            display="flex"
+                                            alignItems="center"
+                                            mb={2}
+                                            flexWrap="wrap"
+                                            gap={2}
                                         >
-                                            <Box
-                                                display="flex"
-                                                alignItems="center"
-                                                mb={2}
-                                                flexWrap="wrap"
-                                                gap={2}
+                                            <SoftBox
+                                                fontWeight="bold"
+                                                sx={{ color: "#1976d2", fontSize: 16, mr: 2 }}
                                             >
-                                                <SoftBox
-                                                    fontWeight="bold"
-                                                    sx={{ color: "#1976d2", fontSize: 16, mr: 2 }}
+                                                {`Màu: ${getLabelById(colorOptions, variant.colorId)}`}
+                                            </SoftBox>
+                                            <FormControl sx={{ verticalAlign: "middle" }}>
+                                                <Tooltip title={allChecked ? "Bỏ chọn tất cả" : "Chọn tất cả"}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={allChecked}
+                                                        onChange={() =>
+                                                            handleCheckAllRows(colorIdx, !allChecked)
+                                                        }
+                                                        style={{
+                                                            transform: "scale(1.3)",
+                                                            marginRight: 5,
+                                                            verticalAlign: "middle",
+                                                        }}
+                                                    />
+                                                </Tooltip>
+                                                <span style={{ fontWeight: 400, fontSize: 14 }}>
+                                                    Chọn tất cả
+                                                </span>
+                                            </FormControl>
+                                            {allChecked && (
+                                                <Box
+                                                    display="flex"
+                                                    alignItems="center"
+                                                    gap={2}
+                                                    sx={{
+                                                        background: "#f4f7fd",
+                                                        borderRadius: 2,
+                                                        px: 2,
+                                                        py: 1,
+                                                        ml: 2,
+                                                    }}
                                                 >
-                                                    {`Màu: ${getLabelById(colorOptions, variant.colorId)}`}
-                                                </SoftBox>
-                                                <FormControl sx={{ verticalAlign: "middle" }}>
-                                                    <Tooltip title={allChecked ? "Bỏ chọn tất cả" : "Chọn tất cả"}>
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={allChecked}
-                                                            onChange={() =>
-                                                                handleCheckAllRows(colorIdx, !allChecked)
+                                                    <FormControl sx={{ minWidth: 120, mr: 2 }}>
+                                                        <label htmlFor={`quick-weight-${colorIdx}`} style={{ fontWeight: 400, fontSize: 13, marginBottom: 4, display: "block" }}>
+                                                            Trọng lượng (g)
+                                                        </label>
+                                                        <Input
+                                                            id={`quick-weight-${colorIdx}`}
+                                                            type="text"
+                                                            value={quickWeight[colorIdx] ?? ""}
+                                                            onChange={e =>
+                                                                handleQuickFill(colorIdx, "weight", e.target.value)
                                                             }
-                                                            style={{
-                                                                transform: "scale(1.3)",
-                                                                marginRight: 5,
-                                                                verticalAlign: "middle",
-                                                            }}
+                                                            size="small"
+                                                            sx={{ width: 110, background: "#fff" }}
+                                                            placeholder="VD: 300"
+                                                        />
+                                                    </FormControl>
+                                                    <FormControl sx={{ minWidth: 120, mr: 2 }}>
+                                                        <label htmlFor={`quick-qty-${colorIdx}`} style={{ fontWeight: 400, fontSize: 13, marginBottom: 4, display: "block" }}>
+                                                            Số lượng
+                                                        </label>
+                                                        <Input
+                                                            id={`quick-qty-${colorIdx}`}
+                                                            type="text"
+                                                            value={quickQty[colorIdx] ?? ""}
+                                                            onChange={e =>
+                                                                handleQuickFill(colorIdx, "qty", e.target.value)
+                                                            }
+                                                            size="small"
+                                                            sx={{ width: 110, background: "#fff" }}
+                                                            placeholder="VD: 20"
+                                                        />
+                                                    </FormControl>
+                                                    <FormControl sx={{ minWidth: 120 }}>
+                                                        <label htmlFor={`quick-price-${colorIdx}`} style={{ fontWeight: 400, fontSize: 13, marginBottom: 4, display: "block" }}>
+                                                            Giá (₫)
+                                                        </label>
+                                                        <Input
+                                                            id={`quick-price-${colorIdx}`}
+                                                            type="text"
+                                                            value={quickPrice[colorIdx] ?? ""}
+                                                            onChange={e =>
+                                                                handleQuickFill(colorIdx, "price", e.target.value)
+                                                            }
+                                                            size="small"
+                                                            sx={{ width: 110, background: "#fff" }}
+                                                            placeholder="VD: 150000"
+                                                        />
+                                                    </FormControl>
+                                                </Box>
+                                            )}
+                                        </Box>
+                                        <Table
+                                            columns={[
+                                                { name: "check", label: "", align: "center", width: 40 },
+                                                { name: "name", label: "Sản phẩm", align: "left" },
+                                                { name: "size", label: "Kích cỡ", align: "center" },
+                                                {
+                                                    name: "weight",
+                                                    label: "Trọng lượng (g)",
+                                                    align: "right",
+                                                },
+                                                {
+                                                    name: "qty",
+                                                    label: "Số lượng",
+                                                    align: "right"
+                                                },
+                                                {
+                                                    name: "price",
+                                                    label: "Giá (₫)",
+                                                    align: "right"
+                                                },
+                                                { name: "image", label: "Ảnh", align: "center" },
+                                                { name: "action", label: "", align: "center", width: 40 },
+                                            ]}
+                                            rows={variant.products.map((p, prodIdx) => ({
+                                                check: (
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={checkedRows[colorIdx]?.includes(prodIdx) || false}
+                                                        onChange={() => handleCheckRow(colorIdx, prodIdx)}
+                                                    />
+                                                ),
+                                                name: (
+                                                    <Tooltip title={p.name || ""}>
+                                                        <Input
+                                                            value={p.name}
+                                                            size="small"
+                                                            readOnly
+                                                            sx={{ minWidth: 90 }}
                                                         />
                                                     </Tooltip>
-                                                    <span style={{ fontWeight: 400, fontSize: 14 }}>
-                            Chọn tất cả
-                          </span>
-                                                </FormControl>
-                                                {allChecked && (
-                                                    <Box
-                                                        display="flex"
-                                                        alignItems="center"
-                                                        gap={2}
-                                                        sx={{
-                                                            background: "#f4f7fd",
-                                                            borderRadius: 2,
-                                                            px: 2,
-                                                            py: 1,
-                                                            ml: 2,
-                                                        }}
+                                                ),
+                                                size: (
+                                                    <Tooltip
+                                                        title={getLabelById(sizeOptions, p.sizeId) || ""}
                                                     >
-                                                        <FormControl sx={{ minWidth: 120, mr: 2 }}>
-                                                            <SoftBox fontWeight={400} fontSize={13} mb={0.5}>
-                                                                Trọng lượng (g)
-                                                            </SoftBox>
-                                                            <Input
-                                                                type="text"
-                                                                value={quickWeight[colorIdx] ?? ""}
-                                                                onChange={e =>
-                                                                    handleQuickFill(colorIdx, "weight", e.target.value)
-                                                                }
-                                                                size="small"
-                                                                sx={{ width: 110, background: "#fff" }}
-                                                                placeholder="VD: 300"
-                                                            />
-                                                        </FormControl>
-                                                        <FormControl sx={{ minWidth: 120, mr: 2 }}>
-                                                            <SoftBox fontWeight={400} fontSize={13} mb={0.5}>
-                                                                Số lượng
-                                                            </SoftBox>
-                                                            <Input
-                                                                type="text"
-                                                                value={quickQty[colorIdx] ?? ""}
-                                                                onChange={e =>
-                                                                    handleQuickFill(colorIdx, "qty", e.target.value)
-                                                                }
-                                                                size="small"
-                                                                sx={{ width: 110, background: "#fff" }}
-                                                                placeholder="VD: 20"
-                                                            />
-                                                        </FormControl>
-                                                        <FormControl sx={{ minWidth: 120 }}>
-                                                            <SoftBox fontWeight={400} fontSize={13} mb={0.5}>
-                                                                Giá (₫)
-                                                            </SoftBox>
-                                                            <Input
-                                                                type="text"
-                                                                value={quickPrice[colorIdx] ?? ""}
-                                                                onChange={e =>
-                                                                    handleQuickFill(colorIdx, "price", e.target.value)
-                                                                }
-                                                                size="small"
-                                                                sx={{ width: 110, background: "#fff" }}
-                                                                placeholder="VD: 150000"
-                                                            />
-                                                        </FormControl>
-                                                    </Box>
-                                                )}
-                                            </Box>
-                                            <Table
-                                                columns={[
-                                                    { name: "check", label: "", align: "center", width: 40 },
-                                                    { name: "name", label: "Sản phẩm", align: "left" },
-                                                    { name: "size", label: "Kích cỡ", align: "center" },
-                                                    {
-                                                        name: "weight",
-                                                        label: "Trọng lượng (g)",
-                                                        align: "right",
-                                                    },
-                                                    {
-                                                        name: "qty",
-                                                        label: "Số lượng",
-                                                        align: "right"
-                                                    },
-                                                    {
-                                                        name: "price",
-                                                        label: "Giá (₫)",
-                                                        align: "right"
-                                                    },
-                                                    { name: "image", label: "Ảnh", align: "center" },
-                                                    { name: "action", label: "", align: "center", width: 40 },
-                                                ]}
-                                                rows={variant.products.map((p, prodIdx) => ({
-                                                    check: (
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={checkedRows[colorIdx]?.includes(prodIdx) || false}
-                                                            onChange={() => handleCheckRow(colorIdx, prodIdx)}
-                                                        />
-                                                    ),
-                                                    name: (
-                                                        <Tooltip title={p.name || ""}>
-                                                            <Input
-                                                                value={p.name}
-                                                                size="small"
-                                                                readOnly
-                                                                sx={{ minWidth: 90 }}
-                                                            />
-                                                        </Tooltip>
-                                                    ),
-                                                    size: (
-                                                        <Tooltip
-                                                            title={getLabelById(sizeOptions, p.sizeId) || ""}
-                                                        >
-                                                            <Input
-                                                                value={getLabelById(sizeOptions, p.sizeId)}
-                                                                size="small"
-                                                                readOnly
-                                                                sx={{ minWidth: 60 }}
-                                                            />
-                                                        </Tooltip>
-                                                    ),
-                                                    weight: (
-                                                        <FormControl sx={{ minWidth: 120 }}>
-                                                            <Input
-                                                                type="text"
-                                                                value={String(p.weight ?? "")}
-                                                                onChange={(e) =>
-                                                                    handleVariantValueChange(
-                                                                        colorIdx,
-                                                                        prodIdx,
-                                                                        "weight",
-                                                                        e.target.value
-                                                                    )
-                                                                }
-                                                                size="small"
-                                                                sx={{ width: 110, background: "#fff" }}
-                                                                placeholder="VD: 300"
-                                                            />
-                                                        </FormControl>
-                                                    ),
-                                                    qty: (
-                                                        <FormControl sx={{ minWidth: 120 }}>
-                                                            <Input
-                                                                type="text"
-                                                                value={String(p.qty ?? "")}
-                                                                onChange={(e) =>
-                                                                    handleVariantValueChange(
-                                                                        colorIdx,
-                                                                        prodIdx,
-                                                                        "qty",
-                                                                        e.target.value
-                                                                    )
-                                                                }
-                                                                size="small"
-                                                                sx={{ width: 110, background: "#fff" }}
-                                                                placeholder="VD: 20"
-                                                            />
-                                                        </FormControl>
-                                                    ),
-                                                    price: (
-                                                        <FormControl sx={{ minWidth: 120 }}>
-                                                            <Input
-                                                                type="text"
-                                                                value={String(p.price ?? "")}
-                                                                onChange={(e) =>
-                                                                    handleVariantValueChange(
-                                                                        colorIdx,
-                                                                        prodIdx,
-                                                                        "price",
-                                                                        e.target.value
-                                                                    )
-                                                                }
-                                                                size="small"
-                                                                sx={{ width: 110, background: "#fff" }}
-                                                                placeholder="VD: 150000"
-                                                            />
-                                                        </FormControl>
-                                                    ),
-                                                    image: (
-                                                        <Button
-                                                            variant="outlined"
+                                                        <Input
+                                                            value={getLabelById(sizeOptions, p.sizeId)}
                                                             size="small"
+                                                            readOnly
                                                             sx={{ minWidth: 60 }}
-                                                            onClick={() =>
-                                                                openImageModal(
-                                                                    variant.colorId
+                                                        />
+                                                    </Tooltip>
+                                                ),
+                                                weight: (
+                                                    <FormControl sx={{ minWidth: 120 }}>
+                                                        <label htmlFor={`weight-${colorIdx}-${prodIdx}`} style={{ fontWeight: 400, fontSize: 13, marginBottom: 4, display: "block" }}>
+                                                            Trọng lượng (g)
+                                                        </label>
+                                                        <Input
+                                                            id={`weight-${colorIdx}-${prodIdx}`}
+                                                            type="text"
+                                                            value={String(p.weight ?? "")}
+                                                            onChange={(e) =>
+                                                                handleVariantValueChange(
+                                                                    colorIdx,
+                                                                    prodIdx,
+                                                                    "weight",
+                                                                    e.target.value
                                                                 )
                                                             }
-                                                        >
-                                                            <Icon fontSize="small">image</Icon> Ảnh
-                                                        </Button>
-                                                    ),
-                                                    action: (
-                                                        <Tooltip title="Xóa dòng này">
-                                                            <IconButton size="small" sx={{ color: "#eb5757" }}>
-                                                                <FaTrash />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    ),
-                                                }))}
-                                            />
-                                        </Card>
-                                    );
-                                })}
+                                                            size="small"
+                                                            sx={{ width: 110, background: "#fff" }}
+                                                            placeholder="VD: 300"
+                                                        />
+                                                    </FormControl>
+                                                ),
+                                                qty: (
+                                                    <FormControl sx={{ minWidth: 120 }}>
+                                                        <label htmlFor={`qty-${colorIdx}-${prodIdx}`} style={{ fontWeight: 400, fontSize: 13, marginBottom: 4, display: "block" }}>
+                                                            Số lượng
+                                                        </label>
+                                                        <Input
+                                                            id={`qty-${colorIdx}-${prodIdx}`}
+                                                            type="text"
+                                                            value={String(p.qty ?? "")}
+                                                            onChange={(e) =>
+                                                                handleVariantValueChange(
+                                                                    colorIdx,
+                                                                    prodIdx,
+                                                                    "qty",
+                                                                    e.target.value
+                                                                )
+                                                            }
+                                                            size="small"
+                                                            sx={{ width: 110, background: "#fff" }}
+                                                            placeholder="VD: 20"
+                                                        />
+                                                    </FormControl>
+                                                ),
+                                                price: (
+                                                    <FormControl sx={{ minWidth: 120 }}>
+                                                        <label htmlFor={`price-${colorIdx}-${prodIdx}`} style={{ fontWeight: 400, fontSize: 13, marginBottom: 4, display: "block" }}>
+                                                            Giá (₫)
+                                                        </label>
+                                                        <Input
+                                                            id={`price-${colorIdx}-${prodIdx}`}
+                                                            type="text"
+                                                            value={String(p.price ?? "")}
+                                                            onChange={(e) =>
+                                                                handleVariantValueChange(
+                                                                    colorIdx,
+                                                                    prodIdx,
+                                                                    "price",
+                                                                    e.target.value
+                                                                )
+                                                            }
+                                                            size="small"
+                                                            sx={{ width: 110, background: "#fff" }}
+                                                            placeholder="VD: 150000"
+                                                        />
+                                                    </FormControl>
+                                                ),
+                                                image: (
+                                                    <Button
+                                                        variant="outlined"
+                                                        size="small"
+                                                        sx={{ minWidth: 60 }}
+                                                        onClick={() =>
+                                                            openImageModal(
+                                                                variant.colorId
+                                                            )
+                                                        }
+                                                    >
+                                                        <Icon fontSize="small">image</Icon> Ảnh
+                                                    </Button>
+                                                ),
+                                                action: (
+                                                    <Tooltip title="Xóa dòng này">
+                                                        <IconButton size="small" sx={{ color: "#eb5757" }}>
+                                                            <FaTrash />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                ),
+                                            }))}
+                                        />
+                                    </Card>
+                                );
+                            })}
+                        </SoftBox>
+                    </form>
+                </Card>
+                <Dialog
+                    open={showAddProductModal}
+                    onClose={() => setShowAddProductModal(false)}
+                    maxWidth="xs"
+                    fullWidth
+                    PaperProps={{ sx: { borderRadius: 4 } }}
+                >
+                    <DialogTitle sx={{ fontWeight: 700, fontSize: 22, color: "#1976d2" }}>
+                        Thêm sản phẩm mới nhanh
+                    </DialogTitle>
+                    <DialogContent>
+                        <SoftBox mb={2}>
+                            <label htmlFor="new-product-name" style={{ fontWeight: "bold", marginBottom: 4, display: "block" }}>
+                                Tên sản phẩm <span style={{ color: "red" }}>*</span>
+                            </label>
+                            <Input
+                                id="new-product-name"
+                                inputRef={autoFocusRef}
+                                fullWidth
+                                value={newProductName}
+                                onChange={e => setNewProductName(e.target.value)}
+                                placeholder="Nhập tên sản phẩm mới"
+                                sx={{ background: "#f6fafd", borderRadius: 2 }}
+                            />
+                            {addProductValidate?.newProductName && (
+                                <Box sx={{ color: "red", fontSize: 13, mt: 0.5 }}>
+                                    {addProductValidate.newProductName}
+                                </Box>
+                            )}
+                        </SoftBox>
+                        <SoftBox mb={2}>
+                            <label htmlFor="new-product-category" style={{ fontWeight: "bold", marginBottom: 4, display: "block" }}>
+                                Danh mục <span style={{ color: "red" }}>*</span>
+                            </label>
+                            <Select
+                                inputId="new-product-category"
+                                options={categoryOptions}
+                                value={categoryOptions.find(o => o.value === newProductCategory) || null}
+                                onChange={opt => setNewProductCategory(opt ? opt.value : "")}
+                                placeholder="Chọn danh mục"
+                                styles={selectMenuStyle}
+                                isClearable
+                            />
+                            {addProductValidate?.newProductCategory && (
+                                <Box sx={{ color: "red", fontSize: 13, mt: 0.5 }}>
+                                    {addProductValidate.newProductCategory}
+                                </Box>
+                            )}
+                        </SoftBox>
+                        <SoftBox mb={2}>
+                            <label htmlFor="new-product-country" style={{ fontWeight: "bold", marginBottom: 4, display: "block" }}>
+                                Xuất xứ <span style={{ color: "red" }}>*</span>
+                            </label>
+                            <Select
+                                inputId="new-product-country"
+                                options={countryOptions}
+                                value={countryOptions.find(o => o.value === newProductCountry) || null}
+                                onChange={opt => setNewProductCountry(opt ? opt.value : "")}
+                                placeholder="Chọn quốc gia"
+                                styles={selectMenuStyle}
+                                isClearable
+                            />
+                            {addProductValidate?.newProductCountry && (
+                                <Box sx={{ color: "red", fontSize: 13, mt: 0.5 }}>
+                                    {addProductValidate.newProductCountry}
+                                </Box>
+                            )}
+                        </SoftBox>
+                        <SoftBox mb={2}>
+                            <label htmlFor="new-product-desc" style={{ fontWeight: "bold", marginBottom: 4, display: "block" }}>
+                                Mô tả
+                            </label>
+                            <Input
+                                id="new-product-desc"
+                                fullWidth
+                                value={newProductDesc}
+                                onChange={e => setNewProductDesc(e.target.value)}
+                                placeholder="Mô tả sản phẩm (không bắt buộc)"
+                                sx={{ background: "#f6fafd", borderRadius: 2 }}
+                                multiline
+                                rows={3}
+                            />
+                        </SoftBox>
+                        {addProductError && (
+                            <SoftBox color="error" mb={1}>
+                                {addProductError}
                             </SoftBox>
                         )}
-                    </Card>
-                )}
-                {/* Dialog chọn ảnh */}
+                        {addProductSuccess && (
+                            <SoftBox color="success" mb={1}>
+                                {addProductSuccess}
+                            </SoftBox>
+                        )}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button variant="outlined" onClick={() => setShowAddProductModal(false)}>
+                            Đóng
+                        </Button>
+                        <Button
+                            variant="contained"
+                            color="info"
+                            onClick={handleAddNewProduct}
+                            disabled={addProductLoading}
+                        >
+                            {addProductLoading && (
+                                <CircularProgress size={18} color="inherit" sx={{ mr: 1 }} />
+                            )}
+                            Thêm sản phẩm
+                        </Button>
+                    </DialogActions>
+                </Dialog>
                 <Dialog
                     open={showImageModal}
                     onClose={closeImageModal}
                     maxWidth="md"
                     fullWidth
+                    PaperProps={{
+                        sx: { borderRadius: 4 }
+                    }}
                 >
-                    <DialogTitle>Chọn ảnh cho màu {getLabelById(colorOptions, modalColor)}</DialogTitle>
+                    <DialogTitle sx={{ fontWeight: 700, fontSize: 22, color: "#1976d2" }}>
+                        Chọn ảnh cho màu {getLabelById(colorOptions, modalColor)}
+                    </DialogTitle>
                     <DialogContent>
                         <SoftBox mb={2} fontWeight="bold">
                             Danh sách ảnh đã chọn
@@ -1387,7 +1548,7 @@ function ProductForm() {
                         </SoftBox>
                     </DialogContent>
                     <DialogActions>
-                        <Button variant="outlined" onClick={closeImageModal}>
+                        <Button variant="outlined" onClick={closeImageModal} sx={{ minWidth: 110 }}>
                             Đóng
                         </Button>
                         <Button
@@ -1395,12 +1556,19 @@ function ProductForm() {
                             color="info"
                             onClick={handleSaveImages}
                             disabled={!tempImages.length}
+                            sx={{ minWidth: 120, fontWeight: 600 }}
                         >
                             Lưu chọn ảnh
                         </Button>
                     </DialogActions>
                 </Dialog>
             </SoftBox>
+            <Notifications
+                open={notify.open}
+                onClose={() => setNotify((n) => ({ ...n, open: false }))}
+                message={notify.message}
+                severity={notify.severity}
+            />
             <Footer />
         </DashboardLayout>
     );

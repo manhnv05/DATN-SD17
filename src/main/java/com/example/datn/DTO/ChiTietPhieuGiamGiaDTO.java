@@ -1,20 +1,20 @@
 package com.example.datn.DTO;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import lombok.Data;
-
-import java.io.Serializable;
-
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class ChiTietPhieuGiamGiaDTO {
-    private Integer id;
+    int id;
 
-    private Integer idKhachHang;
+    PhieuGiamGiaDTO PhieuGiamGia;
 
-    private Integer idPhieuGiamGia;
+    KhachHangDTO KhachHang;
 
-    private Integer soLanDuocDung;
-
-    private Integer trangThai;
-
+    int trangthai;
 }

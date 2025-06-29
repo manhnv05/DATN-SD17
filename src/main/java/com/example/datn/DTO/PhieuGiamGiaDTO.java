@@ -1,39 +1,46 @@
 package com.example.datn.DTO;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import lombok.Data;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
-import java.io.Serializable;
-import java.sql.Date;
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 
-@Data
-public class PhieuGiamGiaDTO{
-    private Integer id;
+public class PhieuGiamGiaDTO {
+    Integer id;
 
-    private String maPhieuGiamGia;
+    String maPhieuGiamGia;
 
-    private String dieuKienGiam;
+    String dieuKienGiam;
 
-    private String tenPhieu;
+    String tenPhieu;
 
-    private String loaiPhieu;
+    int loaiPhieu;
 
-    private Integer phamTramGiamGia;
+    BigDecimal phamTramGiamGia;
 
-    private Integer soTienGiam;
+    BigDecimal soTienGiam;
 
-    private Integer giamToiDa;
+    BigDecimal giamToiDa;
 
-    private Date ngayBatDau;
+    LocalDateTime ngayBatDau;
 
-    private Date ngayKetThuc;
+    LocalDateTime ngayKetThuc;
 
-    private Date ngayTao;
+    LocalDateTime ngayTao;
 
-    private Date ngayCapNhat;
+    LocalDateTime ngayCapNhat;
 
-    private String ghiChu;
+    String ghiChu;
 
-    private Integer trangThai;
+    int trangThai;
 
+    BigDecimal soLuong;
 }

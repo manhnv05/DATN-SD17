@@ -11,6 +11,12 @@ public class ChiTietSanPhamDTO implements Serializable {
     private Integer idSanPham;
     private String tenSanPham;
 
+    private Integer idChatLieu;
+    private String tenChatLieu;
+
+    private Integer idThuongHieu;
+    private String tenThuongHieu;
+
     private Integer idMauSac;
     private String tenMauSac;
 

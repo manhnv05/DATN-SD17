@@ -1,0 +1,157 @@
+/* src/component/MainContent/OrderTable.module.css */
+/* Các class trong file này sẽ được scoped (giới hạn) cho component OrderTable */
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", "Noto Sans", "Liberation Sans", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+.orderTableContainer {
+  background-color: #ffffff; /* Luôn là màu trắng */
+  padding: 1.5rem;
+  
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Sử dụng :global để style các class từ thư viện bên ngoài (như Bootstrap) 
+   bên trong container của bạn. Điều này đảm bảo các override chỉ áp dụng
+   trong component này.
+*/
+.orderTableContainer :global(.nav-pills) :global(.nav-link) {
+  color: #495057; /* Màu chữ mặc định */
+}
+
+.orderTableContainer :global(.nav-pills) :global(.nav-link.active) {
+  color: #0d6efd; /* Màu chữ xanh của bootstrap */
+  background-color: #e7f1ff; /* Nền xanh nhạt */
+  font-weight: 600;
+}
+
+/* Class tùy chỉnh cho badge đếm số lượng */
+.statusBadge {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 22px;
+  height: 22px;
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: white; /* Giữ màu chữ trắng để nổi bật trên nền đỏ mặc định */
+  
+  /* Đặt màu nền mặc định cho badge là màu đỏ */
+  background-color: #dc3545; 
+
+  border-radius: 50%;
+  padding: 0 4px;
+}
+
+/* Thêm màu cho badge khi tab active */
+/* Khi nav-link active, badge này nằm bên trong, ta muốn nó có màu nền khác */
+.orderTableContainer :global(.nav-pills) :global(.nav-link.active) .statusBadge {
+    background-color:white; /* Đặt màu nền của badge trùng với màu chữ của tab active */
+    color: white; /* Đảm bảo chữ trắng trên nền xanh */
+   border-bottom:  #0d6efd ;
+}
+.customTable th,
+.customTable td {
+    padding-top: 20px;      /* <-- TĂNG KHOẢNG CÁCH */
+    padding-bottom: 20px;   /* <-- TĂNG KHOẢNG CÁCH */
+    vertical-align: middle;
+    text-align: center;
+}
+/* Cài đặt bảng có layout cố định */
+.statusCell {
+  padding: 0;
+  height: 50px; /* Đảm bảo chiều cao cố định cho các ô */
+  width: 150px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.softBadge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  border: 1px solid;
+  background-color: transparent;
+   height: 100%; /* Đảm bảo badge chiếm toàn bộ chiều cao của ô */
+  width: 100%; 
+}
+
+/* ✅ Tạo các biến thể soft (nền nhạt + viền + chữ cùng màu) */
+.soft-success {
+  color: #198754;
+  background-color: #d1e7dd;
+  border-color: #198754;
+}
+
+.soft-danger {
+  color: #dc3545;
+  background-color: #f8d7da;
+  border-color: #dc3545;
+}
+
+.soft-warning {
+  color: #ffc107;
+  background-color: #fff3cd;
+  border-color: #ffc107;
+}
+
+.soft-primary {
+  color: #0d6efd;
+  background-color: #cfe2ff;
+  border-color: #0d6efd;
+}
+
+.soft-info {
+  color: #0dcaf0;
+  background-color: #cff4fc;
+  border-color: #0dcaf0;
+}
+
+.soft-secondary {
+  color: #6c757d;
+  background-color: #e2e3e5;
+  border-color: #6c757d;
+}
+/* Đảm bảo ô có kích thước chuẩn */
+.loaiDonHangCell {
+  padding: 0;
+  height: 50px;
+  width: 150px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Dùng chung cho trạng thái & loại đơn hàng */
+.softBadge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: 8px;
+  border: 1px solid;
+}
+
+/* Màu sắc tương ứng với từng loại */
+.bg-primary {
+  color: #0d6efd;
+  background-color: #cfe2ff;
+  border-color: #0d6efd;
+}
+
+.bg-success {
+  color: #198754;
+  background-color: #d1e7dd;
+  border-color: #198754;
+}
+
+.bg-secondary {
+  color: #6c757d;
+  background-color: #e2e3e5;
+  border-color: #6c757d;
+}
+

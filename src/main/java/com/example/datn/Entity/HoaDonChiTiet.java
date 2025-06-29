@@ -1,53 +1,40 @@
 package com.example.datn.Entity;
-
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
-import lombok.experimental.SuperBuilder;
-
-import java.io.Serializable;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 @Entity
-@Getter
-@Setter
-@ToString
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 @Table(name = "hoa_don_chi_tiet")
-public class HoaDonChiTiet{
-
-
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
+@Builder
+public class HoaDonChiTiet {
     @Id
-    @Column(name = "id", nullable = false)
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_hoa_don")
-    private HoaDon hoaDon;
+    @ManyToOne
+    @JoinColumn(name = "id_hoa_don") // FK tới bảng hoa_don
+    HoaDon hoaDon;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_san_pham_chi_tiet")
-    private ChiTietSanPham chiTietSanPham;
+    @ManyToOne
+    @JoinColumn(name = "id_san_pham_chi_tiet") // FK tới bảng san_pham_chi_tiet
+    ChiTietSanPham sanPhamChiTiet;
 
     @Column(name = "gia")
-    private Integer gia;
+    Integer gia;
 
     @Column(name = "so_luong")
-    private Integer soLuong;
+    Integer soLuong;
 
     @Column(name = "thanh_tien")
-    private Integer thanhTien;
+    Integer thanhTien;
 
     @Column(name = "ghi_chu")
-    private String ghiChu;
+    String ghiChu;
 
     @Column(name = "trang_thai")
-    private Integer trangThai;
-
+    Boolean trangThai;
 }

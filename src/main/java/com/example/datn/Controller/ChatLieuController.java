@@ -61,7 +61,6 @@ public class ChatLieuController {
         vO.setPageSize(size);
         return chatLieuService.query(vO);
     }
-    // Thêm API lấy toàn bộ chất liệu cho FE select động
     @GetMapping("/all")
     public List<ChatLieuDTO> getAll() {
         return chatLieuService.findAll();

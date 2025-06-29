@@ -7,12 +7,6 @@ import java.io.Serializable;
 public class SanPhamDTO implements Serializable {
     private Integer id;
 
-    private Integer idChatLieu;
-    private String tenChatLieu;
-
-    private Integer idThuongHieu;
-    private String tenThuongHieu;
-
     private String xuatXu;
 
     private Integer idDanhMuc;

@@ -12,6 +12,16 @@ import CoAo from "layouts/SanPham/coao";
 import HinhAnh from "layouts/SanPham/hinhanh";
 import ProductForm from "layouts/SanPham/themsp";
 import ProductDetailForm from "layouts/SanPham/chitiet"; // <-- Thêm import này
+import GiamGia from "layouts/GiamGia";
+import OrderManagementPage from "layouts/HoaDon/pages/OrderManagementPage";
+import OrderDetailPage from "layouts/HoaDon/pages/OrderDetailPage";
+import PhieuGiamPage from "layouts/phieugiamgia/phieugiam";
+import AddPhieuGiam from "layouts/phieugiamgia/addPhieuGiam";
+import UpdatePhieuGiam from "layouts/phieugiamgia/updatePhieuGiamGia";
+import KhachHang from "layouts/khachhang";
+
+
+
 
 import RTL from "layouts/rtl";
 import Profile from "layouts/profile";
@@ -27,6 +37,8 @@ import SpaceShip from "examples/Icons/SpaceShip";
 import CustomerSupport from "examples/Icons/CustomerSupport";
 import CreditCard from "examples/Icons/CreditCard";
 import Cube from "examples/Icons/Cube";
+import AddDiscountEventPage from "layouts/GiamGia/AddDiscountEventPage";
+import ViewDiscountEventPage from "layouts/GiamGia/ViewDiscountEventPage";
 
 const routes = [
   {
@@ -41,7 +53,7 @@ const routes = [
   {
     type: "collapse",
     name: "Bán Hàng Tại Quầy",
-    key: "tables",
+    key: "sales",
     route: "/tables",
     icon: <Office size="12px" />,
     component: <Tables />,
@@ -53,8 +65,14 @@ const routes = [
     key: "billing",
     route: "/billing",
     icon: <CreditCard size="12px" />,
-    component: <Billing />,
+    component: <OrderManagementPage />,
     noCollapse: true,
+  },
+  {
+    route: "/order-management/:orderId", // Đây là route khớp với đường dẫn bạn tạo
+    component: <OrderDetailPage />,
+    key: "order-detail",
+    // Không có name/icon/type để ẩn khỏi sidebar
   },
   {
     type: "collapse",
@@ -144,15 +162,19 @@ const routes = [
     collapse: [
       {
         type: "item",
-        name: "Danh Sách Giảm Giá",
+        name: "Phiếu Giảm Giá",
         key: "discount-list",
-        route: "/rtl",
+        route: "/discount",
+        component: <PhieuGiamPage />,
+        noCollapse: true,
       },
       {
         type: "item",
-        name: "Lịch Sử Giảm Giá",
-        key: "discount-history",
-        route: "/rtl",
+        name: "Đợt Giảm Giá",
+        key: "discount-event",
+        route: "/discount-event",
+        component: <GiamGia />,
+        noCollapse: true,
       },
     ],
   },
@@ -168,10 +190,10 @@ const routes = [
   {
     type: "collapse",
     name: "Quản lý Khách Hàng",
-    key: "tables",
-    route: "/tables",
+    key: "customer-management",
+    route: "/customer-management",
     icon: <Office size="12px" />,
-    component: <Tables />,
+    component: <KhachHang />,
     noCollapse: true,
   },
   { type: "title", title: "Account Pages", key: "account-pages" },
@@ -219,6 +241,40 @@ const routes = [
     component: <ProductDetailForm />,
     noCollapse: true,
     hidden: true,
+  },
+  {
+    key: "discount-event-add",
+    name: "Thêm đợt giảm giá",
+    route: "/discount-event/add",
+    component: <AddDiscountEventPage />,
+    noCollapse: true,
+    hidden: true,
+  },
+  {
+    key: "discount-event-view",
+    name: "Xem đợt giảm giá",
+    route: "/discount-event/view",
+    component: <ViewDiscountEventPage />,
+    noCollapse: true,
+    hidden: true,
+  },
+  {
+    type: "item",
+    name: "Thêm Phiếu giảm giá",
+    key: "add-voucher",
+    route: "/PhieuGiam/ThemMoi",
+    component: <AddPhieuGiam />,
+    noCollapse: true,
+    hidden: true, // ẩn khỏi menu nếu muốn
+  },
+  {
+    type: "item",
+    name: "Update Phiếu giảm giá",
+    key: "update-voucher",
+    route: "/PhieuGiam/update/:id",
+    component: <UpdatePhieuGiam />,
+    noCollapse: true,
+    hidden: true, // ẩn khỏi menu nếu muốn
   },
 ];
 

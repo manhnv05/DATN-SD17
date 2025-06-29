@@ -1,55 +1,56 @@
 package com.example.datn.Controller;
 
+import com.example.datn.Config.ResponseHelper;
+import com.example.datn.DTO.ApiResponse;
 import com.example.datn.DTO.PhieuGiamGiaDTO;
 import com.example.datn.Service.PhieuGiamGiaService;
-import com.example.datn.VO.PhieuGiamGiaQueryVO;
-import com.example.datn.VO.PhieuGiamGiaUpdateVO;
 import com.example.datn.VO.PhieuGiamGiaVO;
+import com.example.datn.VO.PhieuGiamGiaVOUpdate;
+import com.example.datn.VO.PhieuGiamVOSearch;
+import com.example.datn.VO.SendMailRequestData;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-@Validated
 @RestController
-@RequestMapping("/phieuGiamGia")
+@RequestMapping("/phieu_giam_gia")
 public class PhieuGiamGiaController {
-
     @Autowired
     private PhieuGiamGiaService phieuGiamGiaService;
 
-    @PostMapping
-    public String save(@Valid @RequestBody PhieuGiamGiaVO vO) {
-        return phieuGiamGiaService.save(vO).toString();
-    }
+    @PostMapping("/findAll")
+    public ResponseEntity<ApiResponse<Page<PhieuGiamGiaDTO>>> getAllPhieuGiamGia(@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "10") int size, @RequestBody PhieuGiamVOSearch search) {
 
-    @DeleteMapping("/{id}")
-    public void delete(@Valid @NotNull @PathVariable("id") Integer id) {
-        phieuGiamGiaService.delete(id);
+        return ResponseHelper
+                .success("", phieuGiamGiaService.getAllPhieuGiamGia(page, size, search));
     }
-
-    @PutMapping("/{id}")
-    public void update(@Valid @NotNull @PathVariable("id") Integer id,
-                       @Valid @RequestBody PhieuGiamGiaUpdateVO vO) {
-        phieuGiamGiaService.update(id, vO);
+    @PostMapping("")
+    public ResponseEntity<ApiResponse<PhieuGiamGiaDTO>> createPhieuGiamGia(@Valid @RequestBody PhieuGiamGiaVO request) {
+        return ResponseHelper
+                .success("Thêm Phiếu giảm giá thành công", phieuGiamGiaService.createPhieuGiamGia(request));
     }
-
     @GetMapping("/{id}")
-    public PhieuGiamGiaDTO getById(@Valid @NotNull @PathVariable("id") Integer id) {
-        return phieuGiamGiaService.getById(id);
+    public ResponseEntity<ApiResponse<PhieuGiamGiaDTO>> getById(@PathVariable int id) {
+        return ResponseHelper
+                .success("", phieuGiamGiaService.getPhieuGiamGiaById(id));
     }
-
-    @GetMapping
-    public Page<PhieuGiamGiaDTO> query(@Valid PhieuGiamGiaQueryVO vO) {
-        return phieuGiamGiaService.query(vO);
+    @PutMapping("")
+    public ResponseEntity<ApiResponse<PhieuGiamGiaDTO>> updatephieuGiamGia(@RequestBody PhieuGiamGiaVOUpdate request) {
+        return ResponseHelper
+                .success("", phieuGiamGiaService.updatePhieuGiamGia(request));
+    }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteById(@PathVariable int id) {
+        return ResponseEntity.ok(phieuGiamGiaService.deletePhieuGiamGia(id));
+    }
+    @PostMapping("/updateStatus/{id}")
+    public ResponseEntity<ApiResponse<PhieuGiamGiaDTO>> updatePhieuGiamGiaStatus(@PathVariable int id, @RequestBody int status) {
+        return ResponseHelper.success("", phieuGiamGiaService.updateStatusPhieuGiamGia(id, status));
+    }
+    @PostMapping("/sendMail")
+    public void sendMail(@RequestBody SendMailRequestData sendMailRequest) {
+        phieuGiamGiaService.sendMailToListCustomer(sendMailRequest);
     }
 }

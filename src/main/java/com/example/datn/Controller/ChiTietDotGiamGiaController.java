@@ -2,6 +2,7 @@ package com.example.datn.Controller;
 
 import com.example.datn.DTO.ChiTietDotGiamGiaDTO;
 import com.example.datn.Service.ChiTietDotGiamGiaService;
+import com.example.datn.VO.ApplyDotGiamGiaVO;
 import com.example.datn.VO.ChiTietDotGiamGiaQueryVO;
 import com.example.datn.VO.ChiTietDotGiamGiaUpdateVO;
 import com.example.datn.VO.ChiTietDotGiamGiaVO;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import java.util.List;
 
 @Validated
 @RestController
@@ -37,6 +39,14 @@ public class ChiTietDotGiamGiaController {
         chiTietDotGiamGiaService.delete(id);
     }
 
+    /**
+     * Lấy danh sách sản phẩm áp dụng theo đợt giảm giá
+     */
+    @GetMapping("/by-dot-giam-gia/{idDot}")
+    public List<ChiTietDotGiamGiaDTO> getByDotGiamGia(@PathVariable("idDot") Integer idDot) {
+        return chiTietDotGiamGiaService.findByDotGiamGia(idDot);
+    }
+
     @PutMapping("/{id}")
     public void update(@Valid @NotNull @PathVariable("id") Integer id,
                        @Valid @RequestBody ChiTietDotGiamGiaUpdateVO vO) {
@@ -51,5 +61,13 @@ public class ChiTietDotGiamGiaController {
     @GetMapping
     public Page<ChiTietDotGiamGiaDTO> query(@Valid ChiTietDotGiamGiaQueryVO vO) {
         return chiTietDotGiamGiaService.query(vO);
+    }
+
+    /**
+     * Áp dụng đợt giảm giá cho danh sách sản phẩm chi tiết
+     */
+    @PostMapping("/apply")
+    public void apply(@Valid @RequestBody ApplyDotGiamGiaVO vO) {
+        chiTietDotGiamGiaService.applyDotGiamGia(vO);
     }
 }

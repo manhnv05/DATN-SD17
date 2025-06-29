@@ -12,6 +12,10 @@ public class ChiTietSanPhamQueryVO implements Serializable {
 
     private Integer idSanPham;
 
+    private Integer idChatLieu;
+
+    private Integer idThuongHieu;
+
     private Integer idMauSac;
 
     private Integer idKichThuoc;

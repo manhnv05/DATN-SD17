@@ -1,23 +1,18 @@
 package com.example.datn.VO;
 
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.io.Serializable;
-
-
-
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class ChiTietPhieuGiamGiaVO {
+    String phieuGiamGia;
 
-    private Integer id;
+    String khachHang;
 
-    private Integer idKhachHang;
-
-    private Integer idPhieuGiamGia;
-
-    private Integer soLanDuocDung;
-
-    private Integer trangThai;
-
+    String trangThai;
 }

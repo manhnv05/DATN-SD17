@@ -36,5 +36,5 @@ public class ThuongHieu implements Serializable {
     private Integer trangThai;
 
     @OneToMany(mappedBy = "thuongHieu")
-    private List<SanPham> sanPhams;
+    private List<ChiTietSanPham> chiTietSanPhams;
 }

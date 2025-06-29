@@ -30,5 +30,5 @@ public class ChatLieu {
 
     @OneToMany(mappedBy = "chatLieu")
     @ToString.Exclude
-    private List<SanPham> sanPhams;
+    private List<ChiTietSanPham> chiTietSanPhams;
 }

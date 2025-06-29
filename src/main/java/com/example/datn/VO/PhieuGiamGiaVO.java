@@ -1,41 +1,62 @@
 package com.example.datn.VO;
 
+import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.io.Serializable;
-import java.sql.Date;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
-
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class PhieuGiamGiaVO {
 
-    private Integer id;
+    @NotBlank(message = "Mã phiếu không để trống")
+    String maPhieuGiamGia;
 
-    private String maPhieuGiamGia;
+    @NotBlank(message = "Điều kiển giảm không để trống")
+    String dieuKienGiam;
 
-    private String dieuKienGiam;
+    @NotBlank(message = "Tên phiếu không để trống")
+    String tenPhieu;
 
-    private String tenPhieu;
+    @NotNull
+    int loaiPhieu;
 
-    private String loaiPhieu;
+    @Min(value = 0, message = "Phần trăm giảm giá phải lớn hơn 0")
+    @Max(value = 100, message = "Phần trăm giảm giá phải nhỏ hơn 100")
+    BigDecimal phamTramGiamGia;
 
-    private Integer phamTramGiamGia;
+    BigDecimal soTienGiam;
 
-    private Integer soTienGiam;
+    @NotNull
+    BigDecimal giamToiDa;
 
-    private Integer giamToiDa;
+    @NotNull(message = "Ngày bắt đầu không được để trống")
+    @FutureOrPresent(message = "Ngày bắt đầu phải là hiện tại hoặc tương lai")
+    LocalDateTime ngayBatDau;
 
-    private Date ngayBatDau;
+    @NotNull(message = "Ngày kết thúc không được để trống")
+    LocalDateTime ngayKetThuc;
 
-    private Date ngayKetThuc;
+    LocalDateTime ngayTao;
 
-    private Date ngayTao;
+    LocalDateTime ngayCapNhat;
 
-    private Date ngayCapNhat;
+    String ghiChu;
 
-    private String ghiChu;
+    int trangThai;
 
-    private Integer trangThai;
+    @NotNull(message = "Số lượng không để trống")
+    @Min(value = 0, message = "Số lượng phải lớn hơn 0")
+    BigDecimal soLuong;
 
 }

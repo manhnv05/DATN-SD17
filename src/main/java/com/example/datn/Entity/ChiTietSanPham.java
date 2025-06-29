@@ -23,6 +23,14 @@ public class ChiTietSanPham implements java.io.Serializable {
     private SanPham sanPham;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_chat_lieu")
+    private ChatLieu chatLieu;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_thuong_hieu")
+    private ThuongHieu thuongHieu;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_mau_sac", nullable = false)
     private MauSac mauSac;
 

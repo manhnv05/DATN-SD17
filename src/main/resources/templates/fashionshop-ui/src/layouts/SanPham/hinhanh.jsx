@@ -23,13 +23,15 @@ import CircularProgress from "@mui/material/CircularProgress";
 import { Alert } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
+// Danh sách trạng thái và số lượng hiển thị
 const statusList = ["Tất cả", "Hiển thị", "Ẩn"];
 const viewOptions = [5, 10, 20];
 
+// Hàm chuyển trạng thái sang text
 const getTrangThaiText = (val) =>
     val === 1 || val === "1" || val === "Hiển thị" ? "Hiển thị" : "Ẩn";
 
-// Pagination helper: 2 đầu, 2 cuối, luôn nổi bật trang hiện tại nếu ở giữa
+// Hàm tạo phân trang thông minh
 function getPaginationItems(current, total) {
   if (total <= 5) return Array.from({ length: total }, (_, i) => i);
   if (current <= 1) return [0, 1, "...", total - 2, total - 1];
@@ -37,10 +39,14 @@ function getPaginationItems(current, total) {
   return [0, 1, "...", current, "...", total - 2, total - 1];
 }
 
+// Chuẩn hóa đường dẫn ảnh
 const normalizeUrl = (url) =>
-    url?.startsWith("http") ? url : `http://localhost:8080${url?.startsWith("/") ? "" : "/"}${url || ""}`;
+    url?.startsWith("http")
+        ? url
+        : `http://localhost:8080${url?.startsWith("/") ? "" : "/"}${url || ""}`;
 
 function ImageTable() {
+  // State quản lý dữ liệu
   const [images, setImages] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("Tất cả");
@@ -52,16 +58,19 @@ function ImageTable() {
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [anchorEl, setAnchorEl] = useState(null);
 
+  // State cho form
   const [formData, setFormData] = useState({
     maAnh: "",
     duongDanAnh: null, // file
     anhMacDinh: false,
     moTa: "",
     trangThai: "Hiển thị",
+    // idSanPhamChiTiet: null, // Thêm nếu cần
   });
 
-  // Fetch images
+  // Lấy danh sách hình ảnh
   const fetchImages = async () => {
     setLoading(true);
     setError("");
@@ -70,7 +79,12 @@ function ImageTable() {
         page,
         size,
         moTa: search,
-        trangThai: statusFilter === "Tất cả" ? undefined : (statusFilter === "Hiển thị" ? 1 : 0),
+        trangThai:
+            statusFilter === "Tất cả"
+                ? undefined
+                : statusFilter === "Hiển thị"
+                    ? 1
+                    : 0,
       };
       const queryString = Object.keys(params)
           .filter((k) => params[k] !== undefined && params[k] !== "")
@@ -100,7 +114,7 @@ function ImageTable() {
     // eslint-disable-next-line
   }, [search, statusFilter, page, size]);
 
-  // Modal handlers
+  // Hiện modal thêm mới
   const handleShowAddModal = () => {
     setEditingImage(null);
     setFormData({
@@ -114,6 +128,7 @@ function ImageTable() {
     setShowModal(true);
   };
 
+  // Hiện modal sửa
   const handleShowEditModal = (img) => {
     setEditingImage(img);
     setFormData({
@@ -122,17 +137,19 @@ function ImageTable() {
       anhMacDinh: img.anhMacDinh === 1 || img.anhMacDinh === true,
       moTa: img.moTa || "",
       trangThai: getTrangThaiText(img.trangThai),
+      // idSanPhamChiTiet: img.idSanPhamChiTiet || null,
     });
     setPreviewImg(normalizeUrl(img.duongDanAnh));
     setShowModal(true);
   };
 
+  // Đóng modal
   const handleCloseModal = () => {
     setShowModal(false);
     setPreviewImg("");
   };
 
-  // Form change
+  // Xử lý thay đổi form
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
     if (type === "file") {
@@ -152,26 +169,51 @@ function ImageTable() {
     }
   };
 
-  // Save image (add or edit)
+  // Lưu hình ảnh (thêm mới)
   const handleSave = async () => {
-    if (!(formData.maAnh || "").trim() || !(formData.moTa || "").trim() || (!editingImage && !formData.duongDanAnh)) {
+    if (
+        !(formData.maAnh || "").trim() ||
+        !(formData.moTa || "").trim() ||
+        (!editingImage && !formData.duongDanAnh)
+    ) {
       alert("Vui lòng nhập đầy đủ thông tin và chọn ảnh!");
       return;
     }
+    // Gửi FormData với snake_case đúng BE yêu cầu
     const data = new FormData();
-    data.append("maAnh", formData.maAnh || "");
-    if (formData.duongDanAnh) data.append("duongDanAnh", formData.duongDanAnh);
-    data.append("anhMacDinh", formData.anhMacDinh ? 1 : 0);
-    data.append("moTa", formData.moTa || "");
-    data.append("trangThai", formData.trangThai === "Hiển thị" ? 1 : 0);
+    data.append("ma_anh", formData.maAnh || "");
+    if (formData.duongDanAnh)
+      data.append("duong_dan_anh", formData.duongDanAnh);
+    data.append("anh_mac_dinh", formData.anhMacDinh ? 1 : 0);
+    data.append("mo_ta", formData.moTa || "");
+    data.append("trang_thai", formData.trangThai === "Hiển thị" ? 1 : 0);
+    // Nếu có id_san_pham_chi_tiet thì truyền thêm
+    // if (formData.idSanPhamChiTiet) data.append("id_san_pham_chi_tiet", formData.idSanPhamChiTiet);
+
     try {
       if (editingImage) {
-        const res = await fetch(`http://localhost:8080/hinhAnh/${editingImage.id}`, {
-          method: "PUT",
-          body: data,
-        });
+        // Nếu backend PUT nhận JSON thì phải sửa lại (xem chú thích bên dưới)
+        // Ở đây giữ nguyên nếu backend PUT cũng nhận multipart
+        const res = await fetch(
+            `http://localhost:8080/hinhAnh/${editingImage.id}`,
+            {
+              method: "PUT",
+              // Nếu backend PUT nhận JSON thì dùng code bên dưới thay cho FormData:
+              // headers: { "Content-Type": "application/json" },
+              // body: JSON.stringify({
+              //   maAnh: formData.maAnh,
+              //   anhMacDinh: formData.anhMacDinh ? 1 : 0,
+              //   moTa: formData.moTa,
+              //   trangThai: formData.trangThai === "Hiển thị" ? 1 : 0,
+              //   duongDanAnh: editingImage.duongDanAnh, // hoặc truyền lại đường dẫn cũ
+              //   idSanPhamChiTiet: formData.idSanPhamChiTiet
+              // })
+              body: data,
+            }
+        );
         if (!res.ok) throw new Error("Có lỗi xảy ra khi lưu hình ảnh!");
       } else {
+        // Thêm mới: gửi FormData
         const res = await fetch("http://localhost:8080/hinhAnh", {
           method: "POST",
           body: data,
@@ -185,11 +227,13 @@ function ImageTable() {
     }
   };
 
-  // Delete
+  // Xóa hình ảnh
   const handleDelete = async (id) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa hình ảnh này?")) {
       try {
-        const res = await fetch(`http://localhost:8080/hinhAnh/${id}`, { method: "DELETE" });
+        const res = await fetch(`http://localhost:8080/hinhAnh/${id}`, {
+          method: "DELETE",
+        });
         if (!res.ok) throw new Error();
         fetchImages();
       } catch (error) {
@@ -198,7 +242,7 @@ function ImageTable() {
     }
   };
 
-  // Table columns
+  // Định nghĩa các cột bảng
   const columns = [
     { name: "stt", label: "STT", align: "center", width: 60 },
     {
@@ -216,7 +260,12 @@ function ImageTable() {
           <img
               src={normalizeUrl(row.duongDanAnh)}
               alt="Ảnh"
-              style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 8 }}
+              style={{
+                width: 60,
+                height: 60,
+                objectFit: "cover",
+                borderRadius: 8,
+              }}
           />
       ),
     },
@@ -274,10 +323,20 @@ function ImageTable() {
       width: 110,
       render: (_, row) => (
           <SoftBox display="flex" gap={0.5} justifyContent="center">
-            <IconButton size="small" sx={{ color: "#4acbf2" }} title="Sửa" onClick={() => handleShowEditModal(row)}>
+            <IconButton
+                size="small"
+                sx={{ color: "#4acbf2" }}
+                title="Sửa"
+                onClick={() => handleShowEditModal(row)}
+            >
               <FaEdit />
             </IconButton>
-            <IconButton size="small" sx={{ color: "#4acbf2" }} title="Xóa" onClick={() => handleDelete(row.id)}>
+            <IconButton
+                size="small"
+                sx={{ color: "#4acbf2" }}
+                title="Xóa"
+                onClick={() => handleDelete(row.id)}
+            >
               <FaTrash />
             </IconButton>
           </SoftBox>
@@ -285,6 +344,7 @@ function ImageTable() {
     },
   ];
 
+  // Chuẩn bị dữ liệu hiển thị bảng
   const rows = images.map((img, idx) => ({
     stt: page * size + idx + 1,
     ...img,
@@ -292,9 +352,10 @@ function ImageTable() {
     actions: "",
   }));
 
-  // Pagination (cải tiến đẹp)
+  // Phân trang
   const paginationItems = getPaginationItems(page, totalPages);
 
+  // Đổi trang
   const handlePageChange = (newPage) => {
     if (newPage >= 0 && newPage < totalPages) setPage(newPage);
   };
@@ -302,12 +363,15 @@ function ImageTable() {
   // Menu actions
   const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
-  const [anchorEl, setAnchorEl] = useState(null);
 
+  // Render component
   return (
       <DashboardLayout>
         <DashboardNavbar />
-        <SoftBox py={3} sx={{ background: "#F4F6FB", minHeight: "100vh", userSelect: "none" }}>
+        <SoftBox
+            py={3}
+            sx={{ background: "#F4F6FB", minHeight: "100vh", userSelect: "none" }}
+        >
           {/* Card filter/search/action */}
           <Card sx={{ p: { xs: 2, md: 3 }, mb: 2 }}>
             <SoftBox
@@ -317,7 +381,13 @@ function ImageTable() {
                 justifyContent="space-between"
                 gap={2}
             >
-              <SoftBox flex={1} display="flex" alignItems="center" gap={2} maxWidth={600}>
+              <SoftBox
+                  flex={1}
+                  display="flex"
+                  alignItems="center"
+                  gap={2}
+                  maxWidth={600}
+              >
                 <Input
                     fullWidth
                     placeholder="Tìm mô tả ảnh"
@@ -333,7 +403,12 @@ function ImageTable() {
                         </Icon>
                       </InputAdornment>
                     }
-                    sx={{ background: "#f5f6fa", borderRadius: 2, p: 0.5, color: "#222" }}
+                    sx={{
+                      background: "#f5f6fa",
+                      borderRadius: 2,
+                      p: 0.5,
+                      color: "#222",
+                    }}
                 />
                 <FormControl sx={{ minWidth: 140 }}>
                   <Select
@@ -359,12 +434,27 @@ function ImageTable() {
                 <IconButton onClick={handleMenuOpen} sx={{ color: "#495057" }}>
                   <Icon fontSize="small">menu</Icon>
                 </IconButton>
-                <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-                  <MenuItem onClick={handleMenuClose} sx={{ color: "#384D6C" }}>
-                    <FaQrcode className="me-2" style={{ color: "#0d6efd" }} /> Quét mã
+                <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={handleMenuClose}
+                >
+                  <MenuItem
+                      onClick={handleMenuClose}
+                      sx={{ color: "#384D6C" }}
+                  >
+                    <FaQrcode
+                        className="me-2"
+                        style={{ color: "#0d6efd" }}
+                    />{" "}
+                    Quét mã
                   </MenuItem>
-                  <MenuItem onClick={handleMenuClose} sx={{ color: "#384D6C" }}>
-                    <span style={{ color: "#27ae60", marginRight: 8 }}>📥</span> Export
+                  <MenuItem
+                      onClick={handleMenuClose}
+                      sx={{ color: "#384D6C" }}
+                  >
+                    <span style={{ color: "#27ae60", marginRight: 8 }}>📥</span>{" "}
+                    Export
                   </MenuItem>
                 </Menu>
                 <Button
@@ -394,12 +484,23 @@ function ImageTable() {
 
           {/* Card Table/Pagination */}
           <Card sx={{ p: { xs: 2, md: 3 }, mb: 2 }}>
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            {error && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  {error}
+                </Alert>
+            )}
             <SoftBox>
               <Table columns={columns} rows={rows} loading={loading} />
             </SoftBox>
             {/* Pagination + View */}
-            <SoftBox display="flex" justifyContent="space-between" alignItems="center" mt={2} flexWrap="wrap" gap={2}>
+            <SoftBox
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                mt={2}
+                flexWrap="wrap"
+                gap={2}
+            >
               <SoftBox>
                 <FormControl sx={{ minWidth: 120 }}>
                   <Select
@@ -523,7 +624,9 @@ function ImageTable() {
                       transition: "background 0.2s, border 0.2s",
                     }}
                 >
-                  <span style={{ fontWeight: 600, color: "#444" }}>Thả tệp vào đây</span>
+                <span style={{ fontWeight: 600, color: "#444" }}>
+                  Thả tệp vào đây
+                </span>
                   hoặc
                   <input
                       type="file"

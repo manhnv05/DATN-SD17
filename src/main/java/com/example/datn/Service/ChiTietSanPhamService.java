@@ -1,7 +1,9 @@
 package com.example.datn.Service;
 
 import com.example.datn.DTO.ChiTietSanPhamDTO;
+import com.example.datn.Entity.ChatLieu;
 import com.example.datn.Entity.ChiTietSanPham;
+import com.example.datn.Entity.ThuongHieu;
 import com.example.datn.Repository.*;
 import com.example.datn.VO.ChiTietSanPhamQueryVO;
 import com.example.datn.VO.ChiTietSanPhamUpdateVO;
@@ -10,20 +12,25 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
-
+import org.springframework.validation.annotation.Validated;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 @Service
+@Validated
 public class ChiTietSanPhamService {
 
     @Autowired
     private ChiTietSanPhamRepository chiTietSanPhamRepository;
 
-    // Inject các repository liên kết
     @Autowired
     private SanPhamRepository sanPhamRepository;
+    @Autowired
+    private ChatLieuRepository chatLieuRepository;
+    @Autowired
+    private ThuongHieuRepository thuongHieuRepository;
     @Autowired
     private MauSacRepository mauSacRepository;
     @Autowired
@@ -33,14 +40,20 @@ public class ChiTietSanPhamService {
     @Autowired
     private TayAoRepository tayAoRepository;
 
-    public Integer save(ChiTietSanPhamVO vO) {
+    public Integer save(@Valid ChiTietSanPhamVO vO) {
         ChiTietSanPham bean = new ChiTietSanPham();
-        // Gán các thuộc tính đơn giản
         BeanUtils.copyProperties(vO, bean);
 
-        // Gán các entity liên kết
         if (vO.getIdSanPham() != null)
             bean.setSanPham(sanPhamRepository.findById(vO.getIdSanPham()).orElse(null));
+        if (vO.getIdChatLieu() != null) {
+            ChatLieu chatLieu = chatLieuRepository.findById(vO.getIdChatLieu()).orElse(null);
+            bean.setChatLieu(chatLieu);
+        }
+        if (vO.getIdThuongHieu() != null) {
+            ThuongHieu thuongHieu = thuongHieuRepository.findById(vO.getIdThuongHieu()).orElse(null);
+            bean.setThuongHieu(thuongHieu);
+        }
         if (vO.getIdMauSac() != null)
             bean.setMauSac(mauSacRepository.findById(vO.getIdMauSac()).orElse(null));
         if (vO.getIdKichThuoc() != null)
@@ -58,13 +71,20 @@ public class ChiTietSanPhamService {
         chiTietSanPhamRepository.deleteById(id);
     }
 
-    public void update(Integer id, ChiTietSanPhamUpdateVO vO) {
+    public void update(Integer id, @Valid ChiTietSanPhamUpdateVO vO) {
         ChiTietSanPham bean = requireOne(id);
         BeanUtils.copyProperties(vO, bean);
 
-        // Gán các entity liên kết
         if (vO.getIdSanPham() != null)
             bean.setSanPham(sanPhamRepository.findById(vO.getIdSanPham()).orElse(null));
+        if (vO.getIdChatLieu() != null) {
+            ChatLieu chatLieu = chatLieuRepository.findById(vO.getIdChatLieu()).orElse(null);
+            bean.setChatLieu(chatLieu);
+        }
+        if (vO.getIdThuongHieu() != null) {
+            ThuongHieu thuongHieu = thuongHieuRepository.findById(vO.getIdThuongHieu()).orElse(null);
+            bean.setThuongHieu(thuongHieu);
+        }
         if (vO.getIdMauSac() != null)
             bean.setMauSac(mauSacRepository.findById(vO.getIdMauSac()).orElse(null));
         if (vO.getIdKichThuoc() != null)
@@ -86,27 +106,41 @@ public class ChiTietSanPhamService {
         throw new UnsupportedOperationException();
     }
 
-    // Thêm hàm tìm kiếm theo mã hoặc mô tả sản phẩm chi tiết
     public List<ChiTietSanPhamDTO> searchByMaOrMoTa(String keyword) {
         List<ChiTietSanPham> list = chiTietSanPhamRepository
                 .findByMaSanPhamChiTietContainingIgnoreCaseOrMoTaContainingIgnoreCase(keyword, keyword);
         return list.stream().map(this::toDTO).collect(Collectors.toList());
     }
 
-    // Thêm hàm lấy danh sách chi tiết theo id sản phẩm cha
     public List<ChiTietSanPhamDTO> findBySanPhamId(Integer idSanPham) {
         List<ChiTietSanPham> list = chiTietSanPhamRepository.findBySanPhamId(idSanPham);
         return list.stream().map(this::toDTO).collect(Collectors.toList());
+    }
+
+    // Thêm phương thức lấy chi tiết sản phẩm theo mã (cho QR code)
+    public ChiTietSanPhamDTO findByMaSanPhamChiTiet(String maSanPhamChiTiet) {
+        ChiTietSanPham entity = chiTietSanPhamRepository.findByMaSanPhamChiTiet(maSanPhamChiTiet);
+        if (entity == null) {
+            throw new NoSuchElementException("Không tìm thấy mã sản phẩm chi tiết: " + maSanPhamChiTiet);
+        }
+        return toDTO(entity);
     }
 
     private ChiTietSanPhamDTO toDTO(ChiTietSanPham original) {
         ChiTietSanPhamDTO bean = new ChiTietSanPhamDTO();
         BeanUtils.copyProperties(original, bean);
 
-        // Gán các trường id và tên liên kết nếu cần
         if (original.getSanPham() != null) {
             bean.setIdSanPham(original.getSanPham().getId());
             bean.setTenSanPham(original.getSanPham().getTenSanPham());
+        }
+        if (original.getChatLieu() != null) {
+            bean.setIdChatLieu(original.getChatLieu().getId());
+            bean.setTenChatLieu(original.getChatLieu().getTenChatLieu());
+        }
+        if (original.getThuongHieu() != null) {
+            bean.setIdThuongHieu(original.getThuongHieu().getId());
+            bean.setTenThuongHieu(original.getThuongHieu().getTenThuongHieu());
         }
         if (original.getMauSac() != null) {
             bean.setIdMauSac(original.getMauSac().getId());

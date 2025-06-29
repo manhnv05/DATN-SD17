@@ -1,87 +1,70 @@
 package com.example.datn.Entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
-import lombok.experimental.SuperBuilder;
+import lombok.*;
+import lombok.experimental.FieldDefaults;
+import com.example.datn.enums.TrangThai;
 
-import java.io.Serializable;
-import java.sql.Date;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Getter
-@Setter
-@ToString
-@Builder
-@NoArgsConstructor
+@Data
 @AllArgsConstructor
+@NoArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
+@Builder
 @Table(name = "hoa_don")
-public class HoaDon{
-
+public class HoaDon {
     @Id
-    @Column(name = "id", nullable = false)
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_nhan_vien")
-    private NhanVien nhanVien;
+    LocalDateTime ngayTao;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "id_khach_hang")
-    private KhachHang khachHang;
+    KhachHang khachHang;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
+    @JoinColumn(name = "id_nhan_vien")
+    NhanVien nhanVien;
+
+    @ManyToOne
     @JoinColumn(name = "id_phieu_giam_gia")
-    private PhieuGiamGia phieuGiamGia;
-
-    @Column(name = "ma_hoa_don")
-    private String maHoaDon;
-
-    @Column(name = "ngay_tao")
-    private Date ngayTao;
-
-    @Column(name = "tong_tien")
-    private Integer tongTien;
-
-    @Column(name = "giam_gia")
-    private Integer giamGia;
-
-    @Column(name = "tong_tien_ban_dau")
-    private Integer tongTienBanDau;
-
-    @Column(name = "phi_van_chuyen")
-    private Integer phiVanChuyen;
-
-    @Column(name = "tong_tien_hoa_don")
-    private Integer tongTienHoaDon;
-
-    @Column(name = "ten_khach_hang")
-    private String tenKhachHang;
-
-    @Column(name = "ngay_dat")
-    private Date ngayDat;
-
-    @Column(name = "ngay_giao_du_kien")
-    private Date ngayGiaoDuKien;
-
-    @Column(name = "sdt")
-    private String sdt;
+    PhieuGiamGia phieuGiamGia;
 
     @Column(name = "dia_chi")
-    private String diaChi;
+    String diaChi;
 
     @Column(name = "ghi_chu")
-    private String ghiChu;
+    String ghiChu;
 
     @Column(name = "trang_thai")
-    private Integer trangThai;
+    TrangThai trangThai;
+    @Column(name = "ngay_giao_du_kien")
+    LocalDateTime ngayGiaoDuKien;
 
-    @OneToMany(mappedBy = "hoaDon")
-    private List<HoaDonChiTiet> hoaDonChiTiets;
+    @Column(name = "sdt")
+    String sdt;
+    @Column(name = "tong_tien")
+    Integer tongTien;
+
+    @Column(name = "tong_tien_ban_dau")
+    Integer tongTienBanDau;
+
+    @Column(name = "phi_van_chuyen")
+    Integer phiVanChuyen;
+
+    @Column(name = "tong_hoa_don")
+    Integer tongHoaDon;
+
+    @Column(name = "ten_khach_hang")
+    String tenKhachHang;
+    @Column(name = "loai_hoa_don")
+    String loaiHoaDon;
+    @Column(name = "ma_hoa_don")
+    String maHoaDon;
+
+
 }

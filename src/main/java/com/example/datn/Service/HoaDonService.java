@@ -1,58 +1,43 @@
 package com.example.datn.Service;
 
+
+import com.example.datn.DTO.CapNhatTrangThaiDTO;
+import com.example.datn.DTO.HoaDonChiTietDTO;
 import com.example.datn.DTO.HoaDonDTO;
-import com.example.datn.Entity.HoaDon;
-import com.example.datn.Repository.HoaDonRepository;
-import com.example.datn.VO.HoaDonQueryVO;
+import com.example.datn.DTO.HoaDonHistoryDTO;
+import com.example.datn.VO.HoaDonCreateVO;
 import com.example.datn.VO.HoaDonUpdateVO;
-import com.example.datn.VO.HoaDonVO;
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.datn.enums.TrangThai;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Service;
 
-import java.util.NoSuchElementException;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 
 @Service
-public class HoaDonService {
+public interface HoaDonService {
+    HoaDonDTO taoHoaDon(HoaDonCreateVO request);
+    CapNhatTrangThaiDTO capNhatTrangThaiHoaDon(Integer idHoaDon, TrangThai trangThaiMoi, String ghiChu, String nguoiThucHien);
+    List<HoaDonHistoryDTO> layLichSuThayDoiTrangThai(String  maHoaDon);
+    HoaDonDTO getHoaDonById(Integer id);
+    Page<HoaDonDTO> getFilteredHoaDon(
+                                            TrangThai trangThai,
+                                            String loaiHoaDon,
+                                            LocalDate ngayTaoStart,
+                                            LocalDate ngayTaoEnd,
+                                            String searchTerm,
+                                            Pageable pageable);
+    public Map<TrangThai,Long> getStatusCounts();
 
-    @Autowired
-    private HoaDonRepository hoaDonRepository;
+    CapNhatTrangThaiDTO chuyenTrangThaiTiepTheo(Integer idHoaDon, String ghiChu, String nguoiThucHien);
+    CapNhatTrangThaiDTO huyHoaDon(Integer idHoaDon, String ghiChu, String nguoiThucHien);
+    public CapNhatTrangThaiDTO quayLaiTrangThaiTruoc(Integer idHoaDon, String ghiChu, String nguoiThucHien);
+    String  capNhatThongTinHoaDon(Integer idHoaDon, HoaDonUpdateVO request);
+    // Sửa lại alias (AS) để tên tường minh và dễ ánh xạ
 
-    public Integer save(HoaDonVO vO) {
-        HoaDon bean = new HoaDon();
-        BeanUtils.copyProperties(vO, bean);
-        bean = hoaDonRepository.save(bean);
-        return bean.getId();
-    }
+    List<HoaDonChiTietDTO> findChiTietHoaDon(@Param("idHoaDon") Integer idHoaDon);
 
-    public void delete(Integer id) {
-        hoaDonRepository.deleteById(id);
-    }
-
-    public void update(Integer id, HoaDonUpdateVO vO) {
-        HoaDon bean = requireOne(id);
-        BeanUtils.copyProperties(vO, bean);
-        hoaDonRepository.save(bean);
-    }
-
-    public HoaDonDTO getById(Integer id) {
-        HoaDon original = requireOne(id);
-        return toDTO(original);
-    }
-
-    public Page<HoaDonDTO> query(HoaDonQueryVO vO) {
-        throw new UnsupportedOperationException();
-    }
-
-    private HoaDonDTO toDTO(HoaDon original) {
-        HoaDonDTO bean = new HoaDonDTO();
-        BeanUtils.copyProperties(original, bean);
-        return bean;
-    }
-
-    private HoaDon requireOne(Integer id) {
-        return hoaDonRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Resource not found: " + id));
-    }
 }

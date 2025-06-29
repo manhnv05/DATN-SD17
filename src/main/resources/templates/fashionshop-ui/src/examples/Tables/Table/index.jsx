@@ -3,9 +3,6 @@ import { useMemo } from "react";
 // prop-types is a library for typechecking of props
 import PropTypes from "prop-types";
 
-// uuid is a library for generating unique id
-import { v4 as uuidv4 } from "uuid";
-
 // @mui material components
 import { Table as MuiTable } from "@mui/material";
 import TableBody from "@mui/material/TableBody";
@@ -43,69 +40,69 @@ function Table({ columns, rows }) {
     }
 
     return (
-      <SoftBox
-        key={name}
-        component="th"
-        width={width || "auto"}
-        pt={1.5}
-        pb={1.25}
-        pl={align === "left" ? pl : 3}
-        pr={align === "right" ? pr : 3}
-        textAlign={align}
-        fontSize={size.xxs}
-        fontWeight={fontWeightBold}
-        color="black"
-        opacity={0.7}
-        borderBottom={`${borderWidth[1]} solid ${light.main}`}
-      >
-        {(label || name)}
-      </SoftBox>
+        <SoftBox
+            key={name}
+            component="th"
+            width={width || "auto"}
+            pt={1.5}
+            pb={1.25}
+            pl={align === "left" ? pl : 3}
+            pr={align === "right" ? pr : 3}
+            textAlign={align}
+            fontSize={size.xxs}
+            fontWeight={fontWeightBold}
+            color="black"
+            opacity={0.7}
+            borderBottom={`${borderWidth[1]} solid ${light.main}`}
+        >
+          {(label || name)}
+        </SoftBox>
     );
   });
 
-  const renderRows = rows.map((row, key) => {
-    const rowKey = `row-${key}`;
+  const renderRows = rows.map((row, rowIdx) => {
+    const rowKey = row.id ? `row-${row.id}` : `row-${rowIdx}`;
 
     const tableRow = columns.map((col, colIdx) => {
       const { name, align, render } = col;
       let cellContent;
 
       if (typeof render === "function") {
-        cellContent = render(row[name], row, key);
+        cellContent = render(row[name], row, rowIdx);
       } else if (Array.isArray(row[name])) {
         cellContent = (
-          <SoftBox display="flex" alignItems="center" py={0.5} px={1}>
-            <SoftBox mr={2}>
-              <SoftAvatar src={row[name][0]} name={row[name][1]} variant="rounded" size="sm" />
+            <SoftBox display="flex" alignItems="center" py={0.5} px={1}>
+              <SoftBox mr={2}>
+                <SoftAvatar src={row[name][0]} name={row[name][1]} variant="rounded" size="sm" />
+              </SoftBox>
+              <SoftTypography variant="button" fontWeight="medium" sx={{ width: "max-content" }}>
+                {row[name][1]}
+              </SoftTypography>
             </SoftBox>
-            <SoftTypography variant="button" fontWeight="medium" sx={{ width: "max-content" }}>
-              {row[name][1]}
-            </SoftTypography>
-          </SoftBox>
         );
       } else {
         cellContent = (
-          <SoftTypography
-            variant="button"
-            fontWeight="regular"
-            color="black"
-            sx={{ display: "inline-block", width: "max-content" }}
-          >
-            {row[name]}
-          </SoftTypography>
+            <SoftTypography
+                variant="button"
+                fontWeight="regular"
+                color="black"
+                sx={{ display: "inline-block", width: "max-content" }}
+            >
+              {row[name]}
+            </SoftTypography>
         );
       }
 
       return (
-        <SoftBox
-          key={uuidv4()}
-          component="td"
-          p={1}
-          textAlign={align}
-          borderBottom={row.hasBorder ? `${borderWidth[1]} solid ${light.main}` : null}
-        >
-          {cellContent}
-        </SoftBox>
+          <SoftBox
+              key={name || colIdx}
+              component="td"
+              p={1}
+              textAlign={align}
+              borderBottom={row.hasBorder ? `${borderWidth[1]} solid ${light.main}` : null}
+          >
+            {cellContent}
+          </SoftBox>
       );
     });
 
@@ -113,17 +110,17 @@ function Table({ columns, rows }) {
   });
 
   return useMemo(
-    () => (
-      <TableContainer>
-        <MuiTable>
-          <SoftBox component="thead">
-            <TableRow>{renderColumns}</TableRow>
-          </SoftBox>
-          <TableBody>{renderRows}</TableBody>
-        </MuiTable>
-      </TableContainer>
-    ),
-    [columns, rows]
+      () => (
+          <TableContainer>
+            <MuiTable>
+              <SoftBox component="thead">
+                <TableRow>{renderColumns}</TableRow>
+              </SoftBox>
+              <TableBody>{renderRows}</TableBody>
+            </MuiTable>
+          </TableContainer>
+      ),
+      [columns, rows]
   );
 }
 

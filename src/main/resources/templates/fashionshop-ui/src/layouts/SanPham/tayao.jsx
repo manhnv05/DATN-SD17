@@ -45,6 +45,10 @@ function SleeveTable() {
         size: 5,
     });
 
+    const handleMenuOpen = (event) => {
+        setAnchorEl(event.currentTarget);
+    };
+
     const [sleevesData, setSleevesData] = useState({
         content: [],
         totalPages: 1,

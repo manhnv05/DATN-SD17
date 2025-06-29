@@ -15,4 +15,7 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
 
     // Tìm tất cả chi tiết sản phẩm theo id sản phẩm cha
     List<ChiTietSanPham> findBySanPhamId(Integer idSanPham);
+
+    ChiTietSanPham findByMaSanPhamChiTiet(String maSanPhamChiTiet);
+
 }

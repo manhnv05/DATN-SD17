@@ -73,4 +73,10 @@ public class ChiTietSanPhamController {
     public List<ChiTietSanPhamDTO> getBySanPham(@PathVariable("idSanPham") Integer idSanPham) {
         return chiTietSanPhamService.findBySanPhamId(idSanPham);
     }
+
+    // Lấy chi tiết sản phẩm theo mã chi tiết sản phẩm (phục vụ QR code)
+    @GetMapping("/find-by-ma")
+    public ChiTietSanPhamDTO getByMaSanPhamChiTiet(@RequestParam("ma") String maSanPhamChiTiet) {
+        return chiTietSanPhamService.findByMaSanPhamChiTiet(maSanPhamChiTiet);
+    }
 }

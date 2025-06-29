@@ -1,75 +1,64 @@
 package com.example.datn.Entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.ToString;
-import lombok.experimental.SuperBuilder;
+import lombok.experimental.FieldDefaults;
 
-import java.io.Serializable;
-import java.sql.Date;
-import java.util.List;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
-@Entity
 @Getter
 @Setter
-@ToString
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@Entity
 @Table(name = "phieu_giam_gia")
-public class PhieuGiamGia{
-
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class PhieuGiamGia {
     @Id
-    @Column(name = "id", nullable = false)
+    @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    int id;
 
     @Column(name = "ma_phieu_giam_gia")
-    private String maPhieuGiamGia;
+    String maPhieuGiamGia;
 
     @Column(name = "dieu_kien_giam")
-    private String dieuKienGiam;
+    String dieuKienGiam;
 
     @Column(name = "ten_phieu")
-    private String tenPhieu;
+    String tenPhieu;
 
     @Column(name = "loai_phieu")
-    private String loaiPhieu;
+    int loaiPhieu;
 
     @Column(name = "pham_tram_giam_gia")
-    private Integer phamTramGiamGia;
+    BigDecimal phamTramGiamGia;
 
     @Column(name = "so_tien_giam")
-    private Integer soTienGiam;
+    BigDecimal soTienGiam;
 
     @Column(name = "giam_toi_da")
-    private Integer giamToiDa;
+    BigDecimal giamToiDa;
 
     @Column(name = "ngay_bat_dau")
-    private Date ngayBatDau;
+    LocalDateTime ngayBatDau;
 
     @Column(name = "ngay_ket_thuc")
-    private Date ngayKetThuc;
+    LocalDateTime ngayKetThuc;
 
     @Column(name = "ngay_tao")
-    private Date ngayTao;
+    LocalDateTime ngayTao;
 
     @Column(name = "ngay_cap_nhat")
-    private Date ngayCapNhat;
+    LocalDateTime ngayCapNhat;
 
     @Column(name = "ghi_chu")
-    private String ghiChu;
+    String ghiChu;
 
     @Column(name = "trang_thai")
-    private Integer trangThai;
+    int trangThai;
 
-    @OneToMany(mappedBy = "phieuGiamGia")
-    private List<ChiTietPhieuGiamGia> chiTietPhieuGiamGias;
-
-    @OneToMany(mappedBy = "phieuGiamGia")
-    private List<HoaDon> hoaDons;
+    @Column(name = "so_luong")
+    BigDecimal soLuong;
 }

@@ -22,7 +22,10 @@ public class HinhAnhController {
     @Autowired
     private HinhAnhService hinhAnhService;
 
-    // ✅ Tạo mới hình ảnh
+    /**
+     * Thêm mới hình ảnh - dùng FormData với đúng tên trường snake_case
+     * ma_anh, duong_dan_anh, anh_mac_dinh, mo_ta, trang_thai, id_san_pham_chi_tiet
+     */
     @PostMapping
     public ResponseEntity<?> save(
             @RequestParam("ma_anh") String maAnh,
@@ -36,14 +39,17 @@ public class HinhAnhController {
         return ResponseEntity.ok(id);
     }
 
-    // ✅ Xóa hình ảnh theo ID
+    // Xóa hình ảnh theo ID
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@Valid @NotNull @PathVariable("id") Integer id) {
         hinhAnhService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
-    // ✅ Cập nhật hình ảnh
+    /**
+     * Cập nhật hình ảnh - dùng JSON body (HinhAnhDTO)
+     * Lưu ý: FE gửi các trường camelCase, không phải FormData.
+     */
     @PutMapping("/{id}")
     public ResponseEntity<?> update(
             @Valid @NotNull @PathVariable("id") Integer id,
@@ -61,13 +67,13 @@ public class HinhAnhController {
         return ResponseEntity.noContent().build();
     }
 
-    // ✅ Lấy chi tiết hình ảnh theo ID
+    // Lấy chi tiết hình ảnh theo ID
     @GetMapping("/{id}")
     public ResponseEntity<HinhAnhDTO> getById(@Valid @NotNull @PathVariable("id") Integer id) {
         return ResponseEntity.ok(hinhAnhService.getById(id));
     }
 
-    // ✅ Danh sách hình ảnh có phân trang và lọc
+    // Danh sách hình ảnh có phân trang và lọc (query param - dùng camelCase)
     @GetMapping
     public Page<HinhAnhDTO> query(
             @RequestParam(required = false) Integer id,
@@ -93,7 +99,7 @@ public class HinhAnhController {
         return hinhAnhService.query(vO);
     }
 
-    // ✅ Lấy toàn bộ hình ảnh (cho FE select option động, không phân trang)
+    // Lấy toàn bộ hình ảnh (không phân trang)
     @GetMapping("/all")
     public List<HinhAnhDTO> getAll() {
         return hinhAnhService.findAll();

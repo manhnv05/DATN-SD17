@@ -14,6 +14,9 @@ public class ChiTietDotGiamGiaDTO {
 
     private Integer idSanPhamChiTiet;
 
+    // Id sản phẩm cha của chi tiết được áp dụng giảm giá
+    private Integer idSanPham;
+
     private Integer giaTruocKhiGiam;
 
     private Integer giaSauKhiGiam;

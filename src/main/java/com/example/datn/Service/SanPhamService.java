@@ -1,15 +1,11 @@
 package com.example.datn.Service;
 
 import com.example.datn.DTO.SanPhamDTO;
-import com.example.datn.Entity.ChatLieu;
 import com.example.datn.Entity.DanhMuc;
 import com.example.datn.Entity.SanPham;
-import com.example.datn.Entity.ThuongHieu;
 import com.example.datn.Entity.ChiTietSanPham;
-import com.example.datn.Repository.ChatLieuRepository;
 import com.example.datn.Repository.DanhMucRepository;
 import com.example.datn.Repository.SanPhamRepository;
-import com.example.datn.Repository.ThuongHieuRepository;
 import com.example.datn.Repository.ChiTietSanPhamRepository;
 import com.example.datn.VO.SanPhamQueryVO;
 import com.example.datn.VO.SanPhamUpdateVO;
@@ -19,7 +15,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 
+import jakarta.validation.Valid;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
@@ -29,34 +30,21 @@ public class SanPhamService {
     @Autowired
     private SanPhamRepository sanPhamRepository;
     @Autowired
-    private ChatLieuRepository chatLieuRepository;
-    @Autowired
     private DanhMucRepository danhMucRepository;
-    @Autowired
-    private ThuongHieuRepository thuongHieuRepository;
     @Autowired
     private ChiTietSanPhamRepository chiTietSanPhamRepository;
 
-    public Integer save(SanPhamVO vO) {
+    public Integer save(@Valid SanPhamVO vO) {
         SanPham bean = new SanPham();
-        // Copy các trường cơ bản
+
         bean.setMaSanPham(vO.getMaSanPham());
         bean.setTenSanPham(vO.getTenSanPham());
         bean.setXuatXu(vO.getXuatXu());
         bean.setTrangThai(vO.getTrangThai());
 
-        // Gán entity ManyToOne từ id
-        if (vO.getIdChatLieu() != null) {
-            ChatLieu chatLieu = chatLieuRepository.findById(vO.getIdChatLieu()).orElse(null);
-            bean.setChatLieu(chatLieu);
-        }
         if (vO.getIdDanhMuc() != null) {
             DanhMuc danhMuc = danhMucRepository.findById(vO.getIdDanhMuc()).orElse(null);
             bean.setDanhMuc(danhMuc);
-        }
-        if (vO.getIdThuongHieu() != null) {
-            ThuongHieu thuongHieu = thuongHieuRepository.findById(vO.getIdThuongHieu()).orElse(null);
-            bean.setThuongHieu(thuongHieu);
         }
 
         bean = sanPhamRepository.save(bean);
@@ -64,29 +52,19 @@ public class SanPhamService {
     }
 
     public void delete(Integer id) {
-        sanPhamRepository.deleteById(id);
+        sanPhamRepository.softDeleteById(id);
     }
 
-    public void update(Integer id, SanPhamUpdateVO vO) {
+    public void update(Integer id, @Valid SanPhamUpdateVO vO) {
         SanPham bean = requireOne(id);
-        // Copy các trường cơ bản
         bean.setMaSanPham(vO.getMaSanPham());
         bean.setTenSanPham(vO.getTenSanPham());
         bean.setXuatXu(vO.getXuatXu());
         bean.setTrangThai(vO.getTrangThai());
 
-        // Gán entity ManyToOne từ id nếu có
-        if (vO.getIdChatLieu() != null) {
-            ChatLieu chatLieu = chatLieuRepository.findById(vO.getIdChatLieu()).orElse(null);
-            bean.setChatLieu(chatLieu);
-        }
         if (vO.getIdDanhMuc() != null) {
             DanhMuc danhMuc = danhMucRepository.findById(vO.getIdDanhMuc()).orElse(null);
             bean.setDanhMuc(danhMuc);
-        }
-        if (vO.getIdThuongHieu() != null) {
-            ThuongHieu thuongHieu = thuongHieuRepository.findById(vO.getIdThuongHieu()).orElse(null);
-            bean.setThuongHieu(thuongHieu);
         }
 
         sanPhamRepository.save(bean);
@@ -100,37 +78,57 @@ public class SanPhamService {
     public List<SanPhamDTO> searchByMaSanPhamOrTenSanPham(String keyword) {
         List<SanPham> sanPhams = sanPhamRepository
                 .findByMaSanPhamOrTenSanPham(keyword, keyword);
-        return sanPhams.stream().map(this::toDTO).collect(Collectors.toList());
+        return sanPhams.stream()
+                .filter(sp -> sp.getTrangThai() != null && (sp.getTrangThai() == 0 || sp.getTrangThai() == 1))
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
     public Page<SanPhamDTO> query(SanPhamQueryVO vO) {
-        // Xử lý phân trang và lọc dữ liệu
         int page = vO.getPage() != null ? vO.getPage() : 0;
-        int size = vO.getSize() != null ? vO.getSize() : 5;
+        int size = vO.getSize() != null ? vO.getSize() : 10;
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
 
-        // Lọc theo tên và trạng thái (nếu có)
-        String tenSanPham = vO.getTenSanPham();
-        Integer trangThai = vO.getTrangThai();
+        Page<SanPham> entities = sanPhamRepository.findAll((root, query, cb) -> {
+            var predicates = cb.conjunction();
 
-        Page<SanPham> sanPhamPage;
+            if (vO.getTenSanPham() != null && !vO.getTenSanPham().isEmpty()) {
+                predicates = cb.and(predicates,
+                        cb.like(cb.lower(root.get("tenSanPham")), "%" + vO.getTenSanPham().toLowerCase() + "%"));
+            }
+            if (vO.getMaSanPham() != null && !vO.getMaSanPham().isEmpty()) {
+                predicates = cb.and(predicates,
+                        cb.like(cb.lower(root.get("maSanPham")), "%" + vO.getMaSanPham().toLowerCase() + "%"));
+            }
+            if (vO.getTrangThai() != null) {
+                predicates = cb.and(predicates, cb.equal(root.get("trangThai"), vO.getTrangThai()));
+            } else {
+                // Always exclude trạng thái 3 (đã xóa mềm) khỏi kết quả
+                predicates = cb.and(predicates, root.get("trangThai").in(0, 1));
+            }
+            return predicates;
+        }, pageable);
 
-        if ((tenSanPham == null || tenSanPham.trim().isEmpty()) && trangThai == null) {
-            sanPhamPage = sanPhamRepository.findAll(pageable);
-        } else if ((tenSanPham == null || tenSanPham.trim().isEmpty())) {
-            sanPhamPage = sanPhamRepository.findByTrangThai(trangThai, pageable);
-        } else if (trangThai == null) {
-            sanPhamPage = sanPhamRepository.findByTenSanPhamContainingIgnoreCase(tenSanPham, pageable);
-        } else {
-            sanPhamPage = sanPhamRepository.findByTenSanPhamContainingIgnoreCaseAndTrangThai(tenSanPham, trangThai, pageable);
-        }
-
-        return sanPhamPage.map(this::toDTO);
+        return entities.map(this::toDTO);
     }
 
-    // Get all product names
     public List<String> getAllTenSanPham() {
-        return sanPhamRepository.findAllTenSanPham();
+        List<SanPham> list = sanPhamRepository.findActiveSanPhamOrderByIdDesc();
+        Map<String, Integer> nameMap = new LinkedHashMap<>();
+        for (SanPham sp : list) {
+            if (sp.getTenSanPham() == null) continue;
+            String name = sp.getTenSanPham().trim();
+            if (!nameMap.containsKey(name) || sp.getId() > nameMap.get(name)) {
+                nameMap.put(name, sp.getId());
+            }
+        }
+        List<Map.Entry<String, Integer>> sorted = new ArrayList<>(nameMap.entrySet());
+        sorted.sort((a, b) -> b.getValue() - a.getValue());
+        List<String> result = new ArrayList<>();
+        for (Map.Entry<String, Integer> entry : sorted) {
+            result.add(entry.getKey());
+        }
+        return result;
     }
 
     private SanPhamDTO toDTO(SanPham original) {
@@ -148,14 +146,6 @@ public class SanPhamService {
             bean.setGiaBan(null);
         }
 
-        if (original.getChatLieu() != null) {
-            bean.setIdChatLieu(original.getChatLieu().getId());
-            bean.setTenChatLieu(original.getChatLieu().getTenChatLieu());
-        }
-        if (original.getThuongHieu() != null) {
-            bean.setIdThuongHieu(original.getThuongHieu().getId());
-            bean.setTenThuongHieu(original.getThuongHieu().getTenThuongHieu());
-        }
         if (original.getDanhMuc() != null) {
             bean.setIdDanhMuc(original.getDanhMuc().getId());
             bean.setTenDanhMuc(original.getDanhMuc().getTenDanhMuc());

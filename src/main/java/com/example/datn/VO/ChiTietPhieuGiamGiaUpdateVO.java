@@ -1,14 +1,20 @@
 package com.example.datn.VO;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class ChiTietPhieuGiamGiaUpdateVO {
+    Integer id;
 
-import java.io.Serializable;
+    String phieuGiamGia;
 
-@Data
-@EqualsAndHashCode(callSuper = false)
-public class ChiTietPhieuGiamGiaUpdateVO extends ChiTietPhieuGiamGiaVO implements Serializable {
-    private static final long serialVersionUID = 1L;
+    String khachHang;
 
+    int trangthai;
 }

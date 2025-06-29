@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
 import Card from "@mui/material/Card";
 import IconButton from "@mui/material/IconButton";
-import Menu from "@mui/material/Menu";
-import MenuItem from "@mui/material/MenuItem";
 import Button from "@mui/material/Button";
 import InputAdornment from "@mui/material/InputAdornment";
 import Input from "@mui/material/Input";
 import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
 import FormControl from "@mui/material/FormControl";
 import SoftBox from "components/SoftBox";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
@@ -15,37 +14,83 @@ import Footer from "examples/Footer";
 import Icon from "@mui/material/Icon";
 import Table from "examples/Tables/Table";
 import { useNavigate } from "react-router-dom";
-import { FaQrcode, FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import axios from "axios";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import TextField from "@mui/material/TextField";
+import CircularProgress from "@mui/material/CircularProgress";
+import MenuItemMui from "@mui/material/MenuItem";
+import ReactSelect from "react-select";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import CloseIcon from "@mui/icons-material/Close";
+import Divider from "@mui/material/Divider";
+import DialogContentText from "@mui/material/DialogContentText";
+import Notifications from "layouts/Notifications";
 
-// Helper format giá
-const formatPrice = (value) =>
-    value !== undefined && value !== null
-        ? value.toLocaleString("vi-VN") + " ₫"
-        : "";
+const selectMenuStyle = {
+    menu: (base) => ({
+        ...base,
+        borderRadius: 12,
+        zIndex: 25,
+        boxShadow: "0 6px 24px 0 rgba(0,0,0,0.12)",
+        fontSize: 16,
+    }),
+    placeholder: (base) => ({
+        ...base,
+        color: "#a8b8c3",
+    }),
+    option: (base, state) => ({
+        ...base,
+        backgroundColor: state.isSelected
+            ? "#e3f2fd"
+            : state.isFocused
+                ? "#f0f7fa"
+                : "#fff",
+        color: "#263238",
+        fontWeight: state.isSelected ? 600 : 500,
+        cursor: "pointer",
+        fontSize: 16,
+        padding: "11px 16px",
+    }),
+};
 
-const getTrangThaiText = (status) =>
-    status === 1 || status === "Đang bán" || status === "Hiển thị"
-        ? "Đang bán"
-        : "Ngừng bán";
+function getOptionByValue(options, value) {
+    if (value === undefined || value === null || value === "") return null;
+    return options.find(function (option) { return String(option.value) === String(value); }) || null;
+}
+
+function formatPrice(value) {
+    if (value !== undefined && value !== null) {
+        return value.toLocaleString("vi-VN") + " ₫";
+    }
+    return "";
+}
+
+function getTrangThaiText(status) {
+    if (status === 1 || status === "Đang bán" || status === "Hiển thị") {
+        return "Đang bán";
+    }
+    return "Ngừng bán";
+}
 
 const statusList = ["Tất cả", "Đang bán", "Ngừng bán"];
 const viewOptions = [5, 10, 20];
 
-// Hàm hiển thị khoảng giá
-const getPriceRangeText = (min, max) => {
+function getPriceRangeText(min, max) {
     if (min === undefined && max === undefined) return "";
     if (min === max || max === undefined) return formatPrice(min);
-    return `${formatPrice(min)} - ${formatPrice(max)}`;
-};
+    return formatPrice(min) + " - " + formatPrice(max);
+}
 
-// Pagination: luôn có 2 đầu, 2 cuối, luôn nổi bật trang hiện tại
 function getPaginationItems(current, total) {
-    if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1);
-    if (current <= 2) return [1, 2, "...", total - 1, total];
-    if (current >= total - 1) return [1, 2, "...", total - 1, total];
-    // current ở giữa
-    return [1, 2, "...", current, "...", total - 1, total];
+    if (total <= 4) return Array.from({ length: total }, function (_, i) { return i; });
+    if (current <= 1) return [0, 1, "...", total - 2, total - 1];
+    if (current >= total - 2) return [0, 1, "...", total - 2, total - 1];
+    return [0, 1, "...", current, "...", total - 2, total - 1];
 }
 
 function ProductTable() {
@@ -58,72 +103,119 @@ function ProductTable() {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-
-    // FE filter/search/pagination states
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("Tất cả");
     const [viewCount, setViewCount] = useState(5);
-    const [page, setPage] = useState(1);
-    const [anchorEl, setAnchorEl] = useState(null);
-
+    const [page, setPage] = useState(0);
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [editingProduct, setEditingProduct] = useState(null);
+    const [editForm, setEditForm] = useState({
+        tenSanPham: "",
+        maSanPham: "",
+        xuatXu: "",
+        trangThai: 1,
+        idDanhMuc: "",
+    });
+    const [editSaving, setEditSaving] = useState(false);
+    const [xuatXuList, setXuatXuList] = useState([]);
+    const [danhMucList, setDanhMucList] = useState([]);
+    const [danhMucOptions, setDanhMucOptions] = useState([]);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [deletingProduct, setDeletingProduct] = useState(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+    const [notification, setNotification] = useState({
+        open: false,
+        message: "",
+        severity: "info",
+    });
     const navigate = useNavigate();
 
-    // Fetch products from API (with paging, search, filter)
-    const fetchProducts = async () => {
+    useEffect(function () {
+        async function fetchCountries() {
+            try {
+                const response = await axios.get("http://localhost:8080/xuatXu/quocGia");
+                setXuatXuList(response.data || []);
+            } catch (error) {
+                setXuatXuList([]);
+            }
+        }
+        fetchCountries();
+    }, []);
+
+    useEffect(function () {
+        async function fetchDanhMuc() {
+            try {
+                const response = await axios.get("http://localhost:8080/danhMuc/all");
+                setDanhMucList(response.data || []);
+                setDanhMucOptions(
+                    (response.data || []).map(function (danhMuc) {
+                        return {
+                            value: String(danhMuc.id),
+                            label: danhMuc.tenDanhMuc
+                        };
+                    })
+                );
+            } catch (error) {
+                setDanhMucList([]);
+                setDanhMucOptions([]);
+            }
+        }
+        fetchDanhMuc();
+    }, []);
+
+    async function fetchProducts() {
         setLoading(true);
         setError(null);
         try {
             let params = {
-                page: page - 1,
+                page: page,
                 size: viewCount,
                 tenSanPham: search,
             };
             if (statusFilter !== "Tất cả") {
                 params.trangThai = statusFilter === "Đang bán" ? 1 : 0;
             }
-
-            const response = await axios.get("http://localhost:8080/sanPham", { params });
-            const productList = response.data.content || [];
-
-            // Lấy min/max giá từ chiTietSanPham (trường 'gia')
+            const response = await axios.get("http://localhost:8080/sanPham", { params: params });
+            const productList = (response.data.content || []).filter(function (product) {
+                return product.trangThai === 0 || product.trangThai === 1;
+            });
             const results = await Promise.all(
-                productList.map(async (sp) => {
+                productList.map(async function (product) {
                     try {
-                        const chiTietRes = await axios.get(
-                            `http://localhost:8080/chiTietSanPham/by-san-pham/${sp.id}`
-                        );
-                        const chiTietList = chiTietRes.data || [];
-                        const totalQuantity = chiTietList.reduce(
-                            (sum, ct) => sum + (ct.soLuong || 0),
-                            0
-                        );
-                        // Lấy giá min/max từ trường 'gia'
-                        let minPrice, maxPrice;
-                        const prices = chiTietList
-                            .filter((ct) => ct.gia !== undefined && ct.gia !== null)
-                            .map((ct) => ct.gia);
+                        const detailResponse = await axios.get("http://localhost:8080/chiTietSanPham/by-san-pham/" + product.id);
+                        const detailList = detailResponse.data || [];
+                        const totalQuantity = detailList.reduce(function (sum, detail) { return sum + (detail.soLuong || 0); }, 0);
+                        let minPrice;
+                        let maxPrice;
+                        const prices = detailList
+                            .filter(function (detail) { return detail.gia !== undefined && detail.gia !== null; })
+                            .map(function (detail) { return detail.gia; });
                         if (prices.length > 0) {
-                            minPrice = Math.min(...prices);
-                            maxPrice = Math.max(...prices);
+                            minPrice = Math.min.apply(null, prices);
+                            maxPrice = Math.max.apply(null, prices);
                         }
                         return {
-                            id: sp.id,
-                            maSanPham: sp.maSanPham,
-                            tenSanPham: sp.tenSanPham,
+                            id: product.id,
+                            maSanPham: product.maSanPham,
+                            tenSanPham: product.tenSanPham,
+                            xuatXu: product.xuatXu,
+                            trangThai: product.trangThai,
                             giaMin: minPrice,
                             giaMax: maxPrice,
-                            trangThai: sp.trangThai,
                             quantity: totalQuantity,
+                            idDanhMuc: product.danhMuc ? product.danhMuc.id : "",
                         };
-                    } catch {
+                    } catch (error) {
                         return {
-                            id: sp.id,
-                            maSanPham: sp.maSanPham,
-                            tenSanPham: sp.tenSanPham,
+                            id: product.id,
+                            maSanPham: product.maSanPham,
+                            tenSanPham: product.tenSanPham,
+                            xuatXu: product.xuatXu,
+                            trangThai: product.trangThai,
                             giaMin: undefined,
                             giaMax: undefined,
-                            trangThai: sp.trangThai,
                             quantity: 0,
+                            idDanhMuc: product.danhMuc ? product.danhMuc.id : "",
                         };
                     }
                 })
@@ -144,29 +236,149 @@ function ProductTable() {
         } finally {
             setLoading(false);
         }
-    };
+    }
 
-    useEffect(() => {
+    useEffect(function () {
         fetchProducts();
-        // eslint-disable-next-line
     }, [search, statusFilter, viewCount, page]);
 
-    // Pagination change
-    const handlePageChange = (newPage) => {
+    function handlePageChange(newPage) {
         if (
-            newPage >= 1 &&
-            newPage <= productsData.totalPages &&
-            newPage !== page &&
-            typeof newPage === "number"
-        )
+            typeof newPage === "number" &&
+            newPage >= 0 &&
+            newPage < productsData.totalPages &&
+            newPage !== page
+        ) {
             setPage(newPage);
-    };
+        }
+    }
 
-    // Menu actions
-    const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
-    const handleMenuClose = () => setAnchorEl(null);
+    function handleSearchChange(event) {
+        setSearch(event.target.value);
+        setPage(0);
+    }
 
-    // Table columns
+    function handleStatusFilterChange(event) {
+        setStatusFilter(event.target.value);
+        setPage(0);
+    }
+
+    function handleViewCountChange(event) {
+        setViewCount(Number(event.target.value));
+        setPage(0);
+    }
+
+    async function handleEditOpen(product) {
+        setEditingProduct(product);
+        try {
+            const response = await axios.get("http://localhost:8080/sanPham/" + product.id);
+            const detail = response.data;
+            setEditForm({
+                tenSanPham: detail.tenSanPham || "",
+                maSanPham: detail.maSanPham || "",
+                xuatXu: detail.xuatXu || "",
+                trangThai: detail.trangThai !== undefined ? detail.trangThai : 1,
+                idDanhMuc: detail.idDanhMuc ? String(detail.idDanhMuc) : (detail.danhMuc && detail.danhMuc.id ? String(detail.danhMuc.id) : ""),
+            });
+        } catch (error) {
+            setEditForm({
+                tenSanPham: product.tenSanPham || "",
+                maSanPham: product.maSanPham || "",
+                xuatXu: product.xuatXu || "",
+                trangThai: product.trangThai !== undefined ? product.trangThai : 1,
+                idDanhMuc: product.idDanhMuc ? String(product.idDanhMuc) : "",
+            });
+        }
+        setEditModalOpen(true);
+    }
+
+    function handleEditClose() {
+        setEditModalOpen(false);
+        setEditingProduct(null);
+        setEditForm({
+            tenSanPham: "",
+            maSanPham: "",
+            xuatXu: "",
+            trangThai: 1,
+            idDanhMuc: "",
+        });
+    }
+
+    function handleEditChange(event) {
+        let value = event.target.value;
+        if (event.target.name === "trangThai") {
+            value = Number(value);
+        }
+        setEditForm({ ...editForm, [event.target.name]: value });
+    }
+
+    async function handleEditSave() {
+        if (!editingProduct) return;
+        setEditSaving(true);
+        try {
+            await axios.put("http://localhost:8080/sanPham/" + editingProduct.id, {
+                tenSanPham: editForm.tenSanPham,
+                maSanPham: editForm.maSanPham,
+                xuatXu: editForm.xuatXu,
+                trangThai: editForm.trangThai,
+                idDanhMuc: editForm.idDanhMuc,
+            });
+            handleEditClose();
+            setNotification({
+                open: true,
+                message: "Cập nhật sản phẩm thành công!",
+                severity: "success",
+            });
+            fetchProducts();
+        } catch (error) {
+            setNotification({
+                open: true,
+                message: "Sửa sản phẩm thất bại!",
+                severity: "error",
+            });
+        } finally {
+            setEditSaving(false);
+        }
+    }
+
+    function handleDeleteOpen(product) {
+        setDeletingProduct(product);
+        setDeleteDialogOpen(true);
+    }
+
+    function handleDeleteClose() {
+        setDeleteDialogOpen(false);
+        setDeletingProduct(null);
+    }
+
+    async function handleDeleteConfirm() {
+        if (!deletingProduct) return;
+        setDeleteLoading(true);
+        try {
+            await axios.delete("http://localhost:8080/sanPham/" + deletingProduct.id);
+            handleDeleteClose();
+            setNotification({
+                open: true,
+                message: "Xóa sản phẩm thành công!",
+                severity: "success",
+            });
+            fetchProducts();
+        } catch (error) {
+            setNotification({
+                open: true,
+                message: "Xóa sản phẩm thất bại!",
+                severity: "error",
+            });
+        } finally {
+            setDeleteLoading(false);
+        }
+    }
+
+    function handleNotificationClose(event, reason) {
+        if (reason === "clickaway") return;
+        setNotification({ ...notification, open: false });
+    }
+
     const columns = [
         { name: "stt", label: "STT", align: "center", width: "60px" },
         { name: "maSanPham", label: "Mã", align: "left", width: "110px" },
@@ -176,86 +388,107 @@ function ProductTable() {
             label: "Giá",
             align: "center",
             width: "180px",
-            render: (value, row) => getPriceRangeText(row.giaMin, row.giaMax),
+            render: function (value, row) { return getPriceRangeText(row.giaMin, row.giaMax); },
         },
         {
             name: "quantity",
             label: "Số lượng",
             align: "center",
             width: "100px",
-            render: (value) => value ?? 0,
+            render: function (value) { return value !== undefined && value !== null ? value : 0; },
         },
         {
             name: "status",
             label: "Trạng thái",
             align: "center",
             width: "120px",
-            render: (value) => (
-                <span
-                    style={{
-                        background: getTrangThaiText(value) === "Đang bán" ? "#e6f4ea" : "#f4f6fb",
-                        color: getTrangThaiText(value) === "Đang bán" ? "#219653" : "#bdbdbd",
-                        border: `1px solid ${
-                            getTrangThaiText(value) === "Đang bán" ? "#219653" : "#bdbdbd"
-                        }`,
-                        borderRadius: 6,
-                        fontWeight: 500,
-                        padding: "2px 12px",
-                        fontSize: 13,
-                        display: "inline-block",
-                    }}
-                >
-          {getTrangThaiText(value)}
-        </span>
-            ),
+            render: function (value) {
+                return (
+                    <span
+                        style={{
+                            background: getTrangThaiText(value) === "Đang bán" ? "#e6f4ea" : "#f4f6fb",
+                            color: getTrangThaiText(value) === "Đang bán" ? "#219653" : "#bdbdbd",
+                            border: "1px solid " + (getTrangThaiText(value) === "Đang bán" ? "#219653" : "#bdbdbd"),
+                            borderRadius: 6,
+                            fontWeight: 500,
+                            padding: "2px 12px",
+                            fontSize: 13,
+                            display: "inline-block",
+                        }}
+                    >
+                        {getTrangThaiText(value)}
+                    </span>
+                );
+            },
         },
         {
             name: "actions",
             label: "Thao tác",
             align: "center",
             width: "110px",
-            render: (_, row) => (
-                <SoftBox display="flex" gap={0.5} justifyContent="center">
-                    <IconButton
-                        size="small"
-                        sx={{ color: "#4acbf2" }}
-                        title="Chi tiết"
-                        onClick={() => navigate(`/SanPham/ChiTiet/${row.id}`)}
-                    >
-                        <FaEye />
-                    </IconButton>
-                    <IconButton size="small" sx={{ color: "#4acbf2" }} title="Sửa">
-                        <FaEdit />
-                    </IconButton>
-                    <IconButton size="small" sx={{ color: "#4acbf2" }} title="Xóa">
-                        <FaTrash />
-                    </IconButton>
-                </SoftBox>
-            ),
+            render: function (_, row) {
+                return (
+                    <SoftBox display="flex" gap={0.5} justifyContent="center">
+                        <IconButton
+                            size="small"
+                            sx={{ color: "#4acbf2" }}
+                            title="Chi tiết"
+                            onClick={function () { navigate("/SanPham/ChiTietSanPham/" + row.id); }}
+                        >
+                            <FaEye />
+                        </IconButton>
+                        <IconButton
+                            size="small"
+                            sx={{ color: "#4acbf2" }}
+                            title="Sửa"
+                            onClick={function () { handleEditOpen(row); }}
+                        >
+                            <FaEdit />
+                        </IconButton>
+                        <IconButton
+                            size="small"
+                            sx={{ color: "#e74c3c" }}
+                            title="Xóa"
+                            onClick={function () { handleDeleteOpen(row); }}
+                        >
+                            <FaTrash />
+                        </IconButton>
+                    </SoftBox>
+                );
+            },
         },
     ];
 
-    const rows = productsData.content.map((item, idx) => ({
-        stt: (page - 1) * viewCount + idx + 1,
-        id: item.id,
-        maSanPham: item.maSanPham,
-        tenSanPham: item.tenSanPham,
-        giaMin: item.giaMin,
-        giaMax: item.giaMax,
-        status: item.trangThai,
-        quantity: item.quantity,
-        actions: "",
-    }));
+    const rows = productsData.content.map(function (item, idx) {
+        return {
+            stt: page * viewCount + idx + 1,
+            id: item.id,
+            maSanPham: item.maSanPham,
+            tenSanPham: item.tenSanPham,
+            xuatXu: item.xuatXu,
+            giaMin: item.giaMin,
+            giaMax: item.giaMax,
+            status: item.trangThai,
+            quantity: item.quantity,
+            idDanhMuc: item.idDanhMuc,
+            actions: "",
+        };
+    });
 
-    // Pagination rendering
-    const paginationItems = getPaginationItems(page, productsData.totalPages);
+    const paginationItems = getPaginationItems(productsData.number, productsData.totalPages);
 
     return (
         <DashboardLayout>
+            <Notifications
+                open={notification.open}
+                onClose={handleNotificationClose}
+                message={notification.message}
+                severity={notification.severity}
+                autoHideDuration={2500}
+            />
             <DashboardNavbar />
             <SoftBox py={3} sx={{ background: "#F4F6FB", minHeight: "100vh", userSelect: "none" }}>
-                {/* PHẦN 1: Card filter/search/action */}
-                <Card sx={{ p: { xs: 2, md: 3 }, mb: 2 }}>
+                <Card sx={{ padding: { xs: 2, md: 3 }, marginBottom: 2 }}>
                     <SoftBox
                         display="flex"
                         flexDirection={{ xs: "column", md: "row" }}
@@ -268,7 +501,7 @@ function ProductTable() {
                                 fullWidth
                                 placeholder="Tìm kiếm sản phẩm"
                                 value={search}
-                                onChange={(e) => setSearch(e.target.value)}
+                                onChange={handleSearchChange}
                                 startAdornment={
                                     <InputAdornment position="start">
                                         <Icon fontSize="small" sx={{ color: "#868686" }}>
@@ -276,37 +509,28 @@ function ProductTable() {
                                         </Icon>
                                     </InputAdornment>
                                 }
-                                sx={{ background: "#f5f6fa", borderRadius: 2, p: 0.5, color: "#222" }}
+                                sx={{ background: "#f5f6fa", borderRadius: 2, padding: 0.5, color: "#222" }}
                             />
                             <FormControl sx={{ minWidth: 140 }}>
                                 <Select
                                     value={statusFilter}
-                                    onChange={(e) => setStatusFilter(e.target.value)}
+                                    onChange={handleStatusFilterChange}
                                     size="small"
                                     displayEmpty
                                     sx={{ borderRadius: 2, background: "#f5f6fa", height: 40 }}
                                     inputProps={{ "aria-label": "Trạng thái" }}
                                 >
-                                    {statusList.map((status) => (
-                                        <MenuItem key={status} value={status}>
-                                            {status}
-                                        </MenuItem>
-                                    ))}
+                                    {statusList.map(function (status) {
+                                        return (
+                                            <MenuItem key={status} value={status}>
+                                                {status}
+                                            </MenuItem>
+                                        );
+                                    })}
                                 </Select>
                             </FormControl>
                         </SoftBox>
                         <SoftBox display="flex" alignItems="center" gap={1}>
-                            <IconButton onClick={handleMenuOpen} sx={{ color: "#495057" }}>
-                                <Icon fontSize="small">menu</Icon>
-                            </IconButton>
-                            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-                                <MenuItem onClick={handleMenuClose} sx={{ color: "#384D6C" }}>
-                                    <FaQrcode className="me-2" style={{ color: "#0d6efd" }} /> Quét mã
-                                </MenuItem>
-                                <MenuItem onClick={handleMenuClose} sx={{ color: "#384D6C" }}>
-                                    <span style={{ color: "#27ae60", marginRight: 8 }}>📥</span> Export Excel
-                                </MenuItem>
-                            </Menu>
                             <Button
                                 variant="outlined"
                                 size="small"
@@ -324,16 +548,14 @@ function ProductTable() {
                                         color: "#1769aa",
                                     },
                                 }}
-                                onClick={() => navigate("/SanPham/ThemMoi")}
+                                onClick={function () { navigate("/SanPham/ThemMoi"); }}
                             >
                                 Thêm sản phẩm
                             </Button>
                         </SoftBox>
                     </SoftBox>
                 </Card>
-
-                {/* PHẦN 2: Card Table/Pagination */}
-                <Card sx={{ p: { xs: 2, md: 3 }, mb: 2 }}>
+                <Card sx={{ padding: { xs: 2, md: 3 }, marginBottom: 2 }}>
                     <SoftBox>
                         {error ? (
                             <div className="alert alert-danger">{error}</div>
@@ -345,99 +567,81 @@ function ProductTable() {
                         display="flex"
                         justifyContent="space-between"
                         alignItems="center"
-                        mt={2}
+                        marginTop={2}
                         flexWrap="wrap"
                         gap={2}
                     >
                         <SoftBox>
-                            <Button
-                                variant="outlined"
-                                size="small"
-                                sx={{
-                                    mr: 1,
-                                    borderRadius: 2,
-                                    textTransform: "none",
-                                    color: "#49a3f1",
-                                    borderColor: "#49a3f1",
-                                }}
-                                aria-haspopup="true"
-                                aria-controls="view-count-menu"
-                                onClick={(e) => setAnchorEl(e.currentTarget)}
-                            >
-                                Xem {viewCount} sản phẩm
-                            </Button>
-                            <Menu
-                                anchorEl={anchorEl}
-                                id="view-count-menu"
-                                open={Boolean(anchorEl)}
-                                onClose={handleMenuClose}
-                            >
-                                {viewOptions.map((n) => (
-                                    <MenuItem
-                                        key={n}
-                                        onClick={() => {
-                                            setViewCount(n);
-                                            setPage(1);
-                                            handleMenuClose();
-                                        }}
-                                        sx={{ color: "#495057" }}
-                                    >
-                                        Xem {n} sản phẩm
-                                    </MenuItem>
-                                ))}
-                            </Menu>
+                            <FormControl sx={{ minWidth: 120 }}>
+                                <Select
+                                    value={viewCount}
+                                    onChange={handleViewCountChange}
+                                    size="small"
+                                >
+                                    {viewOptions.map(function (number) {
+                                        return (
+                                            <MenuItem key={number} value={number}>
+                                                Xem {number}
+                                            </MenuItem>
+                                        );
+                                    })}
+                                </Select>
+                            </FormControl>
                         </SoftBox>
                         <SoftBox display="flex" alignItems="center" gap={1}>
                             <Button
                                 variant="text"
                                 size="small"
-                                disabled={page === 1}
-                                onClick={() => handlePageChange(page - 1)}
-                                sx={{ color: page === 1 ? "#bdbdbd" : "#49a3f1" }}
+                                disabled={productsData.first}
+                                onClick={function () { handlePageChange(page - 1); }}
+                                sx={{ color: productsData.first ? "#bdbdbd" : "#49a3f1" }}
                             >
                                 Trước
                             </Button>
-                            {paginationItems.map((item, idx) =>
-                                item === "..." ? (
-                                    <Button
-                                        key={`ellipsis-${idx}`}
-                                        variant="text"
-                                        size="small"
-                                        disabled
-                                        sx={{
-                                            minWidth: 32,
-                                            borderRadius: 2,
-                                            color: "#bdbdbd",
-                                            pointerEvents: "none",
-                                            fontWeight: 700,
-                                        }}
-                                    >
-                                        ...
-                                    </Button>
-                                ) : (
+                            {paginationItems.map(function (item, idx) {
+                                if (item === "...") {
+                                    return (
+                                        <Button
+                                            key={"ellipsis-" + idx}
+                                            variant="text"
+                                            size="small"
+                                            disabled
+                                            sx={{
+                                                minWidth: 32,
+                                                borderRadius: 2,
+                                                color: "#bdbdbd",
+                                                pointerEvents: "none",
+                                                fontWeight: 700,
+                                            }}
+                                        >
+                                            ...
+                                        </Button>
+                                    );
+                                }
+                                return (
                                     <Button
                                         key={item}
-                                        variant={page === item ? "contained" : "text"}
-                                        color={page === item ? "info" : "inherit"}
+                                        variant={productsData.number === item ? "contained" : "text"}
+                                        color={productsData.number === item ? "info" : "inherit"}
                                         size="small"
-                                        onClick={() => handlePageChange(item)}
+                                        onClick={function () { handlePageChange(item); }}
                                         sx={{
                                             minWidth: 32,
                                             borderRadius: 2,
-                                            color: page === item ? "#fff" : "#495057",
-                                            background: page === item ? "#49a3f1" : "transparent",
+                                            color: productsData.number === item ? "#fff" : "#495057",
+                                            background: productsData.number === item ? "#49a3f1" : "transparent",
                                         }}
                                     >
-                                        {item}
+                                        {item + 1}
                                     </Button>
-                                )
-                            )}
+                                );
+                            })}
                             <Button
                                 variant="text"
                                 size="small"
-                                disabled={page === productsData.totalPages || productsData.totalPages === 0}
-                                onClick={() => handlePageChange(page + 1)}
-                                sx={{ color: page === productsData.totalPages ? "#bdbdbd" : "#49a3f1" }}
+                                disabled={productsData.last}
+                                onClick={function () { handlePageChange(page + 1); }}
+                                sx={{ color: productsData.last ? "#bdbdbd" : "#49a3f1" }}
                             >
                                 Sau
                             </Button>
@@ -445,6 +649,124 @@ function ProductTable() {
                     </SoftBox>
                 </Card>
             </SoftBox>
+            <Dialog open={editModalOpen} onClose={handleEditClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 4, background: "#fafdff" } }}>
+                <DialogTitle sx={{ fontWeight: 800, fontSize: 26, paddingBottom: 1, color: "#1976d2", letterSpacing: 0.5 }}>
+                    <Box display="flex" alignItems="center" justifyContent="space-between">
+                        <span>Cập nhật sản phẩm</span>
+                        <IconButton
+                            aria-label="close"
+                            onClick={handleEditClose}
+                            sx={{
+                                color: "#eb5757",
+                                marginLeft: 1,
+                                background: "#f5f6fa",
+                                "&:hover": { background: "#ffeaea" }
+                            }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                    </Box>
+                </DialogTitle>
+                <Divider sx={{ marginBottom: 1 }} />
+                <DialogContent sx={{ background: "#f7fbff", paddingBottom: 2 }}>
+                    <Box display="flex" flexDirection="column" gap={2}>
+                        <Box>
+                            <Typography fontWeight={700} marginBottom={0.5} color="#1769aa">Mã sản phẩm <span style={{ color: "#e74c3c" }}>*</span></Typography>
+                            <TextField
+                                value={editForm.maSanPham}
+                                name="maSanPham"
+                                onChange={handleEditChange}
+                                fullWidth
+                                size="small"
+                                placeholder="Nhập mã sản phẩm"
+                                sx={{ background: "#fff", borderRadius: 2 }}
+                            />
+                        </Box>
+                        <Box>
+                            <Typography fontWeight={700} marginBottom={0.5} color="#1769aa">Tên sản phẩm <span style={{ color: "#e74c3c" }}>*</span></Typography>
+                            <TextField
+                                value={editForm.tenSanPham}
+                                name="tenSanPham"
+                                onChange={handleEditChange}
+                                fullWidth
+                                size="small"
+                                placeholder="Nhập tên sản phẩm"
+                                sx={{ background: "#fff", borderRadius: 2 }}
+                            />
+                        </Box>
+                        <Box>
+                            <Typography fontWeight={700} marginBottom={0.5} color="#1769aa">Xuất xứ</Typography>
+                            <FormControl fullWidth size="small" sx={{ background: "#fff", borderRadius: 2 }}>
+                                <Select
+                                    name="xuatXu"
+                                    value={editForm.xuatXu}
+                                    onChange={handleEditChange}
+                                    displayEmpty
+                                    inputProps={{ "aria-label": "Xuất xứ" }}
+                                >
+                                    <MenuItemMui value=""><em>Chọn xuất xứ</em></MenuItemMui>
+                                    {xuatXuList.map(function (xuatXu) {
+                                        return (
+                                            <MenuItemMui key={xuatXu} value={xuatXu}>{xuatXu}</MenuItemMui>
+                                        );
+                                    })}
+                                </Select>
+                            </FormControl>
+                        </Box>
+                        <Box>
+                            <Typography fontWeight={700} marginBottom={0.5} color="#1769aa">Danh mục <span style={{ color: "#e74c3c" }}>*</span></Typography>
+                            <ReactSelect
+                                options={danhMucOptions}
+                                value={getOptionByValue(danhMucOptions, editForm.idDanhMuc)}
+                                onChange={function (option) { setEditForm({ ...editForm, idDanhMuc: option ? option.value : "" }); }}
+                                styles={selectMenuStyle}
+                                isClearable
+                                placeholder="Chọn danh mục"
+                                noOptionsMessage={function () { return "Không có dữ liệu"; }}
+                            />
+                        </Box>
+                        <Box>
+                            <Typography fontWeight={700} marginBottom={0.5} color="#1769aa">Trạng thái</Typography>
+                            <FormControl fullWidth size="small" sx={{ background: "#fff", borderRadius: 2 }}>
+                                <Select
+                                    name="trangThai"
+                                    value={editForm.trangThai}
+                                    onChange={handleEditChange}
+                                >
+                                    <MenuItemMui value={1}>Đang bán</MenuItemMui>
+                                    <MenuItemMui value={0}>Ngừng bán</MenuItemMui>
+                                </Select>
+                            </FormControl>
+                        </Box>
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{ padding: 2, background: "#fafdff", borderBottomLeftRadius: 12, borderBottomRightRadius: 12 }}>
+                    <Button onClick={handleEditClose} disabled={editSaving} color="inherit" variant="outlined" sx={{ borderRadius: 2, fontWeight: 600 }}>
+                        Hủy
+                    </Button>
+                    <Button onClick={handleEditSave} disabled={editSaving} variant="contained" color="info" sx={{ borderRadius: 2, minWidth: 120, fontWeight: 700, fontSize: 17, boxShadow: 3 }} startIcon={editSaving ? <CircularProgress size={18} color="inherit" /> : null}>
+                        Lưu
+                    </Button>
+                </DialogActions>
+            </Dialog>
+            <Dialog open={deleteDialogOpen} onClose={handleDeleteClose} maxWidth="xs" fullWidth>
+                <DialogTitle fontWeight={800} color="#e74c3c" sx={{ fontSize: 22 }}>
+                    Xác nhận xóa sản phẩm
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Bạn có chắc chắn muốn xóa sản phẩm <strong>{deletingProduct && deletingProduct.tenSanPham}</strong> không? Thao tác này không thể hoàn tác.
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ padding: 2 }}>
+                    <Button onClick={handleDeleteClose} disabled={deleteLoading} variant="outlined" color="inherit" sx={{ borderRadius: 2, fontWeight: 600 }}>
+                        Hủy
+                    </Button>
+                    <Button onClick={handleDeleteConfirm} disabled={deleteLoading} variant="contained" color="error" sx={{ borderRadius: 2, minWidth: 110, fontWeight: 700 }} startIcon={deleteLoading ? <CircularProgress size={18} color="inherit" /> : null}>
+                        Xóa
+                    </Button>
+                </DialogActions>
+            </Dialog>
             <Footer />
         </DashboardLayout>
     );

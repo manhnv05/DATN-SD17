@@ -1,47 +1,38 @@
 package com.example.datn.DTO;
 
-
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import com.example.datn.enums.TrangThai;
 
-import java.io.Serializable;
-import java.sql.Date;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class HoaDonDTO {
     private Integer id;
-
-    private Integer idNhanVien;
-
-    private Integer idKhachHang;
-
-    private Integer idPhieuGiamGia;
-
+    private LocalDateTime ngayTao;
+    private LocalDateTime ngayGiaoDuKien;
+    private TrangThai trangThai;
+    private String ghiChu;
     private String maHoaDon;
 
-    private Date ngayTao;
-
-    private Integer tongTien;
-
-    private Integer giamGia;
-
-    private Integer tongTienBanDau;
-
-    private Integer phiVanChuyen;
-
-    private Integer tongTienHoaDon;
-
     private String tenKhachHang;
-
-    private Date ngayDat;
-
-    private Date ngayGiaoDuKien;
-
     private String sdt;
-
     private String diaChi;
+    private String tenSanPham;
 
-    private String ghiChu;
+    private String tenNhanVien;
+//    private String maPhieuGiamGia;
+    private String loaiHoaDon;
+    private List<HoaDonChiTietDTO> danhSachChiTiet;
 
-    private Integer trangThai;
-
+    private Double tongTienBanDau;   // Tổng tiền trước khi giảm giá
+    private Double tongTien;         // Tổng sau giảm giá, chưa bao gồm phí vận chuyển
+    private Double phiVanChuyen;     // Phí vận chuyển
+    private Double tongHoaDon;       // Tổng
 }

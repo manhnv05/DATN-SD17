@@ -25,14 +25,6 @@ public class SanPham {
     @Column(name = "id", nullable = false)
     private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_chat_lieu")
-    private ChatLieu chatLieu;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_thuong_hieu")
-    private ThuongHieu thuongHieu;
-
     @Column(name = "xuat_xu", length = 50)
     private String xuatXu;
 
