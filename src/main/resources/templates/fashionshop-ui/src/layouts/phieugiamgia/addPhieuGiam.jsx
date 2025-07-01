@@ -165,7 +165,7 @@ export default function AddPhieuGiam() {
             toast.success("Thêm voucher thành công!");
             const danhSachEmailKhachHang = tatCaKhachHang.filter(function (khachHang) { return danhSachDaChon.includes(khachHang.id); }).map(function (khachHang) { return khachHang.email; });
             const duLieuGuiMail = {
-                phieuGiamGiaRequest: duLieuGuiLen,
+                phieuGiamGiaVO: duLieuGuiLen,
                 emails: danhSachEmailKhachHang
             };
             sendMail(duLieuGuiMail);
