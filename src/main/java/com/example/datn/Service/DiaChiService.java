@@ -2,16 +2,17 @@ package com.example.datn.Service;
 
 import com.example.datn.DTO.DiaChiDTO;
 import com.example.datn.Entity.DiaChi;
+import com.example.datn.Entity.KhachHang;
 import com.example.datn.Repository.DiaChiRepository;
-import com.example.datn.VO.DiaChiQueryVO;
-import com.example.datn.VO.DiaChiUpdateVO;
+import com.example.datn.Repository.KhachHangRepository;
 import com.example.datn.VO.DiaChiVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 @Service
 public class DiaChiService {
@@ -19,40 +20,35 @@ public class DiaChiService {
     @Autowired
     private DiaChiRepository diaChiRepository;
 
+    @Autowired
+    private KhachHangRepository khachHangRepository;
+
     public Integer save(DiaChiVO vO) {
-        DiaChi bean = new DiaChi();
-        BeanUtils.copyProperties(vO, bean);
-        bean = diaChiRepository.save(bean);
-        return bean.getId();
+        DiaChi diaChi = new DiaChi();
+        BeanUtils.copyProperties(vO, diaChi);
+
+        if (vO.getIdKhachHang() != null) {
+            KhachHang khachHang = khachHangRepository.findById(vO.getIdKhachHang())
+                    .orElseThrow(() -> new NoSuchElementException("Không tìm thấy khách hàng với id: " + vO.getIdKhachHang()));
+            diaChi.setKhachHang(khachHang);
+        } else {
+            diaChi.setKhachHang(null);
+        }
+        diaChi = diaChiRepository.save(diaChi);
+        return diaChi.getId();
     }
 
-    public void delete(Integer id) {
-        diaChiRepository.deleteById(id);
-    }
-
-    public void update(Integer id, DiaChiUpdateVO vO) {
-        DiaChi bean = requireOne(id);
-        BeanUtils.copyProperties(vO, bean);
-        diaChiRepository.save(bean);
-    }
-
-    public DiaChiDTO getById(Integer id) {
-        DiaChi original = requireOne(id);
-        return toDTO(original);
-    }
-
-    public Page<DiaChiDTO> query(DiaChiQueryVO vO) {
-        throw new UnsupportedOperationException();
+    public List<DiaChiDTO> findAll() {
+        List<DiaChi> diaChis = diaChiRepository.findAll();
+        return diaChis.stream().map(this::toDTO).collect(Collectors.toList());
     }
 
     private DiaChiDTO toDTO(DiaChi original) {
         DiaChiDTO bean = new DiaChiDTO();
         BeanUtils.copyProperties(original, bean);
+        if (original.getKhachHang() != null) {
+            bean.setIdKhachHang(original.getKhachHang().getId());
+        }
         return bean;
-    }
-
-    private DiaChi requireOne(Integer id) {
-        return diaChiRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Resource not found: " + id));
     }
 }

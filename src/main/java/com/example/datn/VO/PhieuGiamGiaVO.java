@@ -19,6 +19,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class PhieuGiamGiaVO {
 
+    private Integer id;
+
     @NotBlank(message = "Mã phiếu không để trống")
     String maPhieuGiamGia;
 

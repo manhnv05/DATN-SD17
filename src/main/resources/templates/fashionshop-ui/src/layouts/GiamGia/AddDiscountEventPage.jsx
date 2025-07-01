@@ -1,13 +1,12 @@
-import {
-    Button,
-    Card,
-    Checkbox,
-    InputLabel,
-    MenuItem,
-    Select,
-    Stack,
-    TextField,
-} from "@mui/material";
+import Button from "@mui/material/Button";
+import Card from "@mui/material/Card";
+import Checkbox from "@mui/material/Checkbox";
+import InputLabel from "@mui/material/InputLabel";
+import MenuItem from "@mui/material/MenuItem";
+import Select from "@mui/material/Select";
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
+
 import SoftTypography from "components/SoftTypography";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";

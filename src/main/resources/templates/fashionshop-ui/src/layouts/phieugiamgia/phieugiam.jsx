@@ -1,12 +1,10 @@
-import React from "react";
-import {
-    Card,
-    Alert,
-    FormControl,
-    Select,
-    MenuItem,
-    Button,
-} from "@mui/material";
+import React, { useState, useEffect } from "react";
+import Card from "@mui/material/Card";
+import Alert from "@mui/material/Alert";
+import FormControl from "@mui/material/FormControl";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import Button from "@mui/material/Button";
 import SoftBox from "components/SoftBox";
 import Table from "examples/Tables/Table";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
@@ -18,18 +16,16 @@ import Icon from "@mui/material/Icon";
 import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
 import { FaQrcode, FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
-import { useState, useEffect } from "react";
-import { fetchVouchersAlternative } from "./service/PhieuGiamService";
+import { fetchVouchersAlternative, updateStatustVoucher } from "./service/PhieuGiamService";
 import dayjs, { Dayjs } from 'dayjs';
 import TextField from '@mui/material/TextField';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { useNavigate } from "react-router-dom";
-import { Chip } from '@mui/material';
+import Chip from '@mui/material/Chip';
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import ThreeDotMenu from "components/Voucher/menu";
-import { updateStatustVoucher } from "./service/PhieuGiamService";
 
 // Pagination: đã sửa logic để hiển thị đúng các trang
 function getPaginationItems(current, total) {
@@ -309,7 +305,7 @@ export default function PhieuGiamPage() {
                                 }
                                 sx={{ background: "#f5f6fa", borderRadius: 2, p: 0.5, color: "#222" }}
                             />
-                          
+
                             <FormControl sx={{ minWidth: 140 }}>
                                 <Select
                                     value={statusFilter}

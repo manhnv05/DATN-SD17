@@ -29,6 +29,9 @@ public class NhanVienQueryVO implements Serializable {
 
     private String email;
 
+    private String diaChi;
+
+
     private String tenTaiKhoan;
 
     private String matKhau;
@@ -36,5 +39,9 @@ public class NhanVienQueryVO implements Serializable {
     private String chucVu;
 
     private Integer trangThai;
+
+
+    private Integer page;
+    private Integer size;
 
 }

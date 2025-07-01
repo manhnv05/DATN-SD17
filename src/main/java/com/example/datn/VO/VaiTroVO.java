@@ -10,8 +10,6 @@ import java.io.Serializable;
 @Data
 public class VaiTroVO {
 
-    private Integer id;
-
     private String ten;
 
     private String moTaVaiTro;

@@ -81,7 +81,7 @@ function OrderFilter({ onFilterChange, filterValues, onClearFilters }) {
 
   return (
     <Card>
-      <SoftBox p={3}>
+      <SoftBox p={3} >
         <Grid container spacing={3} alignItems="flex-end">
           {/* Ô Tìm kiếm */}
           <Grid item xs={12} sm={6} md={3}>
@@ -136,7 +136,7 @@ function OrderFilter({ onFilterChange, filterValues, onClearFilters }) {
                 if (selected === "") {
                   return "Tất cả"; // Hiển thị "Tất cả" khi giá trị là rỗng
                 }
-         
+
                 if (selected === "online") {
                   return "Trực tuyến";
                 }
@@ -156,7 +156,7 @@ function OrderFilter({ onFilterChange, filterValues, onClearFilters }) {
           <Grid item xs={12} md={3} sx={{ display: "flex", gap: "10px" }}>
             <SoftButton  variant="outlined"
                                             size="small"
-                                            
+
                                             sx={{
                                                 borderRadius: 2,
                                                 textTransform: "none",

@@ -14,7 +14,7 @@ import Footer from "examples/Footer";
 import Icon from "@mui/material/Icon";
 import Table from "examples/Tables/Table";
 import { useNavigate } from "react-router-dom";
-import { FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { FaPlus, FaEye, FaTrash } from "react-icons/fa";
 import axios from "axios";
 import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
@@ -36,20 +36,32 @@ const statusList = ["Tất cả", "Online", "Offline"];
 const viewOptions = [5, 10, 20];
 
 function getGenderText(gender) {
-    if (gender === "Nam" || gender === 1) return "Nam";
-    if (gender === "Nữ" || gender === 0) return "Nữ";
+    if (gender === "Nam" || gender === 1) {
+        return "Nam";
+    }
+    if (gender === "Nữ" || gender === 0) {
+        return "Nữ";
+    }
     return "Khác";
 }
 
 function getStatusText(status) {
-    if (status === 1 || status === "Online") return "Online";
+    if (status === 1 || status === "Online") {
+        return "Online";
+    }
     return "Offline";
 }
 
 function getPaginationItems(current, total) {
-    if (total <= 4) return Array.from({ length: total }, (_, i) => i);
-    if (current <= 1) return [0, 1, "...", total - 2, total - 1];
-    if (current >= total - 2) return [0, 1, "...", total - 2, total - 1];
+    if (total <= 4) {
+        return Array.from({ length: total }, (_, i) => i);
+    }
+    if (current <= 1) {
+        return [0, 1, "...", total - 2, total - 1];
+    }
+    if (current >= total - 2) {
+        return [0, 1, "...", total - 2, total - 1];
+    }
     return [0, 1, "...", current, "...", total - 2, total - 1];
 }
 
@@ -94,10 +106,11 @@ function CustomerTable() {
         setLoading(true);
         setError(null);
         try {
+            // Build params as KhachHangQueryVO for Spring controller
             let params = {
                 page: page,
                 size: viewCount,
-                search: search,
+                tenKhachHang: search,
             };
             if (genderFilter !== "Tất cả") {
                 params.gioiTinh = genderFilter;
@@ -126,6 +139,7 @@ function CustomerTable() {
 
     useEffect(() => {
         fetchCustomers();
+        // eslint-disable-next-line
     }, [search, genderFilter, statusFilter, viewCount, page]);
 
     function handlePageChange(newPage) {
@@ -162,7 +176,7 @@ function CustomerTable() {
     async function handleEditOpen(customer) {
         setEditingCustomer(customer);
         try {
-            const response = await axios.get("http://localhost:8080/khachHang/" + customer.id);
+            const response = await axios.get(`http://localhost:8080/khachHang/${customer.id}`);
             const detail = response.data;
             setEditForm({
                 maKhachHang: detail.maKhachHang || "",
@@ -213,15 +227,18 @@ function CustomerTable() {
         if (!editingCustomer) return;
         setEditSaving(true);
         try {
-            await axios.put("http://localhost:8080/khachHang/" + editingCustomer.id, {
-                maKhachHang: editForm.maKhachHang,
-                tenKhachHang: editForm.tenKhachHang,
-                email: editForm.email,
-                ngaySinh: editForm.ngaySinh,
-                gioiTinh: editForm.gioiTinh,
-                trangThai: editForm.trangThai,
-                anh: editForm.anh,
-            });
+            await axios.put(
+                `http://localhost:8080/khachHang/${editingCustomer.id}`,
+                {
+                    maKhachHang: editForm.maKhachHang,
+                    tenKhachHang: editForm.tenKhachHang,
+                    email: editForm.email,
+                    ngaySinh: editForm.ngaySinh,
+                    gioiTinh: editForm.gioiTinh,
+                    trangThai: editForm.trangThai,
+                    anh: editForm.anh,
+                }
+            );
             handleEditClose();
             setNotification({
                 open: true,
@@ -254,7 +271,7 @@ function CustomerTable() {
         if (!deletingCustomer) return;
         setDeleteLoading(true);
         try {
-            await axios.delete("http://localhost:8080/khachHang/" + deletingCustomer.id);
+            await axios.delete(`http://localhost:8080/khachHang/${deletingCustomer.id}`);
             handleDeleteClose();
             setNotification({
                 open: true,
@@ -291,12 +308,14 @@ function CustomerTable() {
             label: "Khách hàng",
             align: "left",
             width: "200px",
-            render: (value, row) => (
-                <Box display="flex" alignItems="center" gap={1.5}>
-                    <Avatar src={row.anh || "/default-avatar.png"} alt={value} />
-                    <span>{value}</span>
-                </Box>
-            ),
+            render: function (value, row) {
+                return (
+                    <Box display="flex" alignItems="center" gap={1.5}>
+                        <Avatar src={row.anh || "/default-avatar.png"} alt={value} />
+                        <span>{value}</span>
+                    </Box>
+                );
+            },
         },
         {
             name: "email",
@@ -309,85 +328,84 @@ function CustomerTable() {
             label: "Ngày sinh",
             align: "center",
             width: "120px",
-            render: (value) => value ? dayjs(value).format("DD/MM/YYYY") : "",
+            render: function (value) { return value ? dayjs(value).format("DD/MM/YYYY") : ""; },
         },
         {
             name: "gioiTinh",
             label: "Giới tính",
             align: "center",
             width: "90px",
-            render: (value) => getGenderText(value),
+            render: function (value) { return getGenderText(value); },
         },
         {
             name: "trangThai",
             label: "Trạng thái",
             align: "center",
             width: "110px",
-            render: (value) => (
-                <span
-                    style={{
-                        background: getStatusText(value) === "Online" ? "#e6f4ea" : "#f4f6fb",
-                        color: getStatusText(value) === "Online" ? "#219653" : "#bdbdbd",
-                        border: "1px solid " + (getStatusText(value) === "Online" ? "#219653" : "#bdbdbd"),
-                        borderRadius: 6,
-                        fontWeight: 500,
-                        padding: "2px 12px",
-                        fontSize: 13,
-                        display: "inline-block",
-                    }}
-                >
-                    {getStatusText(value)}
-                </span>
-            ),
+            render: function (value) {
+                return (
+                    <span
+                        style={{
+                            background: getStatusText(value) === "Online" ? "#e6f4ea" : "#f4f6fb",
+                            color: getStatusText(value) === "Online" ? "#219653" : "#bdbdbd",
+                            border: "1px solid " + (getStatusText(value) === "Online" ? "#219653" : "#bdbdbd"),
+                            borderRadius: 6,
+                            fontWeight: 500,
+                            padding: "2px 12px",
+                            fontSize: 13,
+                            display: "inline-block",
+                        }}
+                    >
+                        {getStatusText(value)}
+                    </span>
+                );
+            },
         },
         {
             name: "actions",
             label: "Thao tác",
             align: "center",
             width: "110px",
-            render: (_, row) => (
-                <SoftBox display="flex" gap={0.5} justifyContent="center">
-                    <IconButton
-                        size="small"
-                        sx={{ color: "#4acbf2" }}
-                        title="Chi tiết"
-                        onClick={() => navigate("/KhachHang/ChiTiet/" + row.id)}
-                    >
-                        <FaEye />
-                    </IconButton>
-                    <IconButton
-                        size="small"
-                        sx={{ color: "#4acbf2" }}
-                        title="Sửa"
-                        onClick={() => handleEditOpen(row)}
-                    >
-                        <FaEdit />
-                    </IconButton>
-                    <IconButton
-                        size="small"
-                        sx={{ color: "#e74c3c" }}
-                        title="Xóa"
-                        onClick={() => handleDeleteOpen(row)}
-                    >
-                        <FaTrash />
-                    </IconButton>
-                </SoftBox>
-            ),
+            render: function (_, row) {
+                return (
+                    <SoftBox display="flex" gap={0.5} justifyContent="center">
+                        <IconButton
+                            size="small"
+                            sx={{ color: "#4acbf2" }}
+                            title="Chi tiết"
+                            onClick={function () { navigate("/KhachHang/ChiTiet/" + row.id); }}
+                        >
+                            <FaEye />
+                        </IconButton>
+                        {/**/}
+                        <IconButton
+                            size="small"
+                            sx={{ color: "#e74c3c" }}
+                            title="Xóa"
+                            onClick={function () { handleDeleteOpen(row); }}
+                        >
+                            <FaTrash />
+                        </IconButton>
+                    </SoftBox>
+                );
+            },
         },
     ];
 
-    const rows = customersData.content.map((item, idx) => ({
-        stt: page * viewCount + idx + 1,
-        id: item.id,
-        maKhachHang: item.maKhachHang,
-        tenKhachHang: item.tenKhachHang,
-        email: item.email,
-        ngaySinh: item.ngaySinh,
-        gioiTinh: item.gioiTinh,
-        trangThai: item.trangThai,
-        anh: item.anh,
-        actions: "",
-    }));
+    const rows = customersData.content.map(function (item, idx) {
+        return {
+            stt: page * viewCount + idx + 1,
+            id: item.id,
+            maKhachHang: item.maKhachHang,
+            tenKhachHang: item.tenKhachHang,
+            email: item.email,
+            ngaySinh: item.ngaySinh,
+            gioiTinh: item.gioiTinh,
+            trangThai: item.trangThai,
+            anh: item.anh,
+            actions: "",
+        };
+    });
 
     const paginationItems = getPaginationItems(customersData.number, customersData.totalPages);
 
@@ -434,11 +452,13 @@ function CustomerTable() {
                                     sx={{ borderRadius: 2, background: "#f5f6fa", height: 40 }}
                                     inputProps={{ "aria-label": "Giới tính" }}
                                 >
-                                    {genderList.map((g) => (
-                                        <MenuItem key={g} value={g}>
-                                            {g}
-                                        </MenuItem>
-                                    ))}
+                                    {genderList.map(function (g) {
+                                        return (
+                                            <MenuItem key={g} value={g}>
+                                                {g}
+                                            </MenuItem>
+                                        );
+                                    })}
                                 </Select>
                             </FormControl>
                             <FormControl sx={{ minWidth: 120 }}>
@@ -450,11 +470,13 @@ function CustomerTable() {
                                     sx={{ borderRadius: 2, background: "#f5f6fa", height: 40 }}
                                     inputProps={{ "aria-label": "Trạng thái" }}
                                 >
-                                    {statusList.map((s) => (
-                                        <MenuItem key={s} value={s}>
-                                            {s}
-                                        </MenuItem>
-                                    ))}
+                                    {statusList.map(function (s) {
+                                        return (
+                                            <MenuItem key={s} value={s}>
+                                                {s}
+                                            </MenuItem>
+                                        );
+                                    })}
                                 </Select>
                             </FormControl>
                         </SoftBox>
@@ -476,7 +498,7 @@ function CustomerTable() {
                                         color: "#1769aa",
                                     },
                                 }}
-                                onClick={() => navigate("/KhachHang/ThemMoi")}
+                                onClick={function () { navigate("/khachhang/add"); }}
                             >
                                 Thêm khách hàng
                             </Button>
@@ -506,11 +528,13 @@ function CustomerTable() {
                                     onChange={handleViewCountChange}
                                     size="small"
                                 >
-                                    {viewOptions.map((number) => (
-                                        <MenuItem key={number} value={number}>
-                                            Xem {number}
-                                        </MenuItem>
-                                    ))}
+                                    {viewOptions.map(function (number) {
+                                        return (
+                                            <MenuItem key={number} value={number}>
+                                                Xem {number}
+                                            </MenuItem>
+                                        );
+                                    })}
                                 </Select>
                             </FormControl>
                         </SoftBox>
@@ -519,12 +543,12 @@ function CustomerTable() {
                                 variant="text"
                                 size="small"
                                 disabled={customersData.first}
-                                onClick={() => handlePageChange(page - 1)}
+                                onClick={function () { handlePageChange(page - 1); }}
                                 sx={{ color: customersData.first ? "#bdbdbd" : "#49a3f1" }}
                             >
                                 Trước
                             </Button>
-                            {paginationItems.map((item, idx) => {
+                            {paginationItems.map(function (item, idx) {
                                 if (item === "...") {
                                     return (
                                         <Button
@@ -550,7 +574,7 @@ function CustomerTable() {
                                         variant={customersData.number === item ? "contained" : "text"}
                                         color={customersData.number === item ? "info" : "inherit"}
                                         size="small"
-                                        onClick={() => handlePageChange(item)}
+                                        onClick={function () { handlePageChange(item); }}
                                         sx={{
                                             minWidth: 32,
                                             borderRadius: 2,
@@ -566,7 +590,7 @@ function CustomerTable() {
                                 variant="text"
                                 size="small"
                                 disabled={customersData.last}
-                                onClick={() => handlePageChange(page + 1)}
+                                onClick={function () { handlePageChange(page + 1); }}
                                 sx={{ color: customersData.last ? "#bdbdbd" : "#49a3f1" }}
                             >
                                 Sau

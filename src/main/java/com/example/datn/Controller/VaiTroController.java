@@ -7,49 +7,60 @@ import com.example.datn.VO.VaiTroUpdateVO;
 import com.example.datn.VO.VaiTroVO;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Validated
 @RestController
 @RequestMapping("/vaiTro")
 public class VaiTroController {
 
-    @Autowired
-    private VaiTroService vaiTroService;
+    private final VaiTroService vaiTroService;
+
+    public VaiTroController(VaiTroService vaiTroService) {
+        this.vaiTroService = vaiTroService;
+    }
 
     @PostMapping
-    public String save(@Valid @RequestBody VaiTroVO vO) {
-        return vaiTroService.save(vO).toString();
+    public String save(@Valid @RequestBody VaiTroVO vaiTroVO) {
+        return vaiTroService.save(vaiTroVO).toString();
+    }
+
+    @PostMapping("/add")
+    public VaiTroDTO addRole(@Valid @RequestBody VaiTroVO vaiTroVO) {
+        return vaiTroService.addRole(vaiTroVO);
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@Valid @NotNull @PathVariable("id") Integer id) {
+    public void delete(@PathVariable("id") @NotNull Integer id) {
         vaiTroService.delete(id);
     }
 
     @PutMapping("/{id}")
-    public void update(@Valid @NotNull @PathVariable("id") Integer id,
-                       @Valid @RequestBody VaiTroUpdateVO vO) {
-        vaiTroService.update(id, vO);
+    public void update(@PathVariable("id") @NotNull Integer id,
+                       @Valid @RequestBody VaiTroUpdateVO vaiTroUpdateVO) {
+        vaiTroService.update(id, vaiTroUpdateVO);
     }
 
     @GetMapping("/{id}")
-    public VaiTroDTO getById(@Valid @NotNull @PathVariable("id") Integer id) {
+    public VaiTroDTO getById(@PathVariable("id") @NotNull Integer id) {
         return vaiTroService.getById(id);
     }
 
     @GetMapping
-    public Page<VaiTroDTO> query(@Valid VaiTroQueryVO vO) {
-        return vaiTroService.query(vO);
+    public Page<VaiTroDTO> query(
+            @Valid VaiTroQueryVO vaiTroQueryVO,
+            Pageable pageable
+    ) {
+        return vaiTroService.query(vaiTroQueryVO, pageable);
+    }
+
+    @GetMapping("/list")
+    public List<VaiTroDTO> getAllVaiTro() {
+        return vaiTroService.getAllVaiTro();
     }
 }

@@ -10,7 +10,6 @@ import java.sql.Date;
 @Data
 public class NhanVienVO {
 
-    private Integer id;
 
     private Integer idVaiTro;
 
@@ -29,6 +28,8 @@ public class NhanVienVO {
     private String canCuocCongDan;
 
     private String email;
+
+    private String diaChi;
 
     private String tenTaiKhoan;
 

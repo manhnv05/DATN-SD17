@@ -7,48 +7,77 @@ import com.example.datn.VO.VaiTroQueryVO;
 import com.example.datn.VO.VaiTroUpdateVO;
 import com.example.datn.VO.VaiTroVO;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 @Service
 public class VaiTroService {
 
-    @Autowired
-    private VaiTroRepository vaiTroRepository;
+    private final VaiTroRepository vaiTroRepository;
 
-    public Integer save(VaiTroVO vO) {
-        VaiTro bean = new VaiTro();
-        BeanUtils.copyProperties(vO, bean);
-        bean = vaiTroRepository.save(bean);
-        return bean.getId();
+    public VaiTroService(VaiTroRepository vaiTroRepository) {
+        this.vaiTroRepository = vaiTroRepository;
     }
 
+    @Transactional
+    public Integer save(VaiTroVO vaiTroVO) {
+        VaiTro vaiTro = new VaiTro();
+        BeanUtils.copyProperties(vaiTroVO, vaiTro);
+        vaiTro = vaiTroRepository.save(vaiTro);
+        return vaiTro.getId();
+    }
+
+    @Transactional
+    public VaiTroDTO addRole(VaiTroVO vaiTroVO) {
+        VaiTro vaiTro = new VaiTro();
+        BeanUtils.copyProperties(vaiTroVO, vaiTro);
+        VaiTro savedVaiTro = vaiTroRepository.save(vaiTro);
+        return toDTO(savedVaiTro);
+    }
+
+    @Transactional
     public void delete(Integer id) {
-        vaiTroRepository.deleteById(id);
+        VaiTro vaiTro = requireOne(id); // Kiểm tra tồn tại trước khi xóa
+        vaiTroRepository.delete(vaiTro);
     }
 
-    public void update(Integer id, VaiTroUpdateVO vO) {
-        VaiTro bean = requireOne(id);
-        BeanUtils.copyProperties(vO, bean);
-        vaiTroRepository.save(bean);
+    @Transactional
+    public void update(Integer id, VaiTroUpdateVO vaiTroUpdateVO) {
+        VaiTro vaiTro = requireOne(id);
+        BeanUtils.copyProperties(vaiTroUpdateVO, vaiTro);
+        vaiTroRepository.save(vaiTro);
     }
 
     public VaiTroDTO getById(Integer id) {
-        VaiTro original = requireOne(id);
-        return toDTO(original);
+        VaiTro vaiTro = requireOne(id);
+        return toDTO(vaiTro);
     }
 
-    public Page<VaiTroDTO> query(VaiTroQueryVO vO) {
-        throw new UnsupportedOperationException();
+    public Page<VaiTroDTO> query(VaiTroQueryVO vaiTroQueryVO, Pageable pageable) {
+        // Có thể bổ sung custom query theo vaiTroQueryVO nếu cần
+        Page<VaiTro> page = vaiTroRepository.findAll(pageable);
+        List<VaiTroDTO> vaiTroDTOList = page.getContent().stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+        return new PageImpl<>(vaiTroDTOList, pageable, page.getTotalElements());
     }
 
-    private VaiTroDTO toDTO(VaiTro original) {
-        VaiTroDTO bean = new VaiTroDTO();
-        BeanUtils.copyProperties(original, bean);
-        return bean;
+    public List<VaiTroDTO> getAllVaiTro() {
+        List<VaiTro> vaiTroList = vaiTroRepository.findAll();
+        return vaiTroList.stream().map(this::toDTO).collect(Collectors.toList());
+    }
+
+    private VaiTroDTO toDTO(VaiTro vaiTro) {
+        VaiTroDTO vaiTroDTO = new VaiTroDTO();
+        BeanUtils.copyProperties(vaiTro, vaiTroDTO);
+        return vaiTroDTO;
     }
 
     private VaiTro requireOne(Integer id) {

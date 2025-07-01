@@ -1,134 +1,117 @@
 import Input from "@mui/material/Input";
 import { useState, useEffect } from "react";
-import dayjs from 'dayjs';
-import {
-    Card,
-    FormControl,
-    Select,
-    MenuItem,
-    Button,
-    Checkbox,
-    Menu,
-    IconButton,
-    InputAdornment,
-    Icon,
-    TextField,
-    Box,
-} from "@mui/material";
+import dayjs from "dayjs";
+import Card from "@mui/material/Card";
+import FormControl from "@mui/material/FormControl";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import Button from "@mui/material/Button";
+import Checkbox from "@mui/material/Checkbox";
+import Menu from "@mui/material/Menu";
+import IconButton from "@mui/material/IconButton";
+import InputAdornment from "@mui/material/InputAdornment";
+import Icon from "@mui/material/Icon";
+import TextField from "@mui/material/TextField";
+import Box from "@mui/material/Box";
 import SoftBox from "components/SoftBox";
 import Table from "examples/Tables/Table";
-import { useNavigate } from 'react-router-dom';
-import { useForm } from "react-hook-form";
-import { Controller } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
+import { useForm, Controller } from "react-hook-form";
 import { addVouchers, sendMail } from "./service/PhieuGiamService";
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from "react-toastify";
 import { fetchKhachHang } from "./service/KhachHangService";
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
-import Radio from '@mui/material/Radio';
-import RadioGroup from '@mui/material/RadioGroup';
-import FormControlLabel from '@mui/material/FormControlLabel';
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
+import Radio from "@mui/material/Radio";
+import RadioGroup from "@mui/material/RadioGroup";
+import FormControlLabel from "@mui/material/FormControlLabel";
 import { addPDDKH } from "./service/PhieuGiamGiaKhachHangService";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
-import { ToastContainer } from 'react-toastify';
 
-// Pagination logic function
-function getPaginationItems(current, total) {
-    if (total <= 7) {
-        return Array.from({ length: total }, (_, i) => i + 1);
+function getPaginationItems(currentPage, totalPages) {
+    if (totalPages <= 7) {
+        return Array.from({ length: totalPages }, function (_, index) { return index + 1; });
     }
-
-    if (current <= 3) {
-        return [1, 2, 3, 4, "...", total - 1, total];
+    if (currentPage <= 3) {
+        return [1, 2, 3, 4, "...", totalPages - 1, totalPages];
     }
-
-    if (current >= total - 2) {
-        return [1, 2, "...", total - 3, total - 2, total - 1, total];
+    if (currentPage >= totalPages - 2) {
+        return [1, 2, "...", totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
     }
-
-    return [1, 2, "...", current - 1, current, current + 1, "...", total - 1, total];
+    return [1, 2, "...", currentPage - 1, currentPage, currentPage + 1, "...", totalPages - 1, totalPages];
 }
 
 export default function AddPhieuGiam() {
-    const [statusPhieu, setStatusPhieu] = useState(0)
-    const [valueInput, setvalueInput] = useState("")
-    const [statusLoaiPhieu, setStatusLoaiPhieu] = useState(0)
-    const [totalPage, setTotalPage] = useState(0)
-    const [khachHangs, setKhachHang] = useState([])
-    const [allKhachHang, setAllKhachHang] = useState([])
-    const [page, setPage] = useState(1)
-    const [viewCount, setViewCount] = useState(5)
-    const [selectedRows, setSelectedRows] = useState([]);
+    const [statusPhieu, setStatusPhieu] = useState(0);
+    const [giaTriGiam, setGiaTriGiam] = useState("");
+    const [loaiPhieu, setLoaiPhieu] = useState(0);
+    const [tongSoTrang, setTongSoTrang] = useState(0);
+    const [danhSachKhachHang, setDanhSachKhachHang] = useState([]);
+    const [tatCaKhachHang, setTatCaKhachHang] = useState([]);
+    const [soTrangHienTai, setSoTrangHienTai] = useState(1);
+    const [soLuongXem, setSoLuongXem] = useState(5);
+    const [danhSachDaChon, setDanhSachDaChon] = useState([]);
     const [anchorEl, setAnchorEl] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [searchKH, setSearchKH] = useState("");
-    // const [rows, setRows] = useState([]);
+    const [dangTaiDuLieu, setDangTaiDuLieu] = useState(false);
+    const [timKiemKhachHang, setTimKiemKhachHang] = useState("");
 
-    const navigate = useNavigate();
+    const navigation = useNavigate();
 
-    // Sửa logic kiểm tra allChecked
-    const allChecked = khachHangs?.length > 0 &&
-        khachHangs.every(kh => selectedRows.includes(kh.id));
+    const tatCaDuocChon = danhSachKhachHang.length > 0 &&
+        danhSachKhachHang.every(function (khachHang) { return danhSachDaChon.includes(khachHang.id); });
 
-    const viewOptions = [5, 10, 20];
+    const cacLuaChonXem = [5, 10, 20];
 
-    // Menu actions
-    const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
-    const handleMenuClose = () => setAnchorEl(null);
-
-    // Sửa hàm handleSelectAll
-    const handleSelectAll = () => {
-        if (allChecked) {
-            // Bỏ chọn tất cả khách hàng trên trang hiện tại
-            const currentPageIds = khachHangs.map(kh => kh.id);
-            setSelectedRows(selectedRows.filter(id => !currentPageIds.includes(id)));
+    function moMenu(event) {
+        setAnchorEl(event.currentTarget);
+    }
+    function dongMenu() {
+        setAnchorEl(null);
+    }
+    function chonTatCaKhachHangHienTai() {
+        if (tatCaDuocChon) {
+            const cacIdTrangHienTai = danhSachKhachHang.map(function (khachHang) { return khachHang.id; });
+            setDanhSachDaChon(danhSachDaChon.filter(function (id) { return !cacIdTrangHienTai.includes(id); }));
         } else {
-            // Chọn tất cả khách hàng trên trang hiện tại (thêm vào selectedRows)
-            const currentPageIds = khachHangs.map(kh => kh.id);
-            const newSelected = [...selectedRows];
-
-            currentPageIds.forEach(id => {
-                if (!newSelected.includes(id)) {
-                    newSelected.push(id);
+            const cacIdTrangHienTai = danhSachKhachHang.map(function (khachHang) { return khachHang.id; });
+            const danhSachMoi = [].concat(danhSachDaChon);
+            cacIdTrangHienTai.forEach(function (id) {
+                if (!danhSachMoi.includes(id)) {
+                    danhSachMoi.push(id);
                 }
             });
-
-            setSelectedRows(newSelected);
+            setDanhSachDaChon(danhSachMoi);
         }
-    };
-
-    // Thêm hàm chọn tất cả khách hàng (toàn bộ database)
-    const handleSelectAllCustomers = () => {
-        if (selectedRows.length === allKhachHang.length) {
-            setSelectedRows([]);
+    }
+    function chonTatCaKhachHang() {
+        if (danhSachDaChon.length === tatCaKhachHang.length) {
+            setDanhSachDaChon([]);
         } else {
-            const allIds = allKhachHang.map(kh => kh.id);
-            setSelectedRows(allIds);
+            const toanBoId = tatCaKhachHang.map(function (khachHang) { return khachHang.id; });
+            setDanhSachDaChon(toanBoId);
         }
-    };
-
-    const handleSelectRow = (id) => {
-        if (selectedRows.includes(id)) {
-            setSelectedRows(selectedRows.filter(i => i !== id));
+    }
+    function chonKhachHang(id) {
+        if (danhSachDaChon.includes(id)) {
+            setDanhSachDaChon(danhSachDaChon.filter(function (i) { return i !== id; }));
         } else {
-            setSelectedRows([...selectedRows, id]);
+            setDanhSachDaChon([].concat(danhSachDaChon, [id]));
         }
-    };
-
-    const handlePageChange = (newPage) => {
+    }
+    function thayDoiTrangMoi(trangMoi) {
         if (
-            newPage >= 1 &&
-            newPage <= totalPage &&
-            newPage !== page &&
-            typeof newPage === "number"
+            trangMoi >= 1 &&
+            trangMoi <= tongSoTrang &&
+            trangMoi !== soTrangHienTai &&
+            typeof trangMoi === "number"
         ) {
-            setPage(newPage);
-            loadKhachHang(newPage - 1);
+            setSoTrangHienTai(trangMoi);
+            taiDuLieuKhachHang(trangMoi - 1);
         }
-    };
+    }
 
     const {
         register,
@@ -137,164 +120,169 @@ export default function AddPhieuGiam() {
         setValue,
     } = useForm();
 
-    const onSubmit = async (data) => {
-        const requiredFields = [
+    async function onSubmit(duLieuNhapVao) {
+        const cacTruongBatBuoc = [
             { field: "maPhieuGiamGia", message: "Mã phiếu không để trống" },
             { field: "tenPhieu", message: "Tên phiếu không để trống" },
             { field: "dieuKienGiam", message: "Điều kiện giảm không để trống" },
             { field: "soLuong", message: "Số lượng không để trống" },
+            { field: "giamToiDa", message: "Giảm tối đa không để trống" },
+            { field: "loaiPhieu", message: "Loại phiếu không để trống" },
+            { field: "ngayBatDau", message: "Ngày bắt đầu không để trống" },
+            { field: "ngayKetThuc", message: "Ngày kết thúc không để trống" }
         ];
-        data.ngayBatDau = dayjs(data.ngayBatDau).format('YYYY-MM-DDTHH:mm:ss');
-        data.ngayKetThuc = dayjs(data.ngayKetThuc).format('YYYY-MM-DDTHH:mm:ss');
-        data.trangThai = 2
-
-        const listKachHang = []
-        allKhachHang.filter((khachhang) => selectedRows.includes(khachhang.id)).map((khachhang) => (
-            listKachHang.push(khachhang.email)
-        ))
-        const datasendMail = {
-            phieuGiamGiaRequest: data,
-            emails: listKachHang
-        }
-        for (const item of requiredFields) {
-            if (!data[item.field]) {
-                toast.error(item.message);
+        for (let i = 0; i < cacTruongBatBuoc.length; i++) {
+            const truong = cacTruongBatBuoc[i].field;
+            if (!duLieuNhapVao[truong] && duLieuNhapVao[truong] !== 0) {
+                toast.error(cacTruongBatBuoc[i].message);
                 return;
             }
         }
-        if (!data.soTienGiam && !data.phamTramGiamGia) {
-            toast.error("Giá trị không để trống")
-            return
+        if (!duLieuNhapVao.soTienGiam && !duLieuNhapVao.phamTramGiamGia) {
+            toast.error("Giá trị không để trống");
+            return;
         }
-        // const result = await addVouchers(data);
-        toast.success("Thêm voucher thành công!");
-        if (result) {
-            sendMail(datasendMail)
-            const dataPDDKH = selectedRows.flatMap((data) => [
-                {
-                    phieuGiamGia: result.data.id,
-                    khachHang: data,
+
+        const duLieuGuiLen = {
+            maPhieuGiamGia: duLieuNhapVao.maPhieuGiamGia,
+            dieuKienGiam: duLieuNhapVao.dieuKienGiam.toString(),
+            tenPhieu: duLieuNhapVao.tenPhieu,
+            loaiPhieu: Number(duLieuNhapVao.loaiPhieu),
+            phamTramGiamGia: statusPhieu === 1 ? Number(giaTriGiam) : null,
+            soTienGiam: statusPhieu === 0 ? Number(giaTriGiam) : null,
+            giamToiDa: duLieuNhapVao.giamToiDa ? Number(duLieuNhapVao.giamToiDa) : 0,
+            ngayBatDau: dayjs(duLieuNhapVao.ngayBatDau).format("YYYY-MM-DDTHH:mm:ss"),
+            ngayKetThuc: dayjs(duLieuNhapVao.ngayKetThuc).format("YYYY-MM-DDTHH:mm:ss"),
+            ngayTao: null,
+            ngayCapNhat: null,
+            ghiChu: duLieuNhapVao.ghiChu || "",
+            trangThai: 2,
+            soLuong: duLieuNhapVao.soLuong ? Number(duLieuNhapVao.soLuong) : 0
+        };
+
+        const ketQua = await addVouchers(duLieuGuiLen);
+        if (ketQua) {
+            toast.success("Thêm voucher thành công!");
+            const danhSachEmailKhachHang = tatCaKhachHang.filter(function (khachHang) { return danhSachDaChon.includes(khachHang.id); }).map(function (khachHang) { return khachHang.email; });
+            const duLieuGuiMail = {
+                phieuGiamGiaRequest: duLieuGuiLen,
+                emails: danhSachEmailKhachHang
+            };
+            sendMail(duLieuGuiMail);
+            const danhSachPhieuGiamGiaKhachHang = danhSachDaChon.map(function (idKhachHang) {
+                return {
+                    phieuGiamGia: ketQua.data.id,
+                    khachHang: idKhachHang,
                     trangThai: 1
-                }]);
-            if (dataPDDKH.length !== 0) {
-                await addPDDKH(dataPDDKH)
+                };
+            });
+            if (danhSachPhieuGiamGiaKhachHang.length !== 0) {
+                await addPDDKH(danhSachPhieuGiamGiaKhachHang);
             }
-            navigate("/PhieuGiam");
+            navigation("/PhieuGiam");
         } else {
             toast.error("Thêm voucher thất bại");
         }
-    };
+    }
 
-    const loadKhachHang = async (pageIndex) => {
-        setLoading(true);
+    async function taiDuLieuKhachHang(soTrang) {
+        setDangTaiDuLieu(true);
         try {
-            const data = await fetchKhachHang(pageIndex, viewCount, searchKH);
-            setKhachHang(data.data.content);
-            setTotalPage(data.data.totalPages);
-            const all = await fetchKhachHang(0, 999);
-            setAllKhachHang(all.data.content);
+            const duLieu = await fetchKhachHang(soTrang, soLuongXem, timKiemKhachHang);
+            setDanhSachKhachHang(duLieu.data.content);
+            setTongSoTrang(duLieu.data.totalPages);
+            const tatCa = await fetchKhachHang(0, 999);
+            setTatCaKhachHang(tatCa.data.content);
         } catch (error) {
-            console.error("Error loading customers:", error);
+            console.error("Lỗi khi tải danh sách khách hàng:", error);
             toast.error("Lỗi khi tải danh sách khách hàng");
         } finally {
-            setLoading(false);
+            setDangTaiDuLieu(false);
         }
     }
 
-    useEffect(() => {
+    useEffect(function () {
+        taiDuLieuKhachHang(soTrangHienTai - 1);
+    }, [soTrangHienTai, soLuongXem, timKiemKhachHang]);
 
-        loadKhachHang(page - 1);
-
-    }, [page, viewCount, searchKH]);
-
-    function changeInput(value) {
-        setStatusPhieu(value.target.value)
-        setvalueInput("")
-        if (value.target.value == 0) {
-            setValue('phamTramGiamGia', "");
-        }
-        else {
-            setValue('soTienGiam', "")
+    function thayDoiLoaiGiamGia(event) {
+        setStatusPhieu(event.target.value);
+        setGiaTriGiam("");
+        if (event.target.value == 0) {
+            setValue("phamTramGiamGia", "");
+        } else {
+            setValue("soTienGiam", "");
         }
     }
-
-    function changeInputValue(e) {
-        let newValue = e.target.value;
-
+    function thayDoiGiaTriGiam(event) {
+        let giaTriMoi = event.target.value;
         if (statusPhieu === 1) {
-            let numericValue = Number(newValue);
-            if (numericValue > 100) {
-                newValue = 100;
+            let giaTriSo = Number(giaTriMoi);
+            if (giaTriSo > 100) {
+                giaTriMoi = 100;
             }
         }
-
-        setvalueInput(newValue)
+        setGiaTriGiam(giaTriMoi);
     }
-
-    const handleChangeRadio = (event) => {
-        const value = event.target.value;
-        setStatusPhieu(value === "0" ? 0 : 1);
-    };
-
-    // Function để render checkbox
-    const renderCheckbox = (row) => {
+    function thayDoiRadioLoaiGiamGia(event) {
+        const giaTri = event.target.value;
+        setStatusPhieu(giaTri === "0" ? 0 : 1);
+    }
+    function renderCheckbox(row) {
         return (
             <Checkbox
                 checked={row.selected}
-                onChange={() => handleSelectRow(row.id)}
+                onChange={function () { chonKhachHang(row.id); }}
                 size="small"
             />
         );
-    };
+    }
 
-    // Prepare table data với checkbox được render sẵn
-    const rows = khachHangs?.map((khachHang, index) => ({
-        id: khachHang.id,
-        checkbox: renderCheckbox({
+    const danhSachDong = danhSachKhachHang.map(function (khachHang, chiSo) {
+        return {
             id: khachHang.id,
-            selected: selectedRows.includes(khachHang.id)
-        }),
-        stt: (page - 1) * viewCount + index + 1,
-        tenKhachHang: khachHang.tenKhachHang,
-        email: khachHang.email,
-        selected: selectedRows.includes(khachHang.id)
-    })) || [];
+            checkbox: renderCheckbox({
+                id: khachHang.id,
+                selected: danhSachDaChon.includes(khachHang.id)
+            }),
+            stt: (soTrangHienTai - 1) * soLuongXem + chiSo + 1,
+            tenKhachHang: khachHang.tenKhachHang,
+            email: khachHang.email,
+            selected: danhSachDaChon.includes(khachHang.id)
+        };
+    }) || [];
 
-    // Table columns
-    const columns = [
+    const danhSachCot = [
         {
             name: "checkbox",
             label: "",
             align: "center",
-            width: "50px",
+            width: "50px"
         },
         { name: "stt", label: "STT", align: "center", width: "60px" },
         { name: "tenKhachHang", label: "Tên khách hàng", align: "left" },
-        { name: "email", label: "Email", align: "left" },
+        { name: "email", label: "Email", align: "left" }
     ];
 
-    // Pagination rendering
-    const paginationItems = getPaginationItems(page, totalPage);
+    const cacPhanTrang = getPaginationItems(soTrangHienTai, tongSoTrang);
 
-    // Thêm biến để hiển thị số lượng đã chọn
-    const selectedCount = selectedRows.length;
-    const totalCustomers = allKhachHang.length;
+    const soLuongDaChon = danhSachDaChon.length;
+    const tongSoKhachHang = tatCaKhachHang.length;
 
     return (
         <DashboardLayout>
             <DashboardNavbar />
             <SoftBox py={3} sx={{ background: "#F4F6FB", minHeight: "100vh", userSelect: "none" }}>
-                <SoftBox sx={{ fontSize: "14px", fontWeight: "bold", mb: 2, px: 3 }}>
+                <SoftBox sx={{ fontSize: "14px", fontWeight: "bold", marginBottom: 2, paddingLeft: 3, paddingRight: 3 }}>
                     Phiếu giảm giá / Thêm mới
                 </SoftBox>
-
-                <Card sx={{ p: { xs: 2, md: 3 }, mx: 3 }}>
+                <Card sx={{ padding: { xs: 2, md: 3 }, marginLeft: 3, marginRight: 3 }}>
                     <Box display="flex" flexDirection="row">
                         <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ width: "40%" }}>
                             <Box display="flex" flexDirection="column">
-                                <Box display="flex" flexDirection="row" gap={2} mb={2}>
+                                <Box display="flex" flexDirection="row" gap={2} marginBottom={2}>
                                     <Box sx={{ flex: 1 }}>
-                                        <Box component="label" sx={{ display: "block", mb: 1, fontSize: "14px" }}>
+                                        <Box component="label" sx={{ display: "block", marginBottom: 1, fontSize: "14px" }}>
                                             Mã phiếu giảm giá
                                         </Box>
                                         <Input
@@ -306,12 +294,12 @@ export default function AddPhieuGiam() {
                                                 color: "#1769aa",
                                                 background: "#f2f6fa",
                                                 borderRadius: 2,
-                                                pl: 1,
+                                                paddingLeft: 1
                                             }}
                                         />
                                     </Box>
                                     <Box sx={{ flex: 1 }}>
-                                        <Box component="label" sx={{ display: "block", mb: 1, fontSize: "14px" }}>
+                                        <Box component="label" sx={{ display: "block", marginBottom: 1, fontSize: "14px" }}>
                                             Tên phiếu
                                         </Box>
                                         <Input
@@ -323,15 +311,14 @@ export default function AddPhieuGiam() {
                                                 color: "#1769aa",
                                                 background: "#f2f6fa",
                                                 borderRadius: 2,
-                                                pl: 1,
+                                                paddingLeft: 1
                                             }}
                                         />
                                     </Box>
                                 </Box>
-
-                                <Box display="flex" flexDirection="row" gap={2} mb={2}>
+                                <Box display="flex" flexDirection="row" gap={2} marginBottom={2}>
                                     <Box sx={{ flex: 1 }}>
-                                        <Box component="label" sx={{ display: "block", mb: 1, fontSize: "14px" }}>
+                                        <Box component="label" sx={{ display: "block", marginBottom: 1, fontSize: "14px" }}>
                                             Điều kiện giảm
                                         </Box>
                                         <Input
@@ -343,86 +330,85 @@ export default function AddPhieuGiam() {
                                                 color: "#1769aa",
                                                 background: "#f2f6fa",
                                                 borderRadius: 2,
-                                                pl: 1,
+                                                paddingLeft: 1
                                             }}
                                         />
                                     </Box>
                                     <Box sx={{ flex: 1 }}>
-                                        <Box component="label" sx={{ display: "block", mb: 1, fontSize: "14px" }}>
+                                        <Box component="label" sx={{ display: "block", marginBottom: 1, fontSize: "14px" }}>
                                             Loại phiếu
                                         </Box>
                                         <Controller
                                             name="loaiPhieu"
                                             control={control}
                                             defaultValue="0"
-                                            render={({ field }) => (
-                                                <FormControl>
-                                                    <RadioGroup
-                                                        row
-                                                        {...field}
-                                                        name="loaiPhieu"
-                                                        onChange={(e) => {
-                                                            const value = Number(e.target.value);
-                                                            field.onChange(value);
-                                                            setStatusLoaiPhieu(value);
-                                                            setSelectedRows([]);
-                                                            setPage(1);
-                                                        }}
-                                                        sx={{ pl: 1 }
-                                                        }
-                                                    >
-                                                        <FormControlLabel sx={{ mr: 3 }} value={0} control={<Radio />} label="Công khai" />
-                                                        <FormControlLabel value={1} control={<Radio />} label="Cá nhân" />
-                                                    </RadioGroup>
-                                                </FormControl>
-                                            )}
+                                            render={function ({ field }) {
+                                                return (
+                                                    <FormControl>
+                                                        <RadioGroup
+                                                            row
+                                                            {...field}
+                                                            name="loaiPhieu"
+                                                            onChange={function (event) {
+                                                                const giaTri = Number(event.target.value);
+                                                                field.onChange(giaTri);
+                                                                setLoaiPhieu(giaTri);
+                                                                setDanhSachDaChon([]);
+                                                                setSoTrangHienTai(1);
+                                                            }}
+                                                            sx={{ paddingLeft: 1 }}
+                                                        >
+                                                            <FormControlLabel sx={{ marginRight: 3 }} value={0} control={<Radio />} label="Công khai" />
+                                                            <FormControlLabel value={1} control={<Radio />} label="Cá nhân" />
+                                                        </RadioGroup>
+                                                    </FormControl>
+                                                );
+                                            }}
                                         />
                                     </Box>
                                 </Box>
-
-                                <Box display="flex" flexDirection="row" gap={2} mb={2}>
+                                <Box display="flex" flexDirection="row" gap={2} marginBottom={2}>
                                     <Box sx={{ flex: 1 }}>
-                                        <Box component="label" sx={{ display: "block", mb: 1, fontSize: "14px" }}>
+                                        <Box component="label" sx={{ display: "block", marginBottom: 1, fontSize: "14px" }}>
                                             Giá trị
                                         </Box>
                                         <Input
                                             fullWidth
                                             {...register(statusPhieu ? "phamTramGiamGia" : "soTienGiam")}
                                             type="number"
-                                            value={valueInput}
-                                            onChange={changeInputValue}
+                                            value={giaTriGiam}
+                                            onChange={thayDoiGiaTriGiam}
                                             placeholder={statusPhieu ? "Giảm theo phần trăm" : "Giảm theo số tiền"}
                                             sx={{
                                                 fontWeight: 700,
                                                 color: "#1769aa",
                                                 background: "#f2f6fa",
                                                 borderRadius: 2,
-                                                pl: 1,
+                                                paddingLeft: 1
                                             }}
                                         />
                                     </Box>
                                     <Box sx={{ flex: 1 }}>
-                                        <Box component="label" sx={{ display: "block", mb: 1, fontSize: "14px" }}>
+                                        <Box component="label" sx={{ display: "block", marginBottom: 1, fontSize: "14px" }}>
                                             Loại Giảm giá
                                         </Box>
                                         <FormControl>
                                             <RadioGroup
                                                 value={statusPhieu === 0 ? "0" : "1"}
-                                                onChange={handleChangeRadio}
-                                                onClick={changeInput}
+                                                onChange={thayDoiRadioLoaiGiamGia}
+                                                onClick={thayDoiLoaiGiamGia}
                                                 row
-                                                sx={{ pl: 1 }}
+                                                sx={{ paddingLeft: 1 }}
                                             >
-                                                <FormControlLabel sx={{ mr: 4 }} value="0" control={<Radio />} label="Giá tiền" />
+                                                <FormControlLabel sx={{ marginRight: 4 }} value="0" control={<Radio />} label="Giá tiền" />
                                                 <FormControlLabel value="1" control={<Radio />} label="Phần trăm" />
                                             </RadioGroup>
                                         </FormControl>
                                     </Box>
                                 </Box>
-
-                                <Box display="flex" flexDirection="row" gap={2} mb={2}>
+                                <Box display="flex" flexDirection="row" gap={2} marginBottom={2}>
                                     <Box sx={{ flex: 1 }}>
-                                        <Box component="label" sx={{ display: "block", mb: 1, fontSize: "14px" }}>
+                                        <Box component="label" sx={{ display: "block", marginBottom: 1, fontSize: "14px" }}>
                                             Giảm tối đa
                                         </Box>
                                         <Input
@@ -433,12 +419,12 @@ export default function AddPhieuGiam() {
                                                 color: "#1769aa",
                                                 background: "#f2f6fa",
                                                 borderRadius: 2,
-                                                pl: 1,
+                                                paddingLeft: 1
                                             }}
                                         />
                                     </Box>
                                     <Box sx={{ flex: 1 }}>
-                                        <Box component="label" sx={{ display: "block", mb: 1, fontSize: "14px" }}>
+                                        <Box component="label" sx={{ display: "block", marginBottom: 1, fontSize: "14px" }}>
                                             Số lượng
                                         </Box>
                                         <Input
@@ -450,15 +436,14 @@ export default function AddPhieuGiam() {
                                                 color: "#1769aa",
                                                 background: "#f2f6fa",
                                                 borderRadius: 2,
-                                                pl: 1,
+                                                paddingLeft: 1
                                             }}
                                         />
                                     </Box>
                                 </Box>
-
-                                <Box display="flex" flexDirection="row" gap={2} mb={2}>
+                                <Box display="flex" flexDirection="row" gap={2} marginBottom={2}>
                                     <Box sx={{ flex: 1, maxWidth: 210 }}>
-                                        <Box component="label" sx={{ display: "block", mb: 1, fontSize: "14px" }}>
+                                        <Box component="label" sx={{ display: "block", marginBottom: 1, fontSize: "14px" }}>
                                             Ngày bắt đầu
                                         </Box>
                                         <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -466,42 +451,45 @@ export default function AddPhieuGiam() {
                                                 name="ngayBatDau"
                                                 control={control}
                                                 defaultValue={null}
-                                                render={({ field }) => (
-                                                    <DateTimePicker
-
-                                                        renderInput={(props) => (
-                                                            <TextField
-                                                                {...props}
-                                                                fullWidth
-                                                                sx={{
-                                                                    '& .MuiInputBase-root': {
-                                                                        fontWeight: 700,
-                                                                        color: "#1769aa",
-                                                                        background: "#f2f6fa",
-                                                                        borderRadius: 2,
-                                                                        height: '56px',
-                                                                        fontSize: '16px',
-                                                                    },
-                                                                    '& .MuiInputBase-input': {
-                                                                        padding: '16.5px 14px',
-                                                                    },
-                                                                    '& .MuiOutlinedInput-notchedOutline': {
-                                                                        border: 'none',
-                                                                    }
-                                                                }}
-                                                            />
-                                                        )}
-                                                        value={field.value}
-                                                        onChange={(newValue) => {
-                                                            field.onChange(newValue);
-                                                        }}
-                                                    />
-                                                )}
+                                                render={function ({ field }) {
+                                                    return (
+                                                        <DateTimePicker
+                                                            renderInput={function (props) {
+                                                                return (
+                                                                    <TextField
+                                                                        {...props}
+                                                                        fullWidth
+                                                                        sx={{
+                                                                            "& .MuiInputBase-root": {
+                                                                                fontWeight: 700,
+                                                                                color: "#1769aa",
+                                                                                background: "#f2f6fa",
+                                                                                borderRadius: 2,
+                                                                                height: "56px",
+                                                                                fontSize: "16px"
+                                                                            },
+                                                                            "& .MuiInputBase-input": {
+                                                                                padding: "16.5px 14px"
+                                                                            },
+                                                                            "& .MuiOutlinedInput-notchedOutline": {
+                                                                                border: "none"
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                );
+                                                            }}
+                                                            value={field.value}
+                                                            onChange={function (giaTriMoi) {
+                                                                field.onChange(giaTriMoi);
+                                                            }}
+                                                        />
+                                                    );
+                                                }}
                                             />
                                         </LocalizationProvider>
                                     </Box>
                                     <Box sx={{ flex: 1, maxWidth: 210 }}>
-                                        <Box component="label" sx={{ display: "block", mb: 1, fontSize: "14px" }}>
+                                        <Box component="label" sx={{ display: "block", marginBottom: 1, fontSize: "14px" }}>
                                             Ngày kết thúc
                                         </Box>
                                         <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -509,65 +497,68 @@ export default function AddPhieuGiam() {
                                                 name="ngayKetThuc"
                                                 control={control}
                                                 defaultValue={null}
-                                                render={({ field }) => (
-                                                    <DateTimePicker
-
-                                                        renderInput={(props) => (
-                                                            <TextField
-                                                                {...props}
-                                                                fullWidth
-                                                                sx={{
-                                                                    '& .MuiInputBase-root': {
-                                                                        fontWeight: 700,
-                                                                        color: "#1769aa",
-                                                                        background: "#f2f6fa",
-                                                                        borderRadius: 2,
-                                                                        height: '56px',
-                                                                        fontSize: '16px',
-                                                                    },
-                                                                    '& .MuiInputBase-input': {
-                                                                        padding: '16.5px 14px',
-                                                                    },
-                                                                    '& .MuiOutlinedInput-notchedOutline': {
-                                                                        border: 'none',
-                                                                    }
-                                                                }}
-                                                            />
-                                                        )}
-                                                        value={field.value}
-                                                        onChange={(newValue) => {
-                                                            field.onChange(newValue);
-                                                        }}
-                                                    />
-                                                )}
+                                                render={function ({ field }) {
+                                                    return (
+                                                        <DateTimePicker
+                                                            renderInput={function (props) {
+                                                                return (
+                                                                    <TextField
+                                                                        {...props}
+                                                                        fullWidth
+                                                                        sx={{
+                                                                            "& .MuiInputBase-root": {
+                                                                                fontWeight: 700,
+                                                                                color: "#1769aa",
+                                                                                background: "#f2f6fa",
+                                                                                borderRadius: 2,
+                                                                                height: "56px",
+                                                                                fontSize: "16px"
+                                                                            },
+                                                                            "& .MuiInputBase-input": {
+                                                                                padding: "16.5px 14px"
+                                                                            },
+                                                                            "& .MuiOutlinedInput-notchedOutline": {
+                                                                                border: "none"
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                );
+                                                            }}
+                                                            value={field.value}
+                                                            onChange={function (giaTriMoi) {
+                                                                field.onChange(giaTriMoi);
+                                                            }}
+                                                        />
+                                                    );
+                                                }}
                                             />
                                         </LocalizationProvider>
                                     </Box>
                                 </Box>
-
-                                <Box mt={2}>
-                                    <Button type="submit" variant="outlined">Thêm</Button>
+                                <Box marginTop={2}>
+                                    <Button type="submit" variant="outlined">
+                                        Thêm
+                                    </Button>
                                 </Box>
                             </Box>
                         </Box>
-
-                        <Box sx={{ width: "60%", ml: 2 }}>
-                            {statusLoaiPhieu === 1 && (
-                                <Card sx={{ p: { xs: 2, md: 3 } }}>
+                        <Box sx={{ width: "60%", marginLeft: 2 }}>
+                            {loaiPhieu === 1 && (
+                                <Card sx={{ padding: { xs: 2, md: 3 } }}>
                                     <SoftBox
                                         display="flex"
                                         flexDirection={{ xs: "column", md: "row" }}
                                         alignItems="center"
                                         justifyContent="space-between"
                                         gap={2}
-                                        mb={2}
+                                        marginBottom={2}
                                     >
                                         <SoftBox flex={1} display="flex" alignItems="center" gap={2} maxWidth={400}>
                                             <Input
                                                 fullWidth
                                                 placeholder="Tìm kiếm theo tên"
-                                                value={searchKH}
-                                                onChange={(e) => setSearchKH(e.target.value)}
+                                                value={timKiemKhachHang}
+                                                onChange={function (event) { setTimKiemKhachHang(event.target.value); }}
                                                 startAdornment={
                                                     <InputAdornment position="start">
                                                         <Icon fontSize="small" sx={{ color: "#868686" }}>
@@ -575,33 +566,27 @@ export default function AddPhieuGiam() {
                                                         </Icon>
                                                     </InputAdornment>
                                                 }
-                                                sx={{ background: "#f5f6fa", borderRadius: 2, p: 0.5, color: "#222" }}
+                                                sx={{ background: "#f5f6fa", borderRadius: 2, padding: 0.5, color: "#222" }}
                                             />
                                         </SoftBox>
-
-                                        {/* Hiển thị thông tin số lượng đã chọn */}
                                         <SoftBox display="flex" alignItems="center" gap={2}>
                                             <Box component="span" sx={{ fontSize: "14px", color: "#666" }}>
-                                                Đã chọn: {selectedCount}/{totalCustomers}
+                                                Đã chọn: {soLuongDaChon}/{tongSoKhachHang}
                                             </Box>
-
-                                            {/* Checkbox chọn trang hiện tại */}
                                             <SoftBox display="flex" alignItems="center" gap={1}>
                                                 <Checkbox
-                                                    checked={allChecked}
-                                                    onChange={handleSelectAll}
+                                                    checked={tatCaDuocChon}
+                                                    onChange={chonTatCaKhachHangHienTai}
                                                     size="small"
                                                 />
                                                 <Box component="span" sx={{ fontSize: "14px" }}>
-                                                    Chọn trang này ({khachHangs.length})
+                                                    Chọn trang này ({danhSachKhachHang.length})
                                                 </Box>
                                             </SoftBox>
-
-                                            {/* Nút chọn tất cả khách hàng */}
                                             <Button
                                                 variant="text"
                                                 size="small"
-                                                onClick={handleSelectAllCustomers}
+                                                onClick={chonTatCaKhachHang}
                                                 sx={{
                                                     textTransform: "none",
                                                     fontSize: "14px",
@@ -609,20 +594,18 @@ export default function AddPhieuGiam() {
                                                     padding: "4px 8px"
                                                 }}
                                             >
-                                                {selectedRows.length === allKhachHang.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                                                {danhSachDaChon.length === tatCaKhachHang.length ? "Bỏ chọn tất cả" : "Chọn tất cả"}
                                             </Button>
                                         </SoftBox>
                                     </SoftBox>
-
                                     <SoftBox>
-                                        <Table columns={columns} rows={rows} loading={loading} />
+                                        <Table columns={danhSachCot} rows={danhSachDong} loading={dangTaiDuLieu} />
                                     </SoftBox>
-
                                     <SoftBox
                                         display="flex"
                                         justifyContent="space-between"
                                         alignItems="center"
-                                        mt={2}
+                                        marginTop={2}
                                         flexWrap="wrap"
                                         gap={2}
                                     >
@@ -634,90 +617,95 @@ export default function AddPhieuGiam() {
                                                     borderRadius: 2,
                                                     textTransform: "none",
                                                     color: "#49a3f1",
-                                                    borderColor: "#49a3f1",
+                                                    borderColor: "#49a3f1"
                                                 }}
-                                                onClick={handleMenuOpen}
+                                                onClick={moMenu}
                                             >
-                                                Xem {viewCount} khách hàng
+                                                Xem {soLuongXem} khách hàng
                                             </Button>
                                             <Menu
                                                 anchorEl={anchorEl}
                                                 open={Boolean(anchorEl)}
-                                                onClose={handleMenuClose}
+                                                onClose={dongMenu}
                                             >
-                                                {viewOptions.map((n) => (
-                                                    <MenuItem
-                                                        key={n}
-                                                        onClick={() => {
-                                                            setViewCount(n);
-                                                            setPage(1);
-                                                            handleMenuClose();
-                                                        }}
-                                                        sx={{ color: "#495057" }}
-                                                    >
-                                                        Xem {n} khách hàng
-                                                    </MenuItem>
-                                                ))}
+                                                {cacLuaChonXem.map(function (soLuong) {
+                                                    return (
+                                                        <MenuItem
+                                                            key={soLuong}
+                                                            onClick={function () {
+                                                                setSoLuongXem(soLuong);
+                                                                setSoTrangHienTai(1);
+                                                                dongMenu();
+                                                            }}
+                                                            sx={{ color: "#495057" }}
+                                                        >
+                                                            Xem {soLuong} khách hàng
+                                                        </MenuItem>
+                                                    );
+                                                })}
                                             </Menu>
                                         </SoftBox>
-
                                         <SoftBox display="flex" alignItems="center" gap={1}>
                                             <Button
                                                 variant="text"
                                                 size="small"
-                                                disabled={page === 1}
-                                                onClick={() => handlePageChange(page - 1)}
-                                                sx={{ color: page === 1 ? "#bdbdbd" : "#49a3f1" }}
+                                                disabled={soTrangHienTai === 1}
+                                                onClick={function () { thayDoiTrangMoi(soTrangHienTai - 1); }}
+                                                sx={{ color: soTrangHienTai === 1 ? "#bdbdbd" : "#49a3f1" }}
                                             >
                                                 TRƯỚC
                                             </Button>
-                                            {paginationItems.map((item, idx) =>
-                                                item === "..." ? (
-                                                    <Button
-                                                        key={`ellipsis-${idx}`}
-                                                        variant="text"
-                                                        size="small"
-                                                        disabled
-                                                        sx={{
-                                                            minWidth: 32,
-                                                            height: 32,
-                                                            borderRadius: 2,
-                                                            color: "#bdbdbd",
-                                                            pointerEvents: "none",
-                                                            fontWeight: 700,
-                                                        }}
-                                                    >
-                                                        ...
-                                                    </Button>
-                                                ) : (
-                                                    <Button
-                                                        key={item}
-                                                        variant={page === item ? "contained" : "text"}
-                                                        color={page === item ? "primary" : "inherit"}
-                                                        size="small"
-                                                        onClick={() => handlePageChange(item)}
-                                                        sx={{
-                                                            minWidth: 32,
-                                                            height: 32,
-                                                            borderRadius: 2,
-                                                            color: page === item ? "#fff" : "#495057",
-                                                            background: page === item ? "#1976d2" : "transparent",
-                                                            fontWeight: page === item ? 600 : 400,
-                                                            "&:hover": {
-                                                                background: page === item ? "#1565c0" : "rgba(25, 118, 210, 0.04)",
-                                                            },
-                                                        }}
-                                                    >
-                                                        {item}
-                                                    </Button>
-                                                )
-                                            )}
+                                            {cacPhanTrang.map(function (item, index) {
+                                                if (item === "...") {
+                                                    return (
+                                                        <Button
+                                                            key={"ellipsis-" + index}
+                                                            variant="text"
+                                                            size="small"
+                                                            disabled
+                                                            sx={{
+                                                                minWidth: 32,
+                                                                height: 32,
+                                                                borderRadius: 2,
+                                                                color: "#bdbdbd",
+                                                                pointerEvents: "none",
+                                                                fontWeight: 700
+                                                            }}
+                                                        >
+                                                            ...
+                                                        </Button>
+                                                    );
+                                                } else {
+                                                    return (
+                                                        <Button
+                                                            key={item}
+                                                            variant={soTrangHienTai === item ? "contained" : "text"}
+                                                            color={soTrangHienTai === item ? "primary" : "inherit"}
+                                                            size="small"
+                                                            onClick={function () { thayDoiTrangMoi(item); }}
+                                                            sx={{
+                                                                minWidth: 32,
+                                                                height: 32,
+                                                                borderRadius: 2,
+                                                                color: soTrangHienTai === item ? "#fff" : "#495057",
+                                                                background: soTrangHienTai === item ? "#1976d2" : "transparent",
+                                                                fontWeight: soTrangHienTai === item ? 600 : 400,
+                                                                "&:hover": {
+                                                                    background: soTrangHienTai === item ? "#1565c0" : "rgba(25, 118, 210, 0.04)"
+                                                                }
+                                                            }}
+                                                        >
+                                                            {item}
+                                                        </Button>
+                                                    );
+                                                }
+                                            })}
                                             <Button
                                                 variant="text"
                                                 size="small"
-                                                disabled={page === totalPage || totalPage === 0}
-                                                onClick={() => handlePageChange(page + 1)}
-                                                sx={{ color: page === totalPage ? "#bdbdbd" : "#49a3f1" }}
+                                                disabled={soTrangHienTai === tongSoTrang || tongSoTrang === 0}
+                                                onClick={function () { thayDoiTrangMoi(soTrangHienTai + 1); }}
+                                                sx={{ color: soTrangHienTai === tongSoTrang ? "#bdbdbd" : "#49a3f1" }}
                                             >
                                                 SAU
                                             </Button>
@@ -732,5 +720,5 @@ export default function AddPhieuGiam() {
             <Footer />
             <ToastContainer />
         </DashboardLayout>
-    )
+    );
 }

@@ -1,5 +1,6 @@
 import React from "react";
-import { Snackbar, Slide } from "@mui/material";
+import Snackbar from "@mui/material/Snackbar";
+import Slide from "@mui/material/Slide";
 import MuiAlert from "@mui/material/Alert";
 import PropTypes from "prop-types";
 

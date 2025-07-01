@@ -11,7 +11,6 @@ import java.sql.Date;
 @Data
 public class KhachHangVO {
 
-    private Integer id;
 
     private String maKhachHang;
 

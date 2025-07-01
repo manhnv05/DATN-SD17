@@ -1,9 +1,19 @@
 import React, { useState, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
-import {
-    Dialog, DialogTitle, DialogContent, DialogActions,
-    IconButton, Button, Grid, TextField, Typography, Box, Tooltip, CircularProgress, Chip, Divider
-} from "@mui/material";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import IconButton from "@mui/material/IconButton";
+import Button from "@mui/material/Button";
+import Grid from "@mui/material/Grid";
+import TextField from "@mui/material/TextField";
+import Typography from "@mui/material/Typography";
+import Box from "@mui/material/Box";
+import Tooltip from "@mui/material/Tooltip";
+import CircularProgress from "@mui/material/CircularProgress";
+import Chip from "@mui/material/Chip";
+import Divider from "@mui/material/Divider";
 import CloseIcon from "@mui/icons-material/Close";
 import { FaPlus, FaTrash, FaDownload } from "react-icons/fa";
 import { QRCodeCanvas } from "qrcode.react";

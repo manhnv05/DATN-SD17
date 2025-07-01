@@ -1,4 +1,10 @@
-import { Box, Button, Card, IconButton, MenuItem, Select, Stack } from "@mui/material";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Card from "@mui/material/Card";
+import IconButton from "@mui/material/IconButton";
+import MenuItem from "@mui/material/MenuItem";
+import Select from "@mui/material/Select";
+import Stack from "@mui/material/Stack";
 import SoftBox from "components/SoftBox";
 import SoftTypography from "components/SoftTypography";
 import Table from "examples/Tables/Table";

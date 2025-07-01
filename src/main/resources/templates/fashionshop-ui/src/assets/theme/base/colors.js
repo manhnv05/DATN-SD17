@@ -1,17 +1,14 @@
 
-
 const colors = {
   background: {
     default: "#f8f9fa",
   },
-
   text: {
     main: "#67748e",
     focus: "#67748e",
   },
-
   transparent: {
-    main: "transparent",
+    main: "rgba(0,0,0,0)", // Sửa tại đây
   },
 
   white: {

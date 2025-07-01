@@ -33,4 +33,7 @@ public class KhachHangQueryVO implements Serializable {
 
     private Integer trangThai;
 
+    private Integer page;
+    private Integer size;
+
 }

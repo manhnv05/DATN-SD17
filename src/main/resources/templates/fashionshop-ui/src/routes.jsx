@@ -19,6 +19,11 @@ import PhieuGiamPage from "layouts/phieugiamgia/phieugiam";
 import AddPhieuGiam from "layouts/phieugiamgia/addPhieuGiam";
 import UpdatePhieuGiam from "layouts/phieugiamgia/updatePhieuGiamGia";
 import KhachHang from "layouts/khachhang";
+import AddKhachHang from "layouts/khachhang/add";
+import NhanVien from "layouts/nhanvien";
+import AddNhanVien from "layouts/nhanvien/add";
+
+
 
 
 
@@ -181,10 +186,10 @@ const routes = [
   {
     type: "collapse",
     name: "Quản lý Nhân Viên",
-    key: "tables",
-    route: "/tables",
+    key: "staff-management",
+    route: "/staff-management",
     icon: <Office size="12px" />,
-    component: <Tables />,
+    component: <NhanVien />,
     noCollapse: true,
   },
   {
@@ -275,6 +280,22 @@ const routes = [
     component: <UpdatePhieuGiam />,
     noCollapse: true,
     hidden: true, // ẩn khỏi menu nếu muốn
+  },
+  {
+    key: "add-customer",
+    name: "Thêm khách hàng",
+    route: "/khachhang/add",
+    component: <AddKhachHang />,
+    noCollapse: true,
+    hidden: true,
+  },
+  {
+    key: "add-staff",
+    name: "Thêm nhân viên",
+    route: "/nhanvien/add",
+    component: <AddNhanVien />,
+    noCollapse: true,
+    hidden: true,
   },
 ];
 
