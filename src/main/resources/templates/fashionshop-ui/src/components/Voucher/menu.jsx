@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
 import PropTypes from 'prop-types';
-import {
-    IconButton,
-    Menu,
-    MenuItem,
-    Tooltip,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogContentText,
-    DialogActions,
-    Button
-} from '@mui/material';
+import IconButton from '@mui/material/IconButton';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import Tooltip from '@mui/material/Tooltip';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogActions from '@mui/material/DialogActions';
+import Button from '@mui/material/Button';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 
 const ThreeDotMenu = ({ statusList, onSelectStatus }) => {

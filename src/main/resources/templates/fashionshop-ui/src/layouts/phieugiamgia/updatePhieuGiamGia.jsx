@@ -1,27 +1,24 @@
 import Input from "@mui/material/Input";
 import { useState, useEffect } from "react";
 import dayjs from 'dayjs';
-import {
-    Card,
-    FormControl,
-    Select,
-    MenuItem,
-    Button,
-    Checkbox,
-    Menu,
-    IconButton,
-    InputAdornment,
-    Icon,
-    TextField,
-    Box,
-} from "@mui/material";
+import Card from "@mui/material/Card";
+import FormControl from "@mui/material/FormControl";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import Button from "@mui/material/Button";
+import Checkbox from "@mui/material/Checkbox";
+import Menu from "@mui/material/Menu";
+import IconButton from "@mui/material/IconButton";
+import InputAdornment from "@mui/material/InputAdornment";
+import Icon from "@mui/material/Icon";
+import TextField from "@mui/material/TextField";
+import Box from "@mui/material/Box";
 import SoftBox from "components/SoftBox";
 import Table from "examples/Tables/Table";
 import { useNavigate, useParams } from 'react-router-dom';
-import { useForm } from "react-hook-form";
-import { Controller } from "react-hook-form";
-import { updateVouchers, fetchOneVouchers } from "./service/PhieuGiamService";
-import { toast } from 'react-toastify';
+import { useForm, Controller } from "react-hook-form";
+import { updateVouchers, fetchOneVouchers, sendMail } from "./service/PhieuGiamService";
+import { toast, ToastContainer } from 'react-toastify';
 import { fetchKhachHang } from "./service/KhachHangService";
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -33,8 +30,6 @@ import { addPDDKH, deletePDDKH, findAllPDDKH } from "./service/PhieuGiamGiaKhach
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
-import { ToastContainer } from "react-toastify";
-import { sendMail } from "./service/PhieuGiamService";
 
 // Pagination logic function
 function getPaginationItems(current, total) {
@@ -139,7 +134,7 @@ export default function UpdatePhieuGiam() {
         data.ngayBatDau = dayjs(data.ngayBatDau).format('YYYY-MM-DDTHH:mm:ss');
         data.ngayKetThuc = dayjs(data.ngayKetThuc).format('YYYY-MM-DDTHH:mm:ss');
         data.trangThai = 2
-        
+
         for (const item of requiredFields) {
             if (!data[item.field]) {
                 toast.error(item.message);
@@ -166,13 +161,13 @@ export default function UpdatePhieuGiam() {
             listKachHang.push(khachhang.email)
         ))
         const datasendMail = {
-            phieuGiamGiaRequest: data,
+            phieuGiamGiaVO: data,
             emails: listKachHang
         }
         if (dataPDDKH.length !== 0) {
             await addPDDKH(dataPDDKH)
         }
-        
+
         for (const data of dataDelete) {
             await deletePDDKH(data.id);
         }

@@ -1,4 +1,10 @@
-import { Button, Card, InputLabel, MenuItem, Select, Stack, TextField } from "@mui/material";
+import Button from "@mui/material/Button";
+import Card from "@mui/material/Card";
+import InputLabel from "@mui/material/InputLabel";
+import MenuItem from "@mui/material/MenuItem";
+import Select from "@mui/material/Select";
+import Stack from "@mui/material/Stack";
+import TextField from "@mui/material/TextField";
 import SoftTypography from "components/SoftTypography";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
@@ -141,7 +147,7 @@ const ViewDiscountEventPage = () => {
                     <SoftTypography
                         display="block"
                         sx={{ fontSize: 13, fontWeight: 500 }}>
-                    {row.tenSanPham} - {row.maSanPhamChiTiet}
+                        {row.tenSanPham} - {row.maSanPhamChiTiet}
                     </SoftTypography>
                     <SoftTypography display="block"
                                     sx={{ fontSize: 12, color: "#666" }}>
@@ -214,36 +220,27 @@ const ViewDiscountEventPage = () => {
                                     allowInput: true, }}
                                 value={info.dateRange}
                                 render={(props, ref) => {
-                                    // (
-                                    // <TextField
-                                    //     {...props}
-                                    //     inputRef={ref}
-                                    //     fullWidth
-                                    //     InputProps={{ readOnly: true }}
-                                    //     disabled
-                                    // />
-
                                     const value = info.dateRange || [];
                                     const displayText =
-                                    value.length === 2
-                                    ? `${format(new Date(value[0]), "dd/MM/yyyy HH:mm")}  ➝  ${format(
-                                    new Date(value[1]),
-                                    "dd/MM/yyyy HH:mm"
-                                    )}`
-                                    : "";
+                                        value.length === 2
+                                            ? `${format(new Date(value[0]), "dd/MM/yyyy HH:mm")}  ➝  ${format(
+                                                new Date(value[1]),
+                                                "dd/MM/yyyy HH:mm"
+                                            )}`
+                                            : "";
 
                                     return (
-                                    <TextField
-                                    inputRef={ref}
-                                value={displayText}
-                                fullWidth
-                                InputProps={{
-                                    readOnly: true,
-                                    sx: { fontSize: "1rem", fontWeight: 500 }, // Tăng size chữ nếu muốn
-                                }}
-                                disabled
-                            />
-                            );
+                                        <TextField
+                                            inputRef={ref}
+                                            value={displayText}
+                                            fullWidth
+                                            InputProps={{
+                                                readOnly: true,
+                                                sx: { fontSize: "1rem", fontWeight: 500 },
+                                            }}
+                                            disabled
+                                        />
+                                    );
                                 }}
                             />
                         </Stack>

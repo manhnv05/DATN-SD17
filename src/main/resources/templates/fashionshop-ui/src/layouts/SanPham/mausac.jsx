@@ -20,7 +20,7 @@ import Icon from "@mui/material/Icon";
 import Table from "examples/Tables/Table";
 import { FaQrcode, FaPlus, FaEdit, FaTrash } from "react-icons/fa";
 import CircularProgress from "@mui/material/CircularProgress";
-import { Alert } from "@mui/material";
+import Alert from "@mui/material/Alert";
 import CloseIcon from "@mui/icons-material/Close";
 
 const statusList = ["Tất cả", "Hiển thị", "Ẩn"];
@@ -45,10 +45,6 @@ function ColorTable() {
         page: 0,
         size: 5,
     });
-
-    const handleMenuOpen = (event) => {
-        setAnchorEl(event.currentTarget);
-    };
 
     // Data/loading/error states
     const [colorsData, setColorsData] = useState({
@@ -79,6 +75,10 @@ function ColorTable() {
 
     // Menu states
     const [anchorEl, setAnchorEl] = useState(null);
+
+    // Menu handlers
+    const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
+    const handleMenuClose = () => setAnchorEl(null);
 
     // Fetch colors from API
     useEffect(() => {
@@ -498,11 +498,11 @@ function ColorTable() {
                             <IconButton onClick={handleMenuOpen} sx={{ color: "#495057" }}>
                                 <Icon fontSize="small">menu</Icon>
                             </IconButton>
-                            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={() => setAnchorEl(null)}>
-                                <MenuItem onClick={() => setAnchorEl(null)} sx={{ color: "#384D6C" }}>
+                            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
+                                <MenuItem onClick={handleMenuClose} sx={{ color: "#384D6C" }}>
                                     <FaQrcode className="me-2" style={{ color: "#0d6efd" }} /> Quét mã
                                 </MenuItem>
-                                <MenuItem onClick={() => setAnchorEl(null)} sx={{ color: "#384D6C" }}>
+                                <MenuItem onClick={handleMenuClose} sx={{ color: "#384D6C" }}>
                                     <span style={{ color: "#27ae60", marginRight: 8 }}>📥</span> Export Excel
                                 </MenuItem>
                             </Menu>

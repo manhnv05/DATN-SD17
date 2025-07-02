@@ -1,18 +1,18 @@
 import { Link } from "react-router-dom";
 import PropTypes from "prop-types";
 
-import { Breadcrumbs as MuiBreadcrumbs } from "@mui/material";
+import Breadcrumbs from "@mui/material/Breadcrumbs"; // ✅
 import Icon from "@mui/material/Icon";
 
 import SoftBox from "components/SoftBox";
 import SoftTypography from "components/SoftTypography";
 
-function Breadcrumbs({ icon, title, route, light }) {
+function BreadcrumbsComponent({ icon, title, route, light }) {
     const routes = route.slice(0, -1);
 
     return (
         <SoftBox mr={{ xs: 0, xl: 8 }} sx={{ userSelect: "none" }}>
-            <MuiBreadcrumbs
+            <Breadcrumbs
                 sx={{
                     userSelect: "none",
                     "& .MuiBreadcrumbs-separator": {
@@ -56,7 +56,7 @@ function Breadcrumbs({ icon, title, route, light }) {
                 >
                     {title.replace("-", " ")}
                 </SoftTypography>
-            </MuiBreadcrumbs>
+            </Breadcrumbs>
             <SoftTypography
                 fontWeight="bold"
                 textTransform="capitalize"
@@ -71,16 +71,15 @@ function Breadcrumbs({ icon, title, route, light }) {
     );
 }
 
-Breadcrumbs.defaultProps = {
+BreadcrumbsComponent.defaultProps = {
     light: false,
 };
 
-// Typechecking props for the Breadcrumbs
-Breadcrumbs.propTypes = {
+BreadcrumbsComponent.propTypes = {
     icon: PropTypes.node.isRequired,
     title: PropTypes.string.isRequired,
     route: PropTypes.oneOfType([PropTypes.string, PropTypes.array]).isRequired,
     light: PropTypes.bool,
 };
 
-export default Breadcrumbs;
+export default BreadcrumbsComponent;

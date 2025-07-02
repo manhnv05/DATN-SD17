@@ -56,6 +56,9 @@ public class NhanVien{
     @Column(name = "email")
     private String email;
 
+    @Column(name = "dia_chi")
+    private String diaChi;
+
     @Column(name = "ten_tai_khoan")
     private String tenTaiKhoan;
 

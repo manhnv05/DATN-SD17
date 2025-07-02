@@ -38,13 +38,9 @@ public class PhieuGiamGiaServiceImpl implements PhieuGiamGiaService {
 
     @Override
     public PhieuGiamGiaDTO getPhieuGiamGiaById(int id) {
-        PhieuGiamGia phieuGiamGia =  phieuGiamGiaRepository.findById(id).orElse(null);
-        if(phieuGiamGia==null){
-            return null;
-        }
-        else {
-            return PhieuGiamGiaMapper.INSTANCE.toResponse(phieuGiamGia);
-        }
+        PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.PHIEU_GIAM_GIA_NULL));
+        return PhieuGiamGiaMapper.INSTANCE.toResponse(phieuGiamGia);
     }
 
     @Override
@@ -57,10 +53,9 @@ public class PhieuGiamGiaServiceImpl implements PhieuGiamGiaService {
     @Override
     public PhieuGiamGiaDTO updatePhieuGiamGia(PhieuGiamGiaVOUpdate phieuGiamGiaRequestUpdate) {
         PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(phieuGiamGiaRequestUpdate.getId()).orElse(null);
-        if(phieuGiamGia==null){
+        if (phieuGiamGia == null) {
             throw new AppException(ErrorCode.PHIEU_GIAM_GIA_NULL);
-        }
-        else {
+        } else {
             PhieuGiamGiaMapper.INSTANCE.updatePhieuGiamGia(phieuGiamGia, phieuGiamGiaRequestUpdate);
             phieuGiamGiaRepository.save(phieuGiamGia);
             return PhieuGiamGiaMapper.INSTANCE.toResponse(phieuGiamGia);
@@ -70,14 +65,14 @@ public class PhieuGiamGiaServiceImpl implements PhieuGiamGiaService {
     @Override
     public boolean deletePhieuGiamGia(int id) {
         PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository.findById(id).orElse(null);
-        if(phieuGiamGia==null){
+        if (phieuGiamGia == null) {
             return false;
-        }
-        else {
+        } else {
             phieuGiamGiaRepository.delete(phieuGiamGia);
             return true;
         }
     }
+
     @Override
     public PhieuGiamGiaDTO updateStatusPhieuGiamGia(int id, int status) {
         PhieuGiamGia phieuGiamGia = phieuGiamGiaRepository

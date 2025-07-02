@@ -1,30 +1,45 @@
 export async function fetchKhachHang(page, size, search) {
     try {
-        const searchObject = {
-            // Thêm các trường tìm kiếm phổ biến mà backend có thể mong đợi
-            tenKhachHang: search && search.trim() !== "" ? search.trim() : undefined,
-        };
-        
-        // Xóa các trường undefined
-        Object.keys(searchObject).forEach(key => {
-            if (searchObject[key] === undefined) {
-                delete searchObject[key];
-            }
-        });
-        const response = await fetch(`http://localhost:8080/KhachHang/findAll?page=${page}&size=${size}`, {
-            method: 'POST',
+        const params = new URLSearchParams();
+        params.append("page", page);
+        params.append("size", size);
+        if (search && search.trim() !== "") {
+            params.append("tenKhachHang", search.trim());
+        }
+
+        const response = await fetch(`http://localhost:8080/khachHang?${params.toString()}`, {
+            method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(searchObject),
+            }
         });
+
         if (!response.ok) {
-            throw new Error("Lỗi không load đc khách hàng");
+            throw new Error("Lỗi không load được khách hàng");
         }
         const data = await response.json();
-        return data
+
+        // Đảm bảo trả về object có thuộc tính 'data' với 'content'
+        return {
+            data: {
+                content: data.content || [],
+                totalPages: data.totalPages || 0,
+                number: data.number || 0,
+                first: typeof data.first === 'boolean' ? data.first : true,
+                last: typeof data.last === 'boolean' ? data.last : true,
+            }
+        };
     } catch (error) {
-        console.error("Lỗi không load đc khách hàng", error);
-        return [];
+        console.error("Lỗi không load được khách hàng", error);
+        // Đảm bảo trả về đúng cấu trúc cho UI, tránh lỗi undefined
+        return {
+            data: {
+                content: [],
+                totalPages: 0,
+                number: 0,
+                first: true,
+                last: true,
+            }
+        };
     }
 }

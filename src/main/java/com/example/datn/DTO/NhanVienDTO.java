@@ -28,6 +28,8 @@ public class NhanVienDTO{
 
     private String email;
 
+    private String diaChi;
+
     private String tenTaiKhoan;
 
     private String matKhau;

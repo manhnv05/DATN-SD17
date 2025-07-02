@@ -9,7 +9,6 @@ import java.io.Serializable;
 @Data
 public class DiaChiVO {
 
-    private Integer id;
 
     private Integer idKhachHang;
 

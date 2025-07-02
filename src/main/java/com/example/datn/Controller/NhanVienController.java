@@ -10,22 +10,19 @@ import jakarta.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Validated
 @RestController
 @RequestMapping("/nhanVien")
 public class NhanVienController {
 
+    private final NhanVienService nhanVienService;
+
     @Autowired
-    private NhanVienService nhanVienService;
+    public NhanVienController(NhanVienService nhanVienService) {
+        this.nhanVienService = nhanVienService;
+    }
 
     @PostMapping
     public String save(@Valid @RequestBody NhanVienVO vO) {
@@ -33,18 +30,18 @@ public class NhanVienController {
     }
 
     @DeleteMapping("/{id}")
-    public void delete(@Valid @NotNull @PathVariable("id") Integer id) {
+    public void delete(@PathVariable("id") @NotNull Integer id) {
         nhanVienService.delete(id);
     }
 
     @PutMapping("/{id}")
-    public void update(@Valid @NotNull @PathVariable("id") Integer id,
+    public void update(@PathVariable("id") @NotNull Integer id,
                        @Valid @RequestBody NhanVienUpdateVO vO) {
         nhanVienService.update(id, vO);
     }
 
     @GetMapping("/{id}")
-    public NhanVienDTO getById(@Valid @NotNull @PathVariable("id") Integer id) {
+    public NhanVienDTO getById(@PathVariable("id") @NotNull Integer id) {
         return nhanVienService.getById(id);
     }
 
