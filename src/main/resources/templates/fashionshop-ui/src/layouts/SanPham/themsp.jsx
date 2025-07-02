@@ -22,6 +22,7 @@ import CreatableSelect from "react-select/creatable";
 import Select from "react-select";
 import Notifications from "layouts/Notifications";
 import { FaPlus, FaTrash } from "react-icons/fa";
+import { toast } from "react-toastify";
 
 const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:8080";
 const apiUrl = (path) => `${API_BASE}${path.startsWith("/") ? "" : "/"}${path}`;
@@ -520,14 +521,7 @@ function ProductForm() {
         }
 
         if (createdSanPhamId) {
-            setAddSuccess("Chọn sản phẩm thành công!");
-            setShowAttributes(true);
-            setAddLoading(false);
-            setNotify({
-                open: true,
-                message: "Chọn sản phẩm thành công!",
-                severity: "success",
-            });
+            toast.success("Chọn sản phẩm thành công")
             return;
         }
 
@@ -547,21 +541,9 @@ function ProductForm() {
             });
             if (!res.ok) throw new Error("Lỗi khi thêm sản phẩm");
             const result = await res.json();
-            setCreatedSanPhamId(result.id ? result.id : result);
-            setAddSuccess("Thêm sản phẩm thành công!");
-            setShowAttributes(true);
-            setNotify({
-                open: true,
-                message: "Thêm sản phẩm thành công!",
-                severity: "success",
-            });
+            toast.success("Thêm sản phẩm thành công")
         } catch (err) {
-            setAddError("Thêm sản phẩm thất bại!");
-            setNotify({
-                open: true,
-                message: "Thêm sản phẩm thất bại!",
-                severity: "error",
-            });
+            toast.error("Thêm sản phẩm thất bại")
         }
         setAddLoading(false);
     };
@@ -606,13 +588,7 @@ function ProductForm() {
         }
 
         if (!createdSanPhamId) {
-            setAddError("Bạn phải thêm sản phẩm trước khi thêm chi tiết sản phẩm!");
-            setNotify({
-                open: true,
-                message: "Bạn phải thêm sản phẩm trước khi thêm chi tiết sản phẩm!",
-                severity: "error",
-            });
-            setAddLoading(false);
+            toast.warning("Bạn phải thêm sản phẩm trước khi thêm chi tiết sản phẩm!")
             return;
         }
 
@@ -659,12 +635,7 @@ function ProductForm() {
                 })
             );
             const chiTietSanPhamResults = await Promise.all(addDetailPromises);
-            setAddSuccess("Thêm chi tiết sản phẩm thành công!");
-            setNotify({
-                open: true,
-                message: "Thêm chi tiết sản phẩm thành công!",
-                severity: "success",
-            });
+            toast.success("Thêm chi tiết sản phẩm thành công!")
 
             const saveImagePromises = [];
             chiTietSanPhamResults.forEach((ctspResult, idx) => {
@@ -694,12 +665,7 @@ function ProductForm() {
             });
             await Promise.all(saveImagePromises);
         } catch (err) {
-            setAddError("Thêm chi tiết sản phẩm thất bại!");
-            setNotify({
-                open: true,
-                message: "Thêm chi tiết sản phẩm thất bại!",
-                severity: "error",
-            });
+            toast.error("Thêm chi tiết sản phẩm thất bại!")
         }
         setAddLoading(false);
     };

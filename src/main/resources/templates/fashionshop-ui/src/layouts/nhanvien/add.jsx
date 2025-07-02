@@ -32,6 +32,7 @@ import { styled } from "@mui/material/styles";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import Slide from "@mui/material/Slide";
 import SafeAutocomplete from "./component/SafeAutocomplete";
+import { toast } from "react-toastify";
 
 const nhanVienAddAPI = "http://localhost:8080/nhanVien";
 const roleListAPI = "http://localhost:8080/vaiTro/list";
@@ -419,6 +420,7 @@ export default function AddNhanVienForm() {
                 setLoading(false);
                 navigate(-1);
             }, 1200);
+            toast.success("Thêm nhân viên thành công !")
         } catch {
             setLoading(false);
             setSuccess(false);
@@ -451,6 +453,7 @@ export default function AddNhanVienForm() {
                     moTaVaiTro: roleDialogValue.moTaVaiTro,
                 });
                 fetchRoles();
+                toast.success("Thêm vai trò thành công !")
                 setTimeout(function () {
                     setEmployee(function (previous) {
                         const newRole = roleOptions.find(function (role) {
@@ -481,7 +484,7 @@ export default function AddNhanVienForm() {
             handleCloseRoleDialog();
         } catch {
             setRoleDialogLoading(false);
-            alert("Có lỗi khi thêm hoặc sửa vai trò.");
+            toast.warning("Có lỗi khi thêm hoặc sửa vai trò.");
         }
     }
 

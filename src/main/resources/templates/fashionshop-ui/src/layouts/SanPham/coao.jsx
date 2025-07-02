@@ -22,8 +22,7 @@ import { FaQrcode, FaPlus, FaEdit, FaTrash } from "react-icons/fa";
 import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
 import CloseIcon from "@mui/icons-material/Close";
-
-
+import { toast } from "react-toastify";
 
 const statusList = ["Tất cả", 1, 0]; // integer
 const viewOptions = [5, 10, 20];
@@ -103,7 +102,7 @@ function CollarTable() {
     // Handler for Add Collar
     const handleAddCollar = () => {
         if (!newCollar.ma || !newCollar.tenCoAo) {
-            alert("Vui lòng nhập đầy đủ thông tin");
+            toast.warning("Vui lòng nhập đầy đủ thông tin");
             return;
         }
         setLoading(true);
@@ -120,6 +119,7 @@ function CollarTable() {
                 return res.text();
             })
             .then(() => {
+                toast.success("Thêm thành công !")
                 setShowModal(false);
                 setNewCollar({ ma: "", tenCoAo: "", trangThai: 1 });
                 setQueryParams({ ...queryParams, page: 0 });
@@ -153,6 +153,7 @@ function CollarTable() {
                 return res.text();
             })
             .then(() => {
+                toast.success("Cập nhật thành công !")
                 setShowEditModal(false);
                 setEditCollar(null);
                 setQueryParams({ ...queryParams });
@@ -173,6 +174,7 @@ function CollarTable() {
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi xóa cổ áo");
+                toast.success("Xóa thành công !")
                 setShowDeleteDialog(false);
                 setDeleteId(null);
                 setQueryParams({ ...queryParams });

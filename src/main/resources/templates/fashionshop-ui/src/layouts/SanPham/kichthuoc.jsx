@@ -22,6 +22,7 @@ import { FaQrcode, FaPlus, FaEdit, FaTrash } from "react-icons/fa";
 import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
 import CloseIcon from "@mui/icons-material/Close";
+import { toast } from "react-toastify";
 
 const statusList = ["Tất cả", "Hiển thị", "Ẩn"];
 const viewOptions = [5, 10, 20];
@@ -97,7 +98,7 @@ function SizeTable() {
     // Handler for Add Size
     const handleAddSize = () => {
         if (!newSize.ma || !newSize.tenKichCo) {
-            alert("Vui lòng nhập đầy đủ thông tin");
+            toast.warning("Vui lòng nhập đầy đủ thông tin");
             return;
         }
         setLoading(true);
@@ -111,6 +112,7 @@ function SizeTable() {
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Có lỗi xảy ra khi thêm kích thước!");
+                toast.success("Thêm kích thước thành công !")
                 return res.text();
             })
             .then(() => {
@@ -133,7 +135,7 @@ function SizeTable() {
 
     const handleSaveEdit = () => {
         if (!editSize.ma || !editSize.tenKichCo) {
-            alert("Vui lòng nhập đầy đủ thông tin");
+            toast.warning("Vui lòng nhập đầy đủ thông tin");
             return;
         }
         setLoading(true);
@@ -147,6 +149,7 @@ function SizeTable() {
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Có lỗi xảy ra khi cập nhật kích thước!");
+                toast.success("Cập nhật thành công")
                 return res.text();
             })
             .then(() => {
@@ -170,6 +173,7 @@ function SizeTable() {
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Có lỗi xảy ra khi xóa kích thước!");
+                toast.success("Xóa thành công !")
                 setShowDeleteDialog(false);
                 setDeleteId(null);
                 setQueryParams({ ...queryParams });

@@ -33,6 +33,7 @@ import dayjs from "dayjs";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import { toast } from "react-toastify";
 
 const genderOptions = ["Tất cả", "Nam", "Nữ", "Khác"];
 const statusOptions = ["Tất cả", "Đang làm", "Nghỉ"];
@@ -302,18 +303,10 @@ function NhanVienTable() {
                 }
             );
             handleEditClose();
-            setNotification({
-                open: true,
-                message: "Cập nhật nhân viên thành công!",
-                severity: "success",
-            });
+            toast.success("Cập nhật nhân viên thành công!")
             fetchEmployees();
         } catch (error) {
-            setNotification({
-                open: true,
-                message: "Sửa nhân viên thất bại!",
-                severity: "error",
-            });
+            toast.error("Sửa nhân viên thất bại!")
         } finally {
             setEditSaving(false);
         }
@@ -333,18 +326,10 @@ function NhanVienTable() {
         try {
             await axios.delete(apiBaseUrl + "/" + deletingEmployee.id);
             handleDeleteClose();
-            setNotification({
-                open: true,
-                message: "Xóa nhân viên thành công!",
-                severity: "success",
-            });
+            toast.success("Xóa nhân viên thành công !")
             fetchEmployees();
         } catch (error) {
-            setNotification({
-                open: true,
-                message: "Xóa nhân viên thất bại!",
-                severity: "error",
-            });
+            toast.error("Xóa nhân viên không thành công !")
         } finally {
             setDeleteLoading(false);
         }

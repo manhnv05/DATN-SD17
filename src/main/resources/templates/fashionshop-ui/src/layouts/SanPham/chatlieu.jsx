@@ -22,6 +22,7 @@ import { FaQrcode, FaPlus, FaEdit, FaTrash } from "react-icons/fa";
 import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
 import CloseIcon from "@mui/icons-material/Close";
+import { toast } from "react-toastify";
 
 const statusList = ["Tất cả", 1, 0];
 const viewOptions = [5, 10, 20];
@@ -94,7 +95,7 @@ function MaterialTable() {
 
     const handleAddMaterial = () => {
         if (!newMaterial.maChatLieu || !newMaterial.tenChatLieu) {
-            alert("Vui lòng nhập đầy đủ thông tin");
+            toast.warning("Vui lòng nhập đầy đủ các trường");
             return;
         }
         setLoading(true);
@@ -111,6 +112,7 @@ function MaterialTable() {
                 return res.text();
             })
             .then(() => {
+                toast.success("Thêm Chất liệu thành cônng")
                 setShowModal(false);
                 setNewMaterial({ maChatLieu: "", tenChatLieu: "", trangThai: 1 });
                 setQueryParams({ ...queryParams, page: 0 });
@@ -126,7 +128,7 @@ function MaterialTable() {
 
     const handleSaveEdit = () => {
         if (!editMaterial.maChatLieu || !editMaterial.tenChatLieu) {
-            alert("Vui lòng nhập đầy đủ thông tin");
+            toast.warning("Vui lòng nhập đầy đủ thông tin");
             return;
         }
         setLoading(true);
@@ -143,6 +145,7 @@ function MaterialTable() {
                 return res.text();
             })
             .then(() => {
+                toast.success("Update Chất liệu thành cônng")
                 setShowEditModal(false);
                 setEditMaterial(null);
                 setQueryParams({ ...queryParams });
@@ -162,6 +165,7 @@ function MaterialTable() {
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi xóa chất liệu");
+                toast.success("Xóa chất liệu thành công")
                 setShowDeleteDialog(false);
                 setDeleteId(null);
                 setQueryParams({ ...queryParams });

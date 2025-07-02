@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { toast } from 'react-toastify';
 // API để lấy danh sách địa chỉ của Việt Nam
 const API_PROVINCES_URL = 'https://provinces.open-api.vn/api/';
 
@@ -147,7 +148,7 @@ const UpdateOrderInfo = ({ show, onClose, orderId, initialData, onUpdateSuccess 
         const wardName = wards.find(w => w.code == selectedWard)?.name || '';
         
         if (!formData.tenNguoiNhan || !formData.soDienThoai || !provinceName || !districtName || !wardName) {
-            alert("Vui lòng điền các trường bắt buộc (Tên, SĐT, Tỉnh, Huyện, Xã).");
+            toast.warning("Vui lòng điền các trường bắt buộc (Tên, SĐT, Tỉnh, Huyện, Xã).");
             setIsSubmitting(false);
             return;
         }
@@ -175,12 +176,13 @@ const UpdateOrderInfo = ({ show, onClose, orderId, initialData, onUpdateSuccess 
                 const errorText = await response.text();
                 throw new Error(errorText || 'Cập nhật thất bại');
             }
+            toast.success("Cập nhật thành công !")
            
             if (onClose) onClose();
             if (onUpdateSuccess) onUpdateSuccess();
         } catch (error) {
             console.error("Lỗi khi submit:", error);
-            alert(`Lỗi: ${error.message}`);
+            toast.error(`Lỗi: ${error.message}`);
         } finally {
             setIsSubmitting(false);
         }

@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 import useNotify from "./hooks/useNotify";
 import ConfirmDialog from "./ConfirmDialog";
 import instanceAPIMain from "../../configapi";
-
+import { toast } from "react-toastify";
 
 export const updateDotGiamGia = (id, payload) =>
     instanceAPIMain.put(`/dotGiamGia/${id}`, payload);
@@ -45,10 +45,10 @@ const DisCountEvent = () => {
     try {
       setLoadingDel(true);
       await deleteDotGiamGia(deleteId);
-      notify("Xóa thành công", "success");
+      toast.success("Xóa thành công")
       refresh();
     } catch (e) {
-      notify("Xóa thất bại", "error");
+      toast.error("Xóa không thành công")
     } finally {
       setLoadingDel(false);
       setShowDeleteDialog(false);
@@ -59,10 +59,9 @@ const DisCountEvent = () => {
   const handleStatusChange = async (row, value) => {
     try {
       await updateDotGiamGia(row.id, { ...row, trangThai: value });
-      notify("Cập nhật thành công", "success");
-      refresh();
+      toast.success("Cập nhật thành công !")
     } catch (e) {
-      notify("Cập nhật thất bại", "error");
+      toast.error("Cập nhật không thành công !")
     }
   };
 

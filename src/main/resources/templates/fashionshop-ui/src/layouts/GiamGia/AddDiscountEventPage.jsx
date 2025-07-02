@@ -22,7 +22,7 @@ import "flatpickr/dist/flatpickr.min.css";
 import "flatpickr/dist/themes/airbnb.css";
 import useNotify from "./hooks/useNotify";
 import instanceAPIMain from "../../configapi";
-
+import { toast } from "react-toastify";
 
 
 export function debounce(func, timeout = 500) {
@@ -336,10 +336,10 @@ const AddDiscountEventPage = () => {
                 : await createDotGiamGia(payload);
             const idDotGiamGia = eventId || res.data;
             setEventId(idDotGiamGia);
-            notify(eventId ? "Cập nhật thành công" : "Thêm thành công", "success");
+            eventId ? toast.success("Cập nhật thành công") : toast.success("Thêm thành công")
         } catch (e) {
             console.error(e);
-            notify("Thao tác thất bại", "error");
+            eventId ? toast.success("Cập nhật không thành công") : toast.error("Thêm không thành công")
         }
     };
 

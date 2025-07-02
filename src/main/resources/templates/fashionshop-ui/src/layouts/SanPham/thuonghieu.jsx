@@ -22,6 +22,7 @@ import { FaQrcode, FaPlus, FaEdit, FaTrash } from "react-icons/fa";
 import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
 import CloseIcon from "@mui/icons-material/Close";
+import { toast } from "react-toastify";
 
 const statusList = ["Tất cả", "Hiển thị", "Ẩn"];
 const viewOptions = [5, 10, 20];
@@ -94,7 +95,7 @@ function BrandTable() {
     // Handler for Add Brand
     const handleAddBrand = () => {
         if (!newBrand.maThuongHieu || !newBrand.tenThuongHieu) {
-            alert("Vui lòng nhập đầy đủ thông tin");
+            toast.warning("Vui lòng nhập đầy đủ các trường")
             return;
         }
         setLoading(true);
@@ -111,6 +112,7 @@ function BrandTable() {
                 return res.text();
             })
             .then(() => {
+                toast.success("Thêm thương hiệu thành công")
                 setShowModal(false);
                 setNewBrand({ maThuongHieu: "", tenThuongHieu: "", trangThai: "Hiển thị" });
                 setQueryParams({ ...queryParams, page: 0 });
@@ -130,7 +132,7 @@ function BrandTable() {
 
     const handleSaveEdit = () => {
         if (!editBrand.maThuongHieu || !editBrand.tenThuongHieu) {
-            alert("Vui lòng nhập đầy đủ thông tin");
+            toast.warning("Vui lòng nhập đầy đủ các trường")
             return;
         }
         setLoading(true);
@@ -147,6 +149,7 @@ function BrandTable() {
                 return res.text();
             })
             .then(() => {
+                toast.success("Cập nhật thành công !")
                 setShowEditModal(false);
                 setEditBrand(null);
                 setQueryParams({ ...queryParams });
@@ -167,6 +170,7 @@ function BrandTable() {
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi xóa thương hiệu");
+                toast.success("Xóa thương hiệu thành công !")
                 setShowDeleteDialog(false);
                 setDeleteId(null);
                 setQueryParams({ ...queryParams });

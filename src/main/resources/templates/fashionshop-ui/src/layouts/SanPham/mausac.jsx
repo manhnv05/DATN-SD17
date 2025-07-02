@@ -22,6 +22,7 @@ import { FaQrcode, FaPlus, FaEdit, FaTrash } from "react-icons/fa";
 import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
 import CloseIcon from "@mui/icons-material/Close";
+import { toast } from "react-toastify";
 
 const statusList = ["Tất cả", "Hiển thị", "Ẩn"];
 const viewOptions = [5, 10, 20];
@@ -103,7 +104,7 @@ function ColorTable() {
     // Handler for Add Color
     const handleAddColor = () => {
         if (!newColor.maMau || !newColor.tenMauSac) {
-            alert("Vui lòng nhập đầy đủ thông tin");
+            toast.warning("Vui lòng nhập đầy đủ thông tin");
             return;
         }
         setLoading(true);
@@ -117,6 +118,7 @@ function ColorTable() {
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi thêm màu sắc");
+                toast.success("Thêm màu sắc thành công")
                 return res.text();
             })
             .then(() => {
@@ -139,7 +141,7 @@ function ColorTable() {
 
     const handleSaveEdit = () => {
         if (!editColor.maMau || !editColor.tenMauSac) {
-            alert("Vui lòng nhập đầy đủ thông tin");
+            toast.warning("Vui lòng nhập đầy đủ thông tin");
             return;
         }
         setLoading(true);
@@ -153,6 +155,7 @@ function ColorTable() {
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi cập nhật màu sắc");
+                toast.success("Cập nhật màu sắc thành công !")
                 return res.text();
             })
             .then(() => {
@@ -176,6 +179,7 @@ function ColorTable() {
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi xóa màu sắc");
+                toast.success("Xóa màu sắc thành công !")
                 setShowDeleteDialog(false);
                 setDeleteId(null);
                 setQueryParams({ ...queryParams });

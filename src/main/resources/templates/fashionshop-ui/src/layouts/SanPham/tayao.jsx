@@ -22,6 +22,7 @@ import { FaQrcode, FaPlus, FaEdit, FaTrash } from "react-icons/fa";
 import CircularProgress from "@mui/material/CircularProgress";
 import Alert from "@mui/material/Alert";
 import CloseIcon from "@mui/icons-material/Close";
+import { toast } from "react-toastify";
 
 const statusList = ["Tất cả", "Hiển thị", "Ẩn"];
 const viewOptions = [5, 10, 20];
@@ -101,7 +102,7 @@ function SleeveTable() {
     // Handler for Add Sleeve
     const handleAddSleeve = () => {
         if (!newSleeve.ma || !newSleeve.tenTayAo) {
-            alert("Vui lòng nhập đầy đủ thông tin");
+            toast.warning("Vui lòng nhập đầy đủ các trường")
             return;
         }
         setLoading(true);
@@ -118,6 +119,7 @@ function SleeveTable() {
                 return res.text();
             })
             .then(() => {
+                toast.success("Thêm tay áo thành công !")
                 setShowModal(false);
                 setNewSleeve({ ma: "", tenTayAo: "", trangThai: "Hiển thị" });
                 setQueryParams({ ...queryParams, page: 0 });
@@ -137,7 +139,7 @@ function SleeveTable() {
 
     const handleSaveEdit = () => {
         if (!editSleeve.ma || !editSleeve.tenTayAo) {
-            alert("Vui lòng nhập đầy đủ thông tin");
+            toast.warning("Vui lòng nhập đầy đủ các trường")
             return;
         }
         setLoading(true);
@@ -154,6 +156,7 @@ function SleeveTable() {
                 return res.text();
             })
             .then(() => {
+                toast.success("Cập nhật thành công !")
                 setShowEditModal(false);
                 setEditSleeve(null);
                 setQueryParams({ ...queryParams });
@@ -174,6 +177,7 @@ function SleeveTable() {
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi xóa tay áo");
+                toast.success("Xóa thành công !")
                 setShowDeleteDialog(false);
                 setDeleteId(null);
                 setQueryParams({ ...queryParams });
