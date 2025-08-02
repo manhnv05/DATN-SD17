@@ -1,7 +1,9 @@
 package com.example.datn.vo.hinhThucThanhToanVO;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.sql.Date;
 
 

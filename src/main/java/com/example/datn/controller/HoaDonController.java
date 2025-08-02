@@ -1,13 +1,8 @@
 package com.example.datn.controller;
 
-import com.example.datn.dto.ApiResponse;
-import com.example.datn.dto.CapNhatTrangThaiDTO;
-import com.example.datn.dto.HoaDonChiTietDTO;
-import com.example.datn.dto.HoaDonDTO;
-import com.example.datn.dto.HoaDonHistoryDTO;
-import com.example.datn.vo.hoaDonVO.HoaDonCreateVO;
-import com.example.datn.vo.hoaDonVO.HoaDonUpdateStatusVO;
-import com.example.datn.vo.hoaDonVO.HoaDonUpdateVO;
+import com.example.datn.config.ResponseHelper;
+import com.example.datn.dto.*;
+import com.example.datn.vo.hoaDonVO.*;
 import com.example.datn.vo.lichSuHoaDonVO.LichSuVO;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -23,13 +18,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import com.example.datn.dto.HoaDonPdfResult;
 
-@CrossOrigin(origins = "http://localhost:3000" +
-        "")
+@CrossOrigin(origins = "http://localhost:3000")
 @RestController
 @RequestMapping("/api/hoa-don")
 @RequiredArgsConstructor
@@ -37,19 +34,53 @@ import java.util.Map;
 public class HoaDonController {
     HoaDonService hoaDonService;
 
-    @PostMapping("/create")
-    public ResponseEntity<ApiResponse<HoaDonDTO>> createHoaDon(@RequestBody @Valid HoaDonCreateVO request) {
-        HoaDonDTO hoaDonResponse = hoaDonService.taoHoaDon(request);
+    //    @PostMapping("/create")
+//    public ResponseEntity<ApiResponse<HoaDonDTO>> createHoaDon(@RequestBody @Valid HoaDonCreateVO request) {
+//        HoaDonDTO hoaDonResponse = hoaDonService.taoHoaDon(request);
+//
+//        ApiResponse<HoaDonDTO> response = ApiResponse.<HoaDonDTO>builder()
+//                .code(1000)
+//                .message("Hóa đơn đã được tạo thành công")
+//                .data(hoaDonResponse)
+//                .build();
+//
+//        return new ResponseEntity<>(response, HttpStatus.CREATED);
+//    }
+    @GetMapping("/{id}/pdf")
+    public ResponseEntity<byte[]> exportPdf(@PathVariable String id) {
 
-        ApiResponse<HoaDonDTO> response = ApiResponse.<HoaDonDTO>builder()
+        HoaDonPdfResult hoaDonPdfResult = hoaDonService.hoadonToPDF(id);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-Disposition", "attachment; filename=hoa_don_" + hoaDonPdfResult.getMaHoaDon() + ".pdf");
+
+        return ResponseEntity
+                .ok()
+                .headers(headers)
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(hoaDonPdfResult.getPdfStream().readAllBytes());
+    }
+    @PostMapping("/tao-hoa-don-cho")
+    public ResponseEntity<ApiResponse<HoaDonChoDTO>> taoHoaDonCho(@RequestBody HoaDonChoRequestVO request) {
+        HoaDonChoDTO hoaDonChoResponse = hoaDonService.taoHoaDonCho(request);
+
+        ApiResponse<HoaDonChoDTO> response = ApiResponse.<HoaDonChoDTO>builder()
                 .code(1000)
-                .message("Hóa đơn đã được tạo thành công")
-                .data(hoaDonResponse)
+                .message("Hóa đơn chờ đã được tạo thành công")
+                .data(hoaDonChoResponse)
                 .build();
 
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
+    @PostMapping("/cap-nhat-danh-sach-san-pham/{idHoaDon}")
+    public ResponseEntity<List<HoaDonChiTietDTO>> updateDanhSachSanPhamChiTiet(
+            @PathVariable Integer idHoaDon,
+            @RequestBody List<CapNhatSanPhamChiTietDonHangVO> danhSachCapNhatSanPham) {
+
+        List<HoaDonChiTietDTO> updatedList = hoaDonService.updateDanhSachSanPhamChiTiet(idHoaDon, danhSachCapNhatSanPham);
+        return ResponseEntity.ok(updatedList);
+    }
     @GetMapping("/{id}")
     public HoaDonDTO getHoaDonDetails(@PathVariable Integer id) {
         return hoaDonService.getHoaDonById(id);
@@ -62,8 +93,8 @@ public class HoaDonController {
 
     @PutMapping("/trang-thai/{id}")
     public CapNhatTrangThaiDTO updateHoaDonStatus(@PathVariable Integer id, @RequestBody @Validated HoaDonUpdateStatusVO request) {
-        // Tham số 'nguoiThucHien' này sẽ được Service tự quyết định dựa trên HoaDon.getNhanVien()
-        String nguoiThucHienPlaceholder = "Nhân viên A"; // Giá trị giả lập
+
+        String nguoiThucHienPlaceholder = "Nhân viên A";
         return hoaDonService.capNhatTrangThaiHoaDon(id, request.getTrangThaiMoi(), request.getGhiChu(), nguoiThucHienPlaceholder);
     }
 
@@ -75,7 +106,7 @@ public class HoaDonController {
             @RequestParam(required = false) String loaiHoaDon,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ngayTaoStart,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ngayTaoEnd,
-            @RequestParam(required = false) String searchTerm) { // Thêm searchTerm vào đây
+            @RequestParam(required = false) String searchTerm) {
 
         Pageable pageable = PageRequest.of(page, size);
         Page<HoaDonDTO> hoaDonPage = hoaDonService.getFilteredHoaDon(
@@ -126,9 +157,16 @@ public class HoaDonController {
         return ResponseEntity.ok(response);
     };
 
-
-
-
+    @GetMapping("/get-thong-tin-hoa-don/{id}")
+    public ResponseEntity<ApiResponse<TongTienHoaDonDto>> getThongTinGiamGiaByHoaDonId(@PathVariable("id") Integer id) {
+        TongTienHoaDonDto tongTienHoaDonDto = hoaDonService.getThongTinGiamGiaByHoaDonId(id);
+        ApiResponse<TongTienHoaDonDto> apiResponse = ApiResponse.<TongTienHoaDonDto>builder()
+                .code(1000)
+                .message("Lấy thông tin hóa đơn thành công")
+                .data(tongTienHoaDonDto)
+                .build();
+        return ResponseEntity.ok(apiResponse);
+    }
     @PutMapping("/chuyen-trang-thai-huy/{id}") // Changed to PUT mapping
     public ResponseEntity<CapNhatTrangThaiDTO> chuyenTrangThaiHuy(
             @PathVariable("id") Integer idHoaDon,
@@ -147,15 +185,15 @@ public class HoaDonController {
             @PathVariable Integer id,
             @RequestBody @Valid HoaDonUpdateVO request) {
 
-        // Gọi service. Nếu service ném AppException, nó sẽ được GlobalExceptionHandler xử lý
+
         String successMessage = hoaDonService.capNhatThongTinHoaDon(id, request);
 
-        // Nếu service trả về thành công, xây dựng ApiResponse thành công
+
         ApiResponse<Void> apiResponse = ApiResponse.<Void>builder()
-                .code(1000) // Code thành công của bạn
-                .message(successMessage) // Lấy thông báo từ service
+                .code(1000)
+                .message(successMessage)
                 .build();
-        return new ResponseEntity<>(apiResponse, HttpStatus.OK); // Trả về 200 OK
+        return new ResponseEntity<>(apiResponse, HttpStatus.OK);
     }
     @GetMapping("/{idHoaDon}/san-pham")
     public ResponseEntity<ApiResponse<List<HoaDonChiTietDTO>>> getHoaDonChiTietResponse(@PathVariable Integer idHoaDon) {
@@ -168,5 +206,33 @@ public class HoaDonController {
                 .build();
         return ResponseEntity.ok(apiResponse);
 
+    }
+    @PutMapping("/update_hoadon")
+    public ResponseEntity<ApiResponse<HoaDonDTO>> updateHoadon(@RequestBody HoaDonRequestUpdateVO hoaDonRequestUpdateVO) {
+        return ResponseHelper.success("", hoaDonService.updateHoaDon(hoaDonRequestUpdateVO));
+    }
+    @PutMapping("/tang-so-luong-san-pham/{idSanPhamChiTiet}")
+    public ResponseEntity<ApiResponse<String>> tangSoLuongSanPhamChiTiet(
+            @PathVariable Integer idSanPhamChiTiet,
+            @RequestParam Integer soLuong) {
+        String result = hoaDonService.tangSoLuongSanPhamChiTiet(idSanPhamChiTiet, soLuong);
+        ApiResponse<String> apiResponse = ApiResponse.<String>builder()
+                .code(1000)
+                .message("Tăng số lượng sản phẩm chi tiết thành công")
+                .data(result)
+                .build();
+        return ResponseEntity.ok(apiResponse);
+    }
+    @PutMapping("/giam-so-luong-san-pham/{idSanPhamChiTiet}")
+    public ResponseEntity<ApiResponse<String>> giamSoLuongSanPhamChiTiet(
+            @PathVariable Integer idSanPhamChiTiet,
+            @RequestParam Integer soLuong) {
+        String result = hoaDonService.giamSoLuongSanPhamChiTiet(idSanPhamChiTiet, soLuong);
+        ApiResponse<String> apiResponse = ApiResponse.<String>builder()
+                .code(1000)
+                .message("Giam số lượng sản phẩm chi tiết thành công")
+                .data(result)
+                .build();
+        return ResponseEntity.ok(apiResponse);
     }
 }

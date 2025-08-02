@@ -1,5 +1,8 @@
 package com.example.datn.service;
 
+import com.example.datn.config.CloudinaryService;
+import com.example.datn.config.EmailService;
+import com.example.datn.dto.DiaChiDTO;
 import com.example.datn.dto.KhachHangDTO;
 import com.example.datn.entity.DiaChi;
 import com.example.datn.entity.KhachHang;
@@ -20,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Service xử lý nghiệp vụ cho Khách Hàng và gửi mail tài khoản với HTML.
@@ -36,23 +40,50 @@ public class KhachHangService {
     // Inject EmailService ở Config package để gửi email HTML nâng cao
     @Autowired(required = false)
     @Qualifier("emailConfigService")
-    private com.example.datn.config.EmailService emailConfigService;
+    private EmailService emailConfigService;
 
-    public Integer save(KhachHangVO vO) {
+    @Autowired
+    private CloudinaryService cloudinaryService;
+
+    // Lưu khách hàng, nhận thêm file ảnh (có thể null)
+    public Integer save(KhachHangVO vO, MultipartFile imageFile) {
         KhachHang bean = new KhachHang();
         BeanUtils.copyProperties(vO, bean);
+
+        // Upload ảnh nếu có file
+        if (imageFile != null && !imageFile.isEmpty()) {
+            try {
+                String imageUrl = cloudinaryService.uploadImage(imageFile);
+                bean.setHinhAnh(imageUrl);
+            } catch (Exception e) {
+                throw new RuntimeException("Lỗi upload ảnh lên Cloudinary: " + e.getMessage(), e);
+            }
+        }
+
         bean = khachHangRepository.save(bean);
         return bean.getId();
     }
 
     /**
      * Thêm đồng thời khách hàng và địa chỉ, đồng thời gửi mail tài khoản/mật khẩu (HTML) nếu có email.
+     * Có hỗ trợ upload ảnh lên cloud.
      */
     @Transactional
-    public Integer saveWithAddress(KhachHangWithDiaChiVO vO) {
+    public Integer saveWithAddress(KhachHangWithDiaChiVO vO, MultipartFile imageFile) {
         // Tạo khách hàng
         KhachHang kh = new KhachHang();
         BeanUtils.copyProperties(vO.getKhachHang(), kh);
+
+        // Upload ảnh nếu có file
+        if (imageFile != null && !imageFile.isEmpty()) {
+            try {
+                String imageUrl = cloudinaryService.uploadImage(imageFile);
+                kh.setHinhAnh(imageUrl);
+            } catch (Exception e) {
+                throw new RuntimeException("Lỗi upload ảnh lên Cloudinary: " + e.getMessage(), e);
+            }
+        }
+
         kh = khachHangRepository.save(kh);
 
         // Tạo địa chỉ gắn với khách hàng vừa tạo
@@ -69,7 +100,7 @@ public class KhachHangService {
                     + "<div style=\"text-align:center;\">"
                     + "    <img src=\"https://i.imgur.com/3fJ1P48.png\" alt=\"Logo Shop\" style=\"width:80px;margin-bottom:16px;\">"
                     + "    <h2 style=\"color:#1976d2;margin-bottom:8px;letter-spacing:1px;\">Đăng ký tài khoản thành công!</h2>"
-                    + "    <p style=\"color:#444;font-size:17px;margin:0 0 20px 0;\">Xin chào <b style='color:#1976d2'>" + kh.getTenKhachHang() + "</b>,</p>"
+                    + "    <p style=\"color:#444;font-size:17px;margin:0 0 20px 0;\">Xin chào <b style='color:#1976d2\">" + kh.getTenKhachHang() + "</b>,</p>"
                     + "</div>"
                     + "<div style=\"background:#f7fbfd;border-radius:12px;padding:24px 18px;margin:18px 0 22px 0;border:1.5px solid #e3f3fc;\">"
                     + "    <div style=\"font-size:17px;\">"
@@ -108,9 +139,20 @@ public class KhachHangService {
         khachHangRepository.deleteById(id);
     }
 
-    public void update(Integer id, KhachHangUpdateVO vO) {
+    // Cập nhật khách hàng, có thể upload lại ảnh mới
+    public void update(Integer id, KhachHangUpdateVO vO, MultipartFile imageFile) {
         KhachHang bean = requireOne(id);
         BeanUtils.copyProperties(vO, bean);
+
+        // Nếu có file ảnh mới, upload và cập nhật lại url cloud
+        if (imageFile != null && !imageFile.isEmpty()) {
+            try {
+                String imageUrl = cloudinaryService.uploadImage(imageFile);
+                bean.setHinhAnh(imageUrl);
+            } catch (Exception e) {
+                throw new RuntimeException("Lỗi upload ảnh lên Cloudinary: " + e.getMessage(), e);
+            }
+        }
         khachHangRepository.save(bean);
     }
 
@@ -141,6 +183,7 @@ public class KhachHangService {
             if (vO.getEmail() != null && !vO.getEmail().trim().isEmpty()) {
                 predicates.add(cb.like(cb.lower(root.get("email")), "%" + vO.getEmail().trim().toLowerCase() + "%"));
             }
+            // Giới tính: FE truyền 'Nam'/'Nữ'/'Khác', nếu cần mapping thì sửa tại đây
             if (vO.getGioiTinh() != null) {
                 predicates.add(cb.equal(root.get("gioiTinh"), vO.getGioiTinh()));
             }
@@ -153,8 +196,22 @@ public class KhachHangService {
             if (vO.getHinhAnh() != null && !vO.getHinhAnh().trim().isEmpty()) {
                 predicates.add(cb.like(cb.lower(root.get("hinhAnh")), "%" + vO.getHinhAnh().trim().toLowerCase() + "%"));
             }
-            if (vO.getTrangThai() != null) {
+            // Trạng thái: chỉ filter khi FE truyền lên (FE truyền số: 1/0)
+            if (vO.getTrangThai() != null && !"".equals(String.valueOf(vO.getTrangThai()))) {
                 predicates.add(cb.equal(root.get("trangThai"), vO.getTrangThai()));
+            }
+            // Lọc theo khoảng tuổi (tính từ ngày sinh)
+            if (vO.getMinAge() != null || vO.getMaxAge() != null) {
+                // Tính ngày hiện tại
+                java.time.LocalDate today = java.time.LocalDate.now();
+                if (vO.getMinAge() != null) {
+                    java.time.LocalDate maxBirthDate = today.minusYears(vO.getMinAge());
+                    predicates.add(cb.lessThanOrEqualTo(root.get("ngaySinh"), java.sql.Date.valueOf(maxBirthDate)));
+                }
+                if (vO.getMaxAge() != null) {
+                    java.time.LocalDate minBirthDate = today.minusYears(vO.getMaxAge() + 1).plusDays(1);
+                    predicates.add(cb.greaterThanOrEqualTo(root.get("ngaySinh"), java.sql.Date.valueOf(minBirthDate)));
+                }
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
@@ -166,6 +223,14 @@ public class KhachHangService {
     private KhachHangDTO toDTO(KhachHang original) {
         KhachHangDTO bean = new KhachHangDTO();
         BeanUtils.copyProperties(original, bean);
+        List<DiaChi> diaChiList = diaChiRepository.findByKhachHangId(original.getId());
+        List<DiaChiDTO> diaChiDTOs = new ArrayList<>();
+        for (DiaChi dc : diaChiList) {
+            DiaChiDTO dto = new DiaChiDTO();
+            BeanUtils.copyProperties(dc, dto);
+            diaChiDTOs.add(dto);
+        }
+        bean.setDiaChis(diaChiDTOs);
         return bean;
     }
 

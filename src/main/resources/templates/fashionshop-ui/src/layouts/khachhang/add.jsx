@@ -5,59 +5,114 @@ import Typography from "@mui/material/Typography";
 import Grid from "@mui/material/Grid";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
-import Autocomplete from "@mui/material/Autocomplete";
 import FormControl from "@mui/material/FormControl";
 import Avatar from "@mui/material/Avatar";
-import FormHelperText from "@mui/material/FormHelperText";
 import UploadIcon from "@mui/icons-material/Upload";
 import { useNavigate } from "react-router-dom";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
-import Select from "@mui/material/Select";
-import MenuItem from "@mui/material/MenuItem";
-import axios from "axios";
 import Fade from "@mui/material/Fade";
-import Tooltip from "@mui/material/Tooltip";
 import Paper from "@mui/material/Paper";
 import Divider from "@mui/material/Divider";
-import Stack from "@mui/material/Stack";
 import CircularProgress from "@mui/material/CircularProgress";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import { styled } from "@mui/material/styles";
+import Radio from "@mui/material/Radio";
+import RadioGroup from "@mui/material/RadioGroup";
+import FormLabel from "@mui/material/FormLabel";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import MenuItem from "@mui/material/MenuItem";
+import SafeAutocomplete from "../nhanvien/component/SafeAutocomplete";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import EmailIcon from "@mui/icons-material/Email";
+
+const provinceAPI = "http://localhost:8080/api/vietnamlabs/province";
+const API_URL = "http://localhost:8080/khachHang/with-address";
+
+const StyledCard = styled(Card)(({ theme }) => ({
+    borderRadius: 20,
+    background: "linear-gradient(135deg, #ffffff 0%, #f8faff 100%)",
+    boxShadow: "0 20px 60px rgba(0, 0, 0, 0.08)",
+    padding: theme.spacing(4),
+    position: "relative",
+    overflow: "visible",
+    width: "100%",
+    margin: "0 auto",
+    border: "0px solid rgba(23, 105, 170, 0.1)",
+    height: "100%",
+    [theme.breakpoints.up('md')]: { maxWidth: "100%" },
+    [theme.breakpoints.down('md')]: { padding: theme.spacing(2) },
+}));
+
+const ProfileSection = styled(Box)(({ theme }) => ({
+    background: "linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%)",
+    borderRadius: 16,
+    padding: theme.spacing(3),
+    textAlign: "center",
+    position: "relative",
+    "&::before": {
+        content: '""',
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: "linear-gradient(45deg, rgba(23, 105, 170, 0.05) 0%, rgba(156, 39, 176, 0.05) 100%)",
+        borderRadius: 16,
+        zIndex: 0,
+    },
+}));
+
+const InfoCard = styled(Paper)(({ theme }) => ({
+    background: "linear-gradient(135deg, #ffffff 0%, #fafbff 100%)",
+    borderRadius: 12,
+    padding: theme.spacing(2.5),
+    border: "1px solid rgba(23, 105, 170, 0.08)",
+    transition: "all 0.3s ease",
+    marginBottom: theme.spacing(3),
+    "&:hover": {
+        transform: "translateY(-2px)",
+        boxShadow: "0 8px 25px rgba(23, 105, 170, 0.15)",
+    },
+}));
+
+const labelStyle = {
+    fontWeight: 600,
+    color: "#1769aa",
+    marginBottom: 4,
+    fontSize: 15,
+    display: "block",
+    letterSpacing: "0.3px"
+};
 
 const GENDER_OPTIONS = [
     { value: 1, label: "Nam" },
     { value: 0, label: "Nữ" },
     { value: 2, label: "Khác" }
 ];
-
 const STATUS_OPTIONS = [
     { value: 1, label: "Đang hoạt động" },
     { value: 0, label: "Ngừng hoạt động" }
 ];
 
-const labelStyle = {
-    fontWeight: 700,
-    color: "#1976d2",
-    marginBottom: 4,
-    fontSize: 16,
-    display: "block",
-    letterSpacing: "0.5px"
-};
-
+function arraySafe(array) {
+    return Array.isArray(array) ? array : [];
+}
+function findById(array, value, key) {
+    if (!array || !value) return null;
+    if (!key) key = "id";
+    return array.find((item) => item && item[key] === value) || null;
+}
 function generateMaKhachHang() {
     const randomNumber = Math.floor(10000000 + Math.random() * 90000000);
     return "KH" + randomNumber;
 }
-
 function generateMatKhau() {
     let result = "";
-    for (let i = 0; i < 10; i++) {
-        result += Math.floor(Math.random() * 10).toString();
-    }
+    for (let i = 0; i < 10; i++) result += Math.floor(Math.random() * 10).toString();
     return result;
 }
-
-const API_URL = "http://localhost:8080/khachHang/with-address";
 
 export default function AddKhachHangForm() {
     const [khachHang, setKhachHang] = useState({
@@ -73,21 +128,16 @@ export default function AddKhachHangForm() {
     });
     const [diaChi, setDiaChi] = useState({
         tinhThanhPho: "",
-        quanHuyen: "",
         xaPhuong: "",
         trangThai: 1
     });
+    const [provinces, setProvinces] = useState([]);
+    const [wards, setWards] = useState([]);
     const [provinceInput, setProvinceInput] = useState("");
-    const [districtInput, setDistrictInput] = useState("");
     const [wardInput, setWardInput] = useState("");
     const [avatarPreview, setAvatarPreview] = useState("");
+    const [imageFile, setImageFile] = useState(null);
     const [errors, setErrors] = useState({});
-    const [provinces, setProvinces] = useState([]);
-    const [districts, setDistricts] = useState([]);
-    const [wards, setWards] = useState([]);
-    const [provinceName, setProvinceName] = useState("");
-    const [districtName, setDistrictName] = useState("");
-    const [wardName, setWardName] = useState("");
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const navigate = useNavigate();
@@ -103,8 +153,9 @@ export default function AddKhachHangForm() {
     useEffect(() => {
         async function fetchProvinces() {
             try {
-                const response = await axios.get("https://provinces.open-api.vn/api/?depth=1");
-                setProvinces(response.data || []);
+                const res = await fetch(provinceAPI);
+                const json = await res.json();
+                setProvinces(arraySafe(json.data));
             } catch {
                 setProvinces([]);
             }
@@ -114,49 +165,18 @@ export default function AddKhachHangForm() {
 
     useEffect(() => {
         if (diaChi.tinhThanhPho) {
-            async function fetchDistricts() {
-                try {
-                    const response = await axios.get(`https://provinces.open-api.vn/api/p/${diaChi.tinhThanhPho}?depth=2`);
-                    setDistricts(response.data.districts || []);
-                    setProvinceName(response.data.name || "");
-                } catch {
-                    setDistricts([]);
-                }
+            const foundProvince = provinces.find((item) => item.id === diaChi.tinhThanhPho);
+            if (foundProvince && Array.isArray(foundProvince.wards)) {
+                setWards(foundProvince.wards);
+            } else {
+                setWards([]);
             }
-            fetchDistricts();
-            setDiaChi((prev) => ({ ...prev, quanHuyen: "", xaPhuong: "" }));
-            setDistrictInput("");
-            setWardInput("");
+        } else {
             setWards([]);
-            setDistrictName("");
-            setWardName("");
         }
-    }, [diaChi.tinhThanhPho]);
-
-    useEffect(() => {
-        if (diaChi.quanHuyen) {
-            async function fetchWards() {
-                try {
-                    const response = await axios.get(`https://provinces.open-api.vn/api/d/${diaChi.quanHuyen}?depth=2`);
-                    setWards(response.data.wards || []);
-                    setDistrictName(response.data.name || "");
-                } catch {
-                    setWards([]);
-                }
-            }
-            fetchWards();
-            setDiaChi((prev) => ({ ...prev, xaPhuong: "" }));
-            setWardInput("");
-            setWardName("");
-        }
-    }, [diaChi.quanHuyen]);
-
-    useEffect(() => {
-        if (diaChi.xaPhuong) {
-            const found = wards.find((item) => String(item.code) === String(diaChi.xaPhuong));
-            setWardName(found ? found.name : "");
-        }
-    }, [diaChi.xaPhuong, wards]);
+        setWardInput("");
+        setDiaChi((prev) => ({ ...prev, xaPhuong: "" }));
+    }, [diaChi.tinhThanhPho, provinces]);
 
     function handleKhachHangChange(event) {
         const { name, value } = event.target;
@@ -164,12 +184,8 @@ export default function AddKhachHangForm() {
             ...prev,
             [name]: value
         }));
-        setErrors((prev) => ({
-            ...prev,
-            [name]: undefined
-        }));
+        setErrors((prev) => ({ ...prev, [name]: undefined }));
     }
-
     function handleDateChange(event) {
         let value = event.target.value;
         setKhachHang((prev) => ({
@@ -181,7 +197,6 @@ export default function AddKhachHangForm() {
             ngaySinh: undefined
         }));
     }
-
     function handleAvatarChange(event) {
         const file = event.target.files[0];
         if (file) {
@@ -190,9 +205,9 @@ export default function AddKhachHangForm() {
                 hinhAnh: file.name
             }));
             setAvatarPreview(URL.createObjectURL(file));
+            setImageFile(file);
         }
     }
-
     function handleDiaChiField(field, value) {
         setDiaChi((prev) => ({
             ...prev,
@@ -203,45 +218,54 @@ export default function AddKhachHangForm() {
             [field]: undefined
         }));
     }
-
     function validate() {
         let error = {};
         if (!khachHang.tenKhachHang) error.tenKhachHang = "Vui lòng nhập tên khách hàng";
         if (!khachHang.email) error.email = "Vui lòng nhập email";
-        if (khachHang.gioiTinh === "") error.gioiTinh = "Vui lòng chọn giới tính";
+        if (khachHang.gioiTinh === "" || khachHang.gioiTinh === undefined) error.gioiTinh = "Vui lòng chọn giới tính";
         if (!khachHang.sdt) error.sdt = "Vui lòng nhập số điện thoại";
         if (!khachHang.ngaySinh) error.ngaySinh = "Vui lòng chọn ngày sinh";
         if (!diaChi.tinhThanhPho && !provinceInput) error.tinhThanhPho = "Vui lòng chọn hoặc nhập tỉnh/thành phố";
-        if (!diaChi.quanHuyen && !districtInput) error.quanHuyen = "Vui lòng chọn hoặc nhập quận/huyện";
         if (!diaChi.xaPhuong && !wardInput) error.xaPhuong = "Vui lòng chọn hoặc nhập phường/xã";
         return error;
     }
-
     async function handleSubmit(event) {
         event.preventDefault();
         const error = validate();
         if (Object.keys(error).length) {
             setErrors(error);
+            // Hiện toast lỗi cho từng trường thiếu
+            toast.error(Object.values(error)[0]);
             return;
         }
         setLoading(true);
         setSuccess(false);
-        const data = {
+        const foundProvince = provinces.find((item) => item.id === diaChi.tinhThanhPho);
+        const foundWard = wards.find((item) => item.name === diaChi.xaPhuong);
+
+        // Chuẩn bị object vO gửi cho backend
+        const vO = {
             khachHang,
             diaChi: {
                 ...diaChi,
-                tinhThanhPho: provinceName || provinceInput || "",
-                quanHuyen: districtName || districtInput || "",
-                xaPhuong: wardName || wardInput || "",
+                tinhThanhPho: foundProvince ? foundProvince.province : provinceInput || "",
+                xaPhuong: foundWard ? foundWard.name : wardInput || "",
             }
         };
+
+        const formData = new FormData();
+        formData.append("vO", new Blob([JSON.stringify(vO)], { type: "application/json" }));
+        if (imageFile) {
+            formData.append("imageFile", imageFile);
+        }
+
         try {
-            await axios.post(API_URL, data, {
-                headers: {
-                    "Content-Type": "application/json"
-                }
+            await fetch(API_URL, {
+                method: "POST",
+                body: formData
             });
             setSuccess(true);
+            toast.success("Thêm khách hàng thành công!");
             setTimeout(() => {
                 setLoading(false);
                 navigate(-1);
@@ -249,464 +273,379 @@ export default function AddKhachHangForm() {
         } catch {
             setLoading(false);
             setSuccess(false);
-            alert("Đã có lỗi, vui lòng thử lại!");
+            toast.error("Đã có lỗi, vui lòng thử lại!");
         }
     }
 
     return (
         <DashboardLayout>
             <DashboardNavbar />
+            <ToastContainer position="top-center" autoClose={2000} />
             <Box
                 sx={{
                     minHeight: "100vh",
                     background: "linear-gradient(130deg,#f2f9fe 70%,#e9f0fa 100%)",
                     display: "flex",
-                    alignItems: "center",
+                    alignItems: "flex-start",
                     justifyContent: "center",
-                    py: 5
+                    py: 4
                 }}
             >
                 <Fade in timeout={600}>
-                    <Card
-                        sx={{
-                            maxWidth: 1500,
-                            width: "100%",
-                            borderRadius: 7,
-                            boxShadow: "0 10px 50px 0 rgba(28, 72, 180, 0.13)",
-                            p: { xs: 2, md: 5 },
-                            background: "linear-gradient(140deg,#fff 60%,#e6f1fb 120%)",
-                            position: "relative"
-                        }}
-                    >
+                    <StyledCard>
                         <Typography
-                            variant="h3"
-                            fontWeight={900}
-                            color="#1976d2"
-                            mb={4}
-                            align="center"
-                            letterSpacing={1.8}
-                            sx={{
-                                textShadow: "0 3px 12px #e3f0fa, 0 2px 0 #fff"
-                            }}
+                            variant="h4"
+                            sx={{ fontWeight: 800, color: "#1769aa", textAlign: "center", mb: 3 }}
                         >
                             Thêm Khách Hàng Mới
                         </Typography>
-                        <Paper elevation={0} sx={{ background: "transparent", mb: 4, p: 2, borderRadius: 4 }}>
-                            <Typography variant="h6" color="#1976d2" fontWeight={700}>
-                                Thông tin khách hàng và địa chỉ được lưu đồng thời. Sau khi thêm, tài khoản và mật khẩu sẽ được gửi vào email khách hàng!
-                            </Typography>
-                        </Paper>
                         <form onSubmit={handleSubmit} autoComplete="off">
                             <Grid container spacing={4}>
-                                <Grid item xs={12} md={3}>
-                                    <Stack spacing={2} alignItems="center">
-                                        <Tooltip title="Ảnh đại diện khách hàng" arrow placement="right">
-                                            <Avatar
-                                                src={avatarPreview || "/default-avatar.png"}
-                                                alt="avatar"
-                                                sx={{
-                                                    width: 120,
-                                                    height: 120,
-                                                    mb: 1,
-                                                    border: "3px solid #42a5f5",
-                                                    boxShadow: "0 5px 20px #e3f0fa",
-                                                    fontSize: 44,
-                                                    bgcolor: "#f7fbfd",
-                                                    color: "#1976d2"
-                                                }}
-                                            >
-                                                {khachHang.tenKhachHang && khachHang.tenKhachHang.length > 0 ? khachHang.tenKhachHang.charAt(0).toUpperCase() : "A"}
-                                            </Avatar>
-                                        </Tooltip>
-                                        <label htmlFor="hinhAnh-upload">
-                                            <input
-                                                type="file"
-                                                id="hinhAnh-upload"
-                                                name="hinhAnh"
-                                                accept="image/*"
-                                                style={{ display: "none" }}
-                                                onChange={handleAvatarChange}
-                                            />
+                                {/* Avatar và trạng thái */}
+                                <Grid item xs={12} md={4}>
+                                    <ProfileSection>
+                                        <Avatar
+                                            src={avatarPreview || "/default-avatar.png"}
+                                            alt={khachHang.tenKhachHang || "Khách hàng"}
+                                            sx={{
+                                                width: 180, height: 180,
+                                                mx: "auto", mb: 2, border: "4px solid white",
+                                                boxShadow: "0 8px 25px rgba(0,0,0,0.15)", fontSize: "3rem", backgroundColor: "#1769aa",
+                                            }}
+                                        >
+                                            {khachHang.tenKhachHang ? khachHang.tenKhachHang.charAt(0).toUpperCase() : "K"}
+                                        </Avatar>
+                                        <Box>
                                             <Button
-                                                variant="outlined"
-                                                color="info"
-                                                component="span"
+                                                variant="contained"
+                                                component="label"
                                                 startIcon={<UploadIcon />}
-                                                sx={{
-                                                    textTransform: "none",
-                                                    fontWeight: 700,
-                                                    borderRadius: 3,
-                                                    px: 2,
-                                                    fontSize: 16,
-                                                    background: "#fafdff",
-                                                    border: "1.7px solid #90caf9",
-                                                    "&:hover": {
-                                                        background: "#e3f0fa",
-                                                        borderColor: "#42a5f5",
-                                                        color: "#1565c0"
-                                                    }
-                                                }}
+                                                sx={{ mt: 2, borderRadius: 2, fontWeight: 600, px: 3 }}
                                             >
-                                                Ảnh đại diện
+                                                Đổi ảnh
+                                                <input
+                                                    type="file"
+                                                    hidden
+                                                    accept="image/*"
+                                                    onChange={handleAvatarChange}
+                                                />
                                             </Button>
-                                        </label>
-                                        <FormHelperText sx={{ color: "error.main" }}>
-                                            {errors.hinhAnh}
-                                        </FormHelperText>
-                                    </Stack>
-                                </Grid>
-                                <Grid item xs={12} md={9}>
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={12} md={6} lg={4}>
-                                            <label style={labelStyle}>Họ và tên khách hàng</label>
-                                            <TextField
-                                                name="tenKhachHang"
-                                                value={khachHang.tenKhachHang}
+                                        </Box>
+                                        <Divider sx={{ my: 2, opacity: 0.3 }} />
+                                        <FormControl component="fieldset" error={!!errors.gioiTinh}>
+                                            <FormLabel component="legend" sx={{ color: "#1769aa", fontWeight: 700, mb: 1 }}>Giới tính</FormLabel>
+                                            <RadioGroup
+                                                row
+                                                name="gioiTinh"
+                                                value={khachHang.gioiTinh}
                                                 onChange={handleKhachHangChange}
-                                                error={!!errors.tenKhachHang}
-                                                helperText={errors.tenKhachHang}
-                                                fullWidth
-                                                size="small"
-                                                sx={{
-                                                    bgcolor: "#f7fbfd",
-                                                    borderRadius: 2,
-                                                    input: { fontWeight: 600 }
-                                                }}
-                                                placeholder="VD: Nguyễn Văn B"
-                                            />
-                                        </Grid>
-                                        <Grid item xs={12} md={6} lg={4}>
-                                            <label style={labelStyle}>Email liên hệ</label>
+                                            >
+                                                {GENDER_OPTIONS.map((gender) => (
+                                                    <FormControlLabel
+                                                        key={gender.value}
+                                                        value={gender.value}
+                                                        control={<Radio />}
+                                                        label={gender.label}
+                                                    />
+                                                ))}
+                                            </RadioGroup>
+                                            {errors.gioiTinh && (
+                                                <Typography color="error" fontSize={13} mt={1}>{errors.gioiTinh}</Typography>
+                                            )}
+                                        </FormControl>
+                                        <FormControl fullWidth sx={{ mt: 2 }}>
+                                            <label style={labelStyle}>Trạng thái</label>
                                             <TextField
-                                                name="email"
-                                                value={khachHang.email}
+                                                select
+                                                name="trangThai"
+                                                value={khachHang.trangThai}
                                                 onChange={handleKhachHangChange}
-                                                error={!!errors.email}
-                                                helperText={errors.email}
-                                                fullWidth
                                                 size="small"
-                                                sx={{
-                                                    bgcolor: "#f7fbfd",
-                                                    borderRadius: 2,
-                                                    input: { fontWeight: 600 }
-                                                }}
-                                                placeholder="VD: email@gmail.com"
-                                            />
-                                        </Grid>
-                                        <Grid item xs={12} md={6} lg={4}>
-                                            <label style={labelStyle}>Giới tính khách hàng</label>
-                                            <FormControl
-                                                fullWidth
-                                                size="small"
-                                                error={!!errors.gioiTinh}
                                                 sx={{ bgcolor: "#f7fbfd", borderRadius: 2 }}
                                             >
-                                                <Select
-                                                    name="gioiTinh"
-                                                    value={khachHang.gioiTinh}
-                                                    onChange={handleKhachHangChange}
-                                                    displayEmpty
-                                                >
-                                                    <MenuItem value="">
-                                                        <em>Chọn giới tính khách hàng</em>
+                                                {STATUS_OPTIONS.map((status) => (
+                                                    <MenuItem key={status.value} value={status.value}>
+                                                        {status.label}
                                                     </MenuItem>
-                                                    {GENDER_OPTIONS.map((gender) => (
-                                                        <MenuItem key={gender.value} value={gender.value}>
-                                                            {gender.label}
-                                                        </MenuItem>
-                                                    ))}
-                                                </Select>
-                                                <FormHelperText>{errors.gioiTinh}</FormHelperText>
-                                            </FormControl>
-                                        </Grid>
-                                        <Grid item xs={12} md={6} lg={4}>
-                                            <label style={labelStyle}>Số điện thoại liên hệ</label>
-                                            <TextField
-                                                name="sdt"
-                                                value={khachHang.sdt}
-                                                onChange={handleKhachHangChange}
-                                                error={!!errors.sdt}
-                                                helperText={errors.sdt}
-                                                fullWidth
-                                                size="small"
-                                                sx={{
-                                                    bgcolor: "#f7fbfd",
-                                                    borderRadius: 2,
-                                                    input: { fontWeight: 600 }
-                                                }}
-                                                placeholder="VD: 0912345678"
-                                            />
-                                        </Grid>
-                                        <Grid item xs={12} md={6} lg={4}>
-                                            <label style={labelStyle}>Ngày sinh khách hàng</label>
-                                            <TextField
-                                                type="date"
-                                                name="ngaySinh"
-                                                value={khachHang.ngaySinh}
-                                                onChange={handleDateChange}
-                                                error={!!errors.ngaySinh}
-                                                helperText={errors.ngaySinh}
-                                                fullWidth
-                                                size="small"
-                                                sx={{
-                                                    bgcolor: "#f7fbfd",
-                                                    borderRadius: 2,
-                                                    input: { fontWeight: 600 }
-                                                }}
-                                                InputLabelProps={{ shrink: true }}
-                                            />
-                                        </Grid>
-                                        {/* Địa chỉ */}
-                                        <Grid item xs={12} md={6} lg={4}>
-                                            <label style={labelStyle}>Tỉnh/Thành phố</label>
-                                            <Autocomplete
-                                                freeSolo
-                                                options={provinces}
-                                                getOptionLabel={(option) =>
-                                                    typeof option === "string"
-                                                        ? option
-                                                        : option.name || ""
-                                                }
-                                                value={
-                                                    provinces.find((item) => item.code === diaChi.tinhThanhPho) ||
-                                                    (provinceInput && { name: provinceInput }) ||
-                                                    null
-                                                }
-                                                inputValue={provinceInput}
-                                                onInputChange={(event, newInputValue, reason) => {
-                                                    setProvinceInput(newInputValue);
-                                                    if (reason === "clear") {
-                                                        handleDiaChiField("tinhThanhPho", "");
-                                                        setProvinceName("");
-                                                    }
-                                                }}
-                                                onChange={(event, newValue) => {
-                                                    if (typeof newValue === "string") {
-                                                        setProvinceInput(newValue);
-                                                        handleDiaChiField("tinhThanhPho", "");
-                                                        setProvinceName(newValue);
-                                                    } else if (newValue && newValue.code) {
-                                                        handleDiaChiField("tinhThanhPho", newValue.code);
-                                                        setProvinceInput(newValue.name);
-                                                        setProvinceName(newValue.name);
-                                                    } else {
-                                                        setProvinceInput("");
-                                                        handleDiaChiField("tinhThanhPho", "");
-                                                        setProvinceName("");
-                                                    }
-                                                }}
-                                                renderInput={(params) => (
-                                                    <TextField
-                                                        {...params}
-                                                        placeholder="Chọn hoặc nhập tỉnh/thành phố"
-                                                        error={!!errors.tinhThanhPho}
-                                                        helperText={errors.tinhThanhPho}
-                                                        size="small"
-                                                        sx={{ bgcolor: "#f7fbfd", borderRadius: 2 }}
-                                                    />
-                                                )}
-                                            />
-                                            {(provinceInput || provinceName) && (
-                                                <Box mt={1} fontSize={14} color="#1976d2">
-                                                    <b>Tỉnh/Thành phố:</b> {provinceInput || provinceName}
-                                                </Box>
-                                            )}
-                                        </Grid>
-                                        <Grid item xs={12} md={6} lg={4}>
-                                            <label style={labelStyle}>Quận/Huyện</label>
-                                            <Autocomplete
-                                                freeSolo
-                                                options={districts}
-                                                getOptionLabel={(option) =>
-                                                    typeof option === "string"
-                                                        ? option
-                                                        : option.name || ""
-                                                }
-                                                value={
-                                                    districts.find((item) => item.code === diaChi.quanHuyen) ||
-                                                    (districtInput && { name: districtInput }) ||
-                                                    null
-                                                }
-                                                inputValue={districtInput}
-                                                onInputChange={(event, newInputValue, reason) => {
-                                                    setDistrictInput(newInputValue);
-                                                    if (reason === "clear") {
-                                                        handleDiaChiField("quanHuyen", "");
-                                                        setDistrictName("");
-                                                    }
-                                                }}
-                                                onChange={(event, newValue) => {
-                                                    if (typeof newValue === "string") {
-                                                        setDistrictInput(newValue);
-                                                        handleDiaChiField("quanHuyen", "");
-                                                        setDistrictName(newValue);
-                                                    } else if (newValue && newValue.code) {
-                                                        handleDiaChiField("quanHuyen", newValue.code);
-                                                        setDistrictInput(newValue.name);
-                                                        setDistrictName(newValue.name);
-                                                    } else {
-                                                        setDistrictInput("");
-                                                        handleDiaChiField("quanHuyen", "");
-                                                        setDistrictName("");
-                                                    }
-                                                }}
-                                                renderInput={(params) => (
-                                                    <TextField
-                                                        {...params}
-                                                        placeholder="Chọn hoặc nhập quận/huyện"
-                                                        error={!!errors.quanHuyen}
-                                                        helperText={errors.quanHuyen}
-                                                        size="small"
-                                                        sx={{ bgcolor: "#f7fbfd", borderRadius: 2 }}
-                                                    />
-                                                )}
-                                                disabled={!diaChi.tinhThanhPho && !provinceInput}
-                                            />
-                                            {(districtInput || districtName) && (
-                                                <Box mt={1} fontSize={14} color="#1976d2">
-                                                    <b>Quận/Huyện:</b> {districtInput || districtName}
-                                                </Box>
-                                            )}
-                                        </Grid>
-                                        <Grid item xs={12} md={6} lg={4}>
-                                            <label style={labelStyle}>Phường/Xã</label>
-                                            <Autocomplete
-                                                freeSolo
-                                                options={wards}
-                                                getOptionLabel={(option) =>
-                                                    typeof option === "string"
-                                                        ? option
-                                                        : option.name || ""
-                                                }
-                                                value={
-                                                    wards.find((item) => item.code === diaChi.xaPhuong) ||
-                                                    (wardInput && { name: wardInput }) ||
-                                                    null
-                                                }
-                                                inputValue={wardInput}
-                                                onInputChange={(event, newInputValue, reason) => {
-                                                    setWardInput(newInputValue);
-                                                    if (reason === "clear") {
-                                                        handleDiaChiField("xaPhuong", "");
-                                                        setWardName("");
-                                                    }
-                                                }}
-                                                onChange={(event, newValue) => {
-                                                    if (typeof newValue === "string") {
-                                                        setWardInput(newValue);
-                                                        handleDiaChiField("xaPhuong", "");
-                                                        setWardName(newValue);
-                                                    } else if (newValue && newValue.code) {
-                                                        handleDiaChiField("xaPhuong", newValue.code);
-                                                        setWardInput(newValue.name);
-                                                        setWardName(newValue.name);
-                                                    } else {
-                                                        setWardInput("");
-                                                        handleDiaChiField("xaPhuong", "");
-                                                        setWardName("");
-                                                    }
-                                                }}
-                                                renderInput={(params) => (
-                                                    <TextField
-                                                        {...params}
-                                                        placeholder="Chọn hoặc nhập phường/xã"
-                                                        error={!!errors.xaPhuong}
-                                                        helperText={errors.xaPhuong}
-                                                        size="small"
-                                                        sx={{ bgcolor: "#f7fbfd", borderRadius: 2 }}
-                                                    />
-                                                )}
-                                                disabled={
-                                                    (!diaChi.tinhThanhPho && !provinceInput) ||
-                                                    (!diaChi.quanHuyen && !districtInput)
-                                                }
-                                            />
-                                            {(wardInput || wardName) && (
-                                                <Box mt={1} fontSize={14} color="#1976d2">
-                                                    <b>Phường/Xã:</b> {wardInput || wardName}
-                                                </Box>
-                                            )}
-                                        </Grid>
-                                        <Grid item xs={12} md={6} lg={4}>
-                                            <label style={labelStyle}>Trạng thái hoạt động</label>
-                                            <FormControl fullWidth size="small" sx={{ bgcolor: "#f7fbfd", borderRadius: 2 }}>
-                                                <Select
-                                                    name="trangThai"
-                                                    value={khachHang.trangThai}
-                                                    onChange={handleKhachHangChange}
-                                                    displayEmpty
+                                                ))}
+                                            </TextField>
+                                        </FormControl>
+                                    </ProfileSection>
+                                </Grid>
+                                {/* Thông tin khách hàng và địa chỉ */}
+                                <Grid item xs={12} md={8}>
+                                    <Grid container spacing={3}>
+                                        <Grid item xs={12}>
+                                            <InfoCard>
+                                                <Typography
+                                                    variant="h6"
+                                                    sx={{
+                                                        fontWeight: 700, color: "#1769aa", mb: 3,
+                                                        display: "flex", alignItems: "center", gap: 1,
+                                                    }}
                                                 >
-                                                    {STATUS_OPTIONS.map((status) => (
-                                                        <MenuItem key={status.value} value={status.value}>
-                                                            {status.label}
-                                                        </MenuItem>
-                                                    ))}
-                                                </Select>
-                                            </FormControl>
+                                                    Thông Tin Cá Nhân
+                                                </Typography>
+                                                <Grid container spacing={2}>
+                                                    <Grid item xs={12} sm={6}>
+                                                        <label>Họ và tên</label>
+                                                        <TextField
+                                                            name="tenKhachHang"
+                                                            value={khachHang.tenKhachHang}
+                                                            onChange={handleKhachHangChange}
+                                                            fullWidth
+                                                            size="small"
+                                                            sx={{ mb: 2 }}
+                                                            error={!!errors.tenKhachHang}
+                                                            helperText={errors.tenKhachHang}
+                                                        />
+                                                    </Grid>
+                                                    <Grid item xs={12} sm={6}>
+                                                        <label>Mã khách hàng</label>
+                                                        <TextField
+                                                            name="maKhachHang"
+                                                            value={khachHang.maKhachHang}
+                                                            onChange={handleKhachHangChange}
+                                                            fullWidth
+                                                            size="small"
+                                                            sx={{ mb: 2 }}
+                                                            disabled
+                                                        />
+                                                    </Grid>
+                                                    <Grid item xs={12} sm={6}>
+                                                        <label>Ngày sinh</label>
+                                                        <TextField
+                                                            name="ngaySinh"
+                                                            type="date"
+                                                            value={khachHang.ngaySinh}
+                                                            onChange={handleDateChange}
+                                                            fullWidth
+                                                            size="small"
+                                                            sx={{ mb: 2 }}
+                                                            InputLabelProps={{ shrink: true }}
+                                                            error={!!errors.ngaySinh}
+                                                            helperText={errors.ngaySinh}
+                                                        />
+                                                    </Grid>
+                                                </Grid>
+                                            </InfoCard>
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <InfoCard>
+                                                <Typography
+                                                    variant="h6"
+                                                    sx={{
+                                                        fontWeight: 700, color: "#1769aa", mb: 3,
+                                                        display: "flex", alignItems: "center", gap: 1,
+                                                    }}
+                                                >
+                                                    <EmailIcon />
+                                                    Thông Tin Liên Hệ
+                                                </Typography>
+                                                <Grid container spacing={2}>
+                                                    <Grid item xs={12} sm={6}>
+                                                        <label>Số điện thoại</label>
+                                                        <TextField
+                                                            name="sdt"
+                                                            value={khachHang.sdt}
+                                                            onChange={handleKhachHangChange}
+                                                            fullWidth
+                                                            size="small"
+                                                            sx={{ mb: 2 }}
+                                                            error={!!errors.sdt}
+                                                            helperText={errors.sdt}
+                                                        />
+                                                    </Grid>
+                                                    <Grid item xs={12} sm={6}>
+                                                        <label>Email</label>
+                                                        <TextField
+                                                            name="email"
+                                                            value={khachHang.email}
+                                                            onChange={handleKhachHangChange}
+                                                            fullWidth
+                                                            size="small"
+                                                            sx={{ mb: 2 }}
+                                                            error={!!errors.email}
+                                                            helperText={errors.email}
+                                                        />
+                                                    </Grid>
+                                                </Grid>
+                                            </InfoCard>
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <InfoCard>
+                                                <Typography
+                                                    variant="h6"
+                                                    sx={{
+                                                        fontWeight: 700, color: "#1769aa", mb: 3,
+                                                        display: "flex", alignItems: "center", gap: 1,
+                                                    }}
+                                                >
+                                                    Thông Tin Địa Chỉ
+                                                </Typography>
+                                                <Grid container spacing={2}>
+                                                    <Grid item xs={12} sm={6}>
+                                                        <label>Tỉnh/Thành phố</label>
+                                                        <SafeAutocomplete
+                                                            freeSolo
+                                                            options={provinces}
+                                                            getOptionLabel={(option) =>
+                                                                typeof option === "string"
+                                                                    ? option
+                                                                    : option && typeof option.province === "string"
+                                                                        ? option.province
+                                                                        : ""
+                                                            }
+                                                            value={
+                                                                diaChi.tinhThanhPho
+                                                                    ? findById(provinces, diaChi.tinhThanhPho, "id")
+                                                                    : provinceInput
+                                                                        ? { province: provinceInput }
+                                                                        : null
+                                                            }
+                                                            inputValue={provinceInput}
+                                                            onInputChange={(_, newInputValue, reason) => {
+                                                                setProvinceInput(newInputValue);
+                                                                if (reason === "clear") {
+                                                                    handleDiaChiField("tinhThanhPho", "");
+                                                                }
+                                                            }}
+                                                            onChange={(_, newValue) => {
+                                                                if (typeof newValue === "string") {
+                                                                    setProvinceInput(newValue);
+                                                                    handleDiaChiField("tinhThanhPho", "");
+                                                                } else if (newValue && newValue.id) {
+                                                                    handleDiaChiField("tinhThanhPho", newValue.id);
+                                                                    setProvinceInput(newValue.province);
+                                                                } else {
+                                                                    setProvinceInput("");
+                                                                    handleDiaChiField("tinhThanhPho", "");
+                                                                }
+                                                            }}
+                                                            renderInput={(params) => (
+                                                                <TextField
+                                                                    {...params}
+                                                                    size="small"
+                                                                    sx={{ mb: 2 }}
+                                                                    error={!!errors.tinhThanhPho}
+                                                                    helperText={errors.tinhThanhPho}
+                                                                />
+                                                            )}
+                                                        />
+                                                    </Grid>
+                                                    <Grid item xs={12} sm={6}>
+                                                        <label>Phường/Xã</label>
+                                                        <SafeAutocomplete
+                                                            freeSolo
+                                                            options={wards}
+                                                            getOptionLabel={(option) =>
+                                                                typeof option === "string"
+                                                                    ? option
+                                                                    : option && typeof option.name === "string"
+                                                                        ? option.name
+                                                                        : ""
+                                                            }
+                                                            value={
+                                                                diaChi.xaPhuong
+                                                                    ? findById(wards, diaChi.xaPhuong, "name")
+                                                                    : wardInput
+                                                                        ? { name: wardInput }
+                                                                        : null
+                                                            }
+                                                            inputValue={wardInput}
+                                                            onInputChange={(_, newInputValue, reason) => {
+                                                                setWardInput(newInputValue);
+                                                                if (reason === "clear") {
+                                                                    handleDiaChiField("xaPhuong", "");
+                                                                }
+                                                            }}
+                                                            onChange={(_, newValue) => {
+                                                                if (typeof newValue === "string") {
+                                                                    setWardInput(newValue);
+                                                                    handleDiaChiField("xaPhuong", "");
+                                                                } else if (newValue && newValue.name) {
+                                                                    handleDiaChiField("xaPhuong", newValue.name);
+                                                                    setWardInput(newValue.name);
+                                                                } else {
+                                                                    setWardInput("");
+                                                                    handleDiaChiField("xaPhuong", "");
+                                                                }
+                                                            }}
+                                                            renderInput={(params) => (
+                                                                <TextField
+                                                                    {...params}
+                                                                    size="small"
+                                                                    sx={{ mb: 2 }}
+                                                                    error={!!errors.xaPhuong}
+                                                                    helperText={errors.xaPhuong}
+                                                                />
+                                                            )}
+                                                            disabled={!diaChi.tinhThanhPho && !provinceInput}
+                                                        />
+                                                    </Grid>
+                                                </Grid>
+                                            </InfoCard>
+                                        </Grid>
+                                        <Grid item xs={12}>
+                                            <Divider sx={{ mb: 2, mt: 3, background: "#1976d2", opacity: 0.2 }} />
+                                            <Box display="flex" justifyContent="center" gap={2}>
+                                                <Button
+                                                    variant="outlined"
+                                                    color="inherit"
+                                                    size="large"
+                                                    onClick={() => navigate(-1)}
+                                                    sx={{
+                                                        color: "#020205",
+                                                        fontWeight: 700,
+                                                        borderRadius: 3,
+                                                        minWidth: 120,
+                                                        background: "#fafdff",
+                                                        border: "2px solid #b0bec5",
+                                                        "&:hover": {
+                                                            background: "#eceff1",
+                                                            borderColor: "#90caf9"
+                                                        }
+                                                    }}
+                                                    disabled={loading}
+                                                >
+                                                    Hủy bỏ
+                                                </Button>
+                                                <Button
+                                                    variant="contained"
+                                                    color={success ? "success" : "info"}
+                                                    size="large"
+                                                    type="submit"
+                                                    sx={{
+                                                        fontWeight: 800,
+                                                        fontSize: 18,
+                                                        px: 8,
+                                                        borderRadius: 3,
+                                                        minWidth: 200,
+                                                        boxShadow: "0 2px 10px 0 #90caf9",
+                                                        transition: "all 0.3s"
+                                                    }}
+                                                    disabled={loading}
+                                                    startIcon={
+                                                        loading ? (
+                                                            <CircularProgress color="inherit" size={22} />
+                                                        ) : success ? (
+                                                            <CheckCircleIcon fontSize="large" />
+                                                        ) : undefined
+                                                    }
+                                                >
+                                                    {loading
+                                                        ? "Đang lưu..."
+                                                        : success
+                                                            ? "Thành công!"
+                                                            : "Thêm khách hàng"}
+                                                </Button>
+                                            </Box>
                                         </Grid>
                                     </Grid>
                                 </Grid>
-                                <Grid item xs={12}>
-                                    <Divider sx={{ mb: 3, mt: 4, background: "#1976d2", opacity: 0.2 }} />
-                                    <Box
-                                        display="flex"
-                                        justifyContent="center"
-                                        mt={2}
-                                        gap={3}
-                                        sx={{ px: { xs: 0, sm: 4 } }}
-                                    >
-                                        <Button
-                                            variant="outlined"
-                                            color="inherit"
-                                            size="large"
-                                            onClick={() => navigate(-1)}
-                                            sx={{
-                                                color: "#090a0c",
-                                                fontWeight: 700,
-                                                borderRadius: 3,
-                                                minWidth: 120,
-                                                background: "#fafdff",
-                                                border: "1.7px solid #b0bec5",
-                                                "&:hover": {
-                                                    background: "#eceff1",
-                                                    borderColor: "#90caf9"
-                                                }
-                                            }}
-                                            disabled={loading}
-                                        >
-                                            Hủy bỏ
-                                        </Button>
-                                        <Button
-                                            variant="contained"
-                                            color={success ? "success" : "info"}
-                                            size="large"
-                                            type="submit"
-                                            sx={{
-                                                fontWeight: 800,
-                                                fontSize: 20,
-                                                px: 8,
-                                                borderRadius: 3,
-                                                minWidth: 220,
-                                                boxShadow: "0 3px 12px 0 #90caf9",
-                                                transition: "all 0.3s"
-                                            }}
-                                            disabled={loading}
-                                            startIcon={
-                                                loading ? <CircularProgress color="inherit" size={20} /> :
-                                                    success ? <CheckCircleIcon color="success" /> : null
-                                            }
-                                        >
-                                            {loading
-                                                ? "Đang lưu..."
-                                                : success
-                                                    ? "Thành công!"
-                                                    : "Thêm khách hàng"}
-                                        </Button>
-                                    </Box>
-                                </Grid>
                             </Grid>
                         </form>
-                    </Card>
+                    </StyledCard>
                 </Fade>
             </Box>
         </DashboardLayout>

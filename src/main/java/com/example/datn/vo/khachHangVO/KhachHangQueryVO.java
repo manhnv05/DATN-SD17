@@ -32,4 +32,7 @@ public class KhachHangQueryVO implements Serializable {
     private Integer page;
     private Integer size;
 
+    private Integer minAge;
+    private Integer maxAge;
+
 }

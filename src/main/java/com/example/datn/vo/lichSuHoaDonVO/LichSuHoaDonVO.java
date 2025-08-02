@@ -1,6 +1,10 @@
 package com.example.datn.vo.lichSuHoaDonVO;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+
+import java.io.Serializable;
+
 
 
 @Data

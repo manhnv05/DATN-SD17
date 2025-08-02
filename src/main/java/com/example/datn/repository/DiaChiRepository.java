@@ -4,6 +4,10 @@ import com.example.datn.entity.DiaChi;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-public interface DiaChiRepository extends JpaRepository<DiaChi, Integer>, JpaSpecificationExecutor<DiaChi> {
+import java.util.List;
 
+public interface DiaChiRepository extends JpaRepository<DiaChi, Integer>, JpaSpecificationExecutor<DiaChi> {
+    List<DiaChi> getDiaChiByKhachHang_Id(Integer customerId);
+
+    List<DiaChi> findByKhachHangId (Integer khachHangId);
 }

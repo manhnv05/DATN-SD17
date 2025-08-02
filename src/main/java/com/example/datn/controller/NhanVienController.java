@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @Validated
 @RestController
@@ -24,9 +25,13 @@ public class NhanVienController {
         this.nhanVienService = nhanVienService;
     }
 
-    @PostMapping
-    public String save(@Valid @RequestBody NhanVienVO vO) {
-        return nhanVienService.save(vO).toString();
+    // Lưu ý: FE phải gửi form-data, field 'vO' là JSON và 'imageFile' là file ảnh
+    @PostMapping(consumes = {"multipart/form-data"})
+    public String save(
+            @RequestPart("vO") @Valid NhanVienVO vO,
+            @RequestPart(value = "imageFile", required = false) MultipartFile imageFile
+    ) {
+        return nhanVienService.save(vO, imageFile).toString();
     }
 
     @DeleteMapping("/{id}")
@@ -34,10 +39,13 @@ public class NhanVienController {
         nhanVienService.delete(id);
     }
 
-    @PutMapping("/{id}")
-    public void update(@PathVariable("id") @NotNull Integer id,
-                       @Valid @RequestBody NhanVienUpdateVO vO) {
-        nhanVienService.update(id, vO);
+    @PutMapping(value = "/{id}", consumes = {"multipart/form-data"})
+    public void update(
+            @PathVariable("id") @NotNull Integer id,
+            @RequestPart("vO") @Valid NhanVienUpdateVO vO,
+            @RequestPart(value = "imageFile", required = false) MultipartFile imageFile
+    ) {
+        nhanVienService.update(id, vO, imageFile);
     }
 
     @GetMapping("/{id}")

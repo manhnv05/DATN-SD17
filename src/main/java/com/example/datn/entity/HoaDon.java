@@ -6,6 +6,7 @@ import lombok.experimental.FieldDefaults;
 import com.example.datn.enums.TrangThai;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Data
@@ -64,6 +65,8 @@ public class HoaDon {
     String loaiHoaDon;
     @Column(name = "ma_hoa_don")
     String maHoaDon;
+    @OneToMany(mappedBy = "hoaDon", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<HoaDonChiTiet> hoaDonChiTietList;
 
 
 }
