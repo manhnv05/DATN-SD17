@@ -1,8 +1,10 @@
 package com.example.datn.vo.chiTietThanhToanVO;
 
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.sql.Date;
 
 @Data
@@ -17,8 +19,6 @@ public class ChiTietThanhToanVO {
     private String maGiaoDich;
 
     private Integer soTienThanhToan;
-
-    private Date ngayThanhToan;
 
     private Integer trangThaiThanhToan;
 

@@ -748,7 +748,7 @@ public class HoaDonServiceImpl implements HoaDonService {
             hoaDon.setNhanVien(nhanVien);
         } else {
             // Mặc định cho một nhân viên nào đó nếu cần
-            NhanVien nhanVien = nhanVienRepository.findById(1).orElseThrow(() -> new AppException(ErrorCode.EMPLOYEE_NOT_FOUND));
+            NhanVien nhanVien = nhanVienRepository.findById(8).orElseThrow(() -> new AppException(ErrorCode.EMPLOYEE_NOT_FOUND));
             hoaDon.setNhanVien(nhanVien);
         }
 

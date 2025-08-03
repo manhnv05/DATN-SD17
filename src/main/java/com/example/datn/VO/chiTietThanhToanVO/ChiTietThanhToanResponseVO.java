@@ -6,7 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.sql.Date;
+import java.time.LocalDate;
+import java.sql.Timestamp;
 
 @Getter
 @Setter
@@ -15,7 +16,7 @@ import java.sql.Date;
 public class ChiTietThanhToanResponseVO {
     private String maGiaoDich;
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    private Date ngayThanhToan;
+    private Timestamp ngayThanhToan;
 
     private String phuongThucThanhToan;
 

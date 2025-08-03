@@ -110,6 +110,7 @@ public class ChiTietSanPhamService {
             ctsp.setMaSanPham(c.getMaSanPhamChiTiet());
             ctsp.setThuongHieu(c.getThuongHieu().getTenThuongHieu());
             ctsp.setSoLuongTonKho(c.getSoLuong());
+            ctsp.setDanhMuc(c.getSanPham().getDanhMuc().getTenDanhMuc());
             ctsp.setChatLieu(c.getChatLieu().getTenChatLieu());
             ctsp.setMauSac(c.getMauSac().getTenMauSac());
             ctsp.setKichThuoc(c.getKichThuoc().getTenKichCo());
