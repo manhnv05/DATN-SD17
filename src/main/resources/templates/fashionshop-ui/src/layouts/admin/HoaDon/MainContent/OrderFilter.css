@@ -1,0 +1,20 @@
+/* src/component/MainContent/OrderFilter.css */
+
+.order-filter-container {
+  /* Bạn có thể thêm các style tùy chỉnh khác ở đây nếu muốn */
+  /* Ví dụ: border-radius, box-shadow mặc định đã có qua class bootstrap */
+}
+/* Trong file custom.css */
+
+/* Định nghĩa lớp button outline mới dựa trên màu blue-300 */
+.btn-outline-blue-300 {
+  color: #6ea8fe;            /* Thay thế var() bằng giá trị HEX thật */
+  border-color: #6ea8fe;
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
+}
+
+.btn-outline-blue-300:hover {
+  background-color: #cfe2ff;  /* Thay thế var() bằng giá trị HEX thật */
+  color: #6ea8fe;
+  border-color: #6ea8fe;
+}

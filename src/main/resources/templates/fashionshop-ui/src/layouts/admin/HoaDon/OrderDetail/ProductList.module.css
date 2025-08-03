@@ -1,0 +1,111 @@
+/* src/component/OrderDetail/ProductList.module.css */
+
+.product-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+/* Các nút của bạn, nếu bạn muốn style riêng biệt và không dùng Bootstrap */
+.btn {
+    padding: 8px 15px;
+    border-radius: 5px; 
+    cursor: pointer;
+    font-weight: bold;
+     background-color: transparent; /* Nền trong suốt */
+    color: #6ea8fe;               /* Chữ màu blue-300 */
+    border: 2px solid #6ea8fe;     /* Viền màu blue-300, dày 2px cho nổi bật */
+    /* Hiệu ứng chuyển động & đổ bóng */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease-in-out;
+}
+.btn:hover {
+    /* Hiệu ứng hover chung */
+    background-color: #cfe2ff; /* Nền màu blue-100 (nhạt hơn) */
+    color: #6ea8fe;           /* Giữ nguyên màu chữ */
+    border-color: #6ea8fe;     /* Giữ nguyên màu viền */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transform: translateY(-1px);
+}
+
+.product-item {
+    display: flex;
+    align-items: center;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    width: 100%; /* Đảm bảo sản phẩm chiếm hết không gian */
+}
+
+.product-image img {
+    width: 150px; /* Tăng chiều rộng lên 150px */
+    height: 150px; /* Tăng chiều cao lên 150px */
+    object-fit: cover;
+    border-radius: 4px;
+    margin-right: 15px;
+}
+.product-details {
+    flex-grow: 1;
+}
+
+.product-name {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.product-price {
+    color: #dc3545; /* Màu đỏ */
+    font-weight: bold;
+}
+
+.product-info {
+    font-size: 0.9em;
+    color: #666;
+}
+
+.product-quantity-control {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-right: 20px;
+}
+
+/* Đây là quy tắc đã gây ra xung đột với Bootstrap trước đó */
+.product-quantity-control button {
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 5px 10px;
+    cursor: pointer;
+    color: black; /* Đảm bảo màu chữ đen */
+}
+
+.product-quantity-control button:hover {
+    background-color: #e0e0e0;
+}
+
+.product-total-price {
+    font-weight: bold;
+    color: #333;
+}
+
+/* Các class bạn đã định nghĩa lại trong file CSS chính */
+.productListHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    width: 100%;
+}
+
+.productItem {
+    display: flex;
+    align-items: center;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    width: 100%;
+}
