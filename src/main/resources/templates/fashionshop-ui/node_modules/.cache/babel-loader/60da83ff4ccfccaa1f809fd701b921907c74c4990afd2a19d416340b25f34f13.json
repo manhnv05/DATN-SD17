@@ -1,0 +1,1 @@
+{"ast":null,"code":"/** Applies mask on element */\nfunction IMask(el, opts) {\n  // currently available only for input-like elements\n  return new IMask.InputMask(el, opts);\n}\nexport { IMask as default };","map":null,"metadata":{},"sourceType":"module","externalDependencies":[]}

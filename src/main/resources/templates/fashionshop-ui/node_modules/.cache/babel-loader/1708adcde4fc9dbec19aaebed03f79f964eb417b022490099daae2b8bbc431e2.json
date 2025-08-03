@@ -1,0 +1,1 @@
+{"ast":null,"code":"'use strict';\n\nObject.defineProperty(exports, Symbol.toStringTag, {\n  value: 'Module'\n});\nfunction noop() {}\nexports.noop = noop;","map":null,"metadata":{},"sourceType":"script","externalDependencies":[]}

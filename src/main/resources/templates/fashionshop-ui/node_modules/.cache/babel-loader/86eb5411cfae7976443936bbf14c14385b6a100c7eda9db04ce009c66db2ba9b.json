@@ -1,0 +1,1 @@
+{"ast":null,"code":"import { useAppSelector } from '../state/hooks';\nexport var useAccessibilityLayer = () => useAppSelector(state => state.rootProps.accessibilityLayer);","map":null,"metadata":{},"sourceType":"module","externalDependencies":[]}

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoGeneratorSettingsState">
+    <option name="ignoredFields">
+      <set>
+        <option value="" />
+      </set>
+    </option>
+    <option name="moduleName" value="DATN" />
+    <option name="moduleNameToSettings">
+      <map>
+        <entry key="DATN">
+          <value>
+            <ModuleSettings>
+              <option name="controllerPackageName" value="com.example.datn.Controller" />
+              <option name="controllerParentDirectory" value="$PROJECT_DIR$/src/main/java" />
+              <option name="dtoPackageName" value="com.example.datn.DTO" />
+              <option name="dtoParentDirectory" value="$PROJECT_DIR$/src/main/java" />
+              <option name="entityPackageName" value="com.example.datn.Entity" />
+              <option name="entityParentDirectory" value="$PROJECT_DIR$/src/main/java" />
+              <option name="generateController" value="true" />
+              <option name="generateDTO" value="true" />
+              <option name="generateService" value="true" />
+              <option name="generateVO" value="true" />
+              <option name="mapperXmlParentDirectory" value="D:\fashion-shirt-shop\DATN\src\main\resources" />
+              <option name="repositoryPackageName" value="com.example.datn.Repository" />
+              <option name="repositoryParentDirectory" value="$PROJECT_DIR$/src/main/java" />
+              <option name="servicePackageName" value="com.example.datn.Service" />
+              <option name="serviceParentDirectory" value="$PROJECT_DIR$/src/main/java" />
+              <option name="voPackageName" value="com.example.datn.VO" />
+              <option name="voParentDirectory" value="$PROJECT_DIR$/src/main/java" />
+            </ModuleSettings>
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="useJakartaEE" value="true" />
+  </component>
+  <component name="DatabaseSettingsState">
+    <option name="language" value="vi-VN" />
+  </component>
+</project>
