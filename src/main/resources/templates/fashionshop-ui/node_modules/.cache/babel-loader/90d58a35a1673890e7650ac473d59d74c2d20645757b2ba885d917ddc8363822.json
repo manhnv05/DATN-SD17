@@ -1,1 +1,0 @@
-{"ast":null,"code":"'use strict';\n\nObject.defineProperty(exports, Symbol.toStringTag, {\n  value: 'Module'\n});\nfunction eq(value, other) {\n  return value === other || Number.isNaN(value) && Number.isNaN(other);\n}\nexports.eq = eq;","map":null,"metadata":{},"sourceType":"script","externalDependencies":[]}

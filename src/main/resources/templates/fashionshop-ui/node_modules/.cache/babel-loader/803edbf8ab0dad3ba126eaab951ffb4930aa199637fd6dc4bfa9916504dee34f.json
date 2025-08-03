@@ -1,1 +1,0 @@
-{"ast":null,"code":"module.exports = require('../dist/predicate/isEqual.js').isEqual;","map":null,"metadata":{},"sourceType":"script","externalDependencies":[]}
