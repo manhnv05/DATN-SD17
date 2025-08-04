@@ -5,13 +5,17 @@ import IconButton from "@mui/material/IconButton";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import Stack from "@mui/material/Stack";
-import SoftBox from "../../../components/SoftBox";
-import SoftTypography from "../../../components/SoftTypography";
-import Table from "../../../examples/Tables/Table";
+import Chip from "@mui/material/Chip";
+import SoftBox from "components/SoftBox";
+import SoftTypography from "components/SoftTypography";
+import Table from "examples/Tables/Table";
 import React, { memo, useMemo } from "react";
 import { FaEdit, FaTrash, FaEye } from "react-icons/fa";
 import PropTypes from "prop-types";
 import { STATUS_LIST } from "./Filter";
+import { useState } from 'react';
+import ThreeDotMenu from "components/Voucher/menu";
+import { toast } from "react-toastify";
 
 const TableList = ({
                        data,
@@ -28,31 +32,115 @@ const TableList = ({
         setPagination((pre) => ({ ...pre, page: newPage }));
     };
 
+    // Function để hiển thị trạng thái giống phiếu giảm giá
+    function checkTrangThai(trangthai) {
+        if (trangthai === 4) { // Kết thúc
+            return (
+                <Chip
+                    label="Đã kết thúc"
+                    size="small"
+                    sx={{
+                        backgroundColor: '#fef2f2',
+                        color: '#b91c1c',
+                        fontWeight: 500,
+                        fontSize: '12px',
+                        height: '28px',
+                        '& .MuiChip-label': {
+                            paddingX: '12px'
+                        }
+                    }}
+                />
+            );
+        }
+        else if (trangthai === 1) { // Đang diễn ra
+            return (
+                <Chip
+                    label="Đang diễn ra"
+                    size="small"
+                    sx={{
+                        backgroundColor: '#f0fdf4',
+                        color: '#15803d',
+                        fontWeight: 500,
+                        fontSize: '12px',
+                        height: '28px',
+                        '& .MuiChip-label': {
+                            paddingX: '12px'
+                        }
+                    }}
+                />
+            );
+        }
+        else if (trangthai === 2) { // Chưa bắt đầu
+            return (
+                <Chip
+                    label="Chưa bắt đầu"
+                    size="small"
+                    sx={{
+                        backgroundColor: '#eff6ff',
+                        color: '#1d4ed8',
+                        fontWeight: 500,
+                        fontSize: '12px',
+                        height: '28px',
+                        '& .MuiChip-label': {
+                            paddingX: '12px'
+                        }
+                    }}
+                />
+            );
+        }
+        else { // Tạm dừng (3)
+            return (
+                <Chip
+                    label="Tạm dừng"
+                    size="small"
+                    sx={{
+                        backgroundColor: '#f9fafb',
+                        color: '#374151',
+                        fontWeight: 500,
+                        fontSize: '12px',
+                        height: '28px',
+                        '& .MuiChip-label': {
+                            paddingX: '12px'
+                        }
+                    }}
+                />
+            );
+        }
+    }
+
+    // Status list cho menu thao tác
+    const statusListDotGiam = ["Tạm Dừng", "Bắt đầu", "Kết thúc"];
+
+    const handleStatusChangeMenu = (row, status) => {
+        // Chuyển đổi từ text sang số
+        onStatusChange(row, status);
+    };
+
     const columns = [
         { name: "stt", label: "STT", align: "center", width: "60px" },
-        { name: "maDotGiamGia", label: "Mã", align: "center", width: "100px" },
-        { name: "tenDotGiamGia", label: "Tên", align: "center", width: "180px" },
+        {
+            name: "maDotGiamGia", label: "Mã", align: "center", width: "100px",
+            render: (value, row) => (value)
+        },
+        {
+            name: "tenDotGiamGia", label: "Tên", align: "center", width: "180px",
+            render: (value, row) => (value)
+        },
         { name: "phanTramGiamGia", label: "% giảm", align: "center", width: "80px" },
-        { name: "ngayBatDau", label: "Bắt đầu", align: "center", width: "100px" },
-        { name: "ngayKetThuc", label: "Kết thúc", align: "center", width: "100px" },
+        {
+            name: "ngayBatDau", label: "Bắt đầu", align: "center", width: "100px",
+            render: (value, row) => (value.replace("T", " "))
+        },
+        {
+            name: "ngayKetThuc", label: "Kết thúc", align: "center", width: "100px",
+            render: (value, row) => (value.replace("T", " "))
+        },
         {
             name: "trangThai",
             label: "Trạng thái",
             align: "center",
             width: "120px",
-            render: (value, row) => (
-                <Select
-                    value={value}
-                    size="small"
-                    onChange={(e) => onStatusChange(row, Number(e.target.value))}
-                >
-                    {STATUS_LIST.map((item) => (
-                        <MenuItem key={item.id} value={item.id}>
-                            {item.label}
-                        </MenuItem>
-                    ))}
-                </Select>
-            ),
+            render: (value, row) => checkTrangThai(value)
         },
         {
             name: "actions",
@@ -61,14 +149,10 @@ const TableList = ({
             width: "110px",
             render: (_, row) => (
                 <SoftBox display="flex" gap={0.5} justifyContent="center">
-                    <IconButton
-                        size="small"
-                        sx={{ color: "#4acbf2" }}
-                        title="Xem chi tiết"
-                        onClick={() => onView(row)}
-                    >
-                        <FaEye />
-                    </IconButton>
+                    <ThreeDotMenu
+                        statusList={statusListDotGiam}
+                        onSelectStatus={(status) => handleStatusChangeMenu(row, status)}
+                    />
                     <IconButton
                         size="small"
                         sx={{ color: "#4acbf2" }}
@@ -77,14 +161,7 @@ const TableList = ({
                     >
                         <FaEdit />
                     </IconButton>
-                    <IconButton
-                        size="small"
-                        sx={{ color: "#4acbf2" }}
-                        title="Xóa"
-                        onClick={() => onDelete(row.id)}
-                    >
-                        <FaTrash />
-                    </IconButton>
+
                 </SoftBox>
             ),
         },

@@ -1,8 +1,12 @@
 package com.example.datn.service.impl;
 
 import com.example.datn.dto.ChiTietPhieuGiamGiaDTO;
+import com.example.datn.dto.PhieuGiamGiaDTO;
 import com.example.datn.entity.ChiTietPhieuGiamGia;
+import com.example.datn.entity.PhieuGiamGia;
+import com.example.datn.mapper.PhieuGiamGiaMapper;
 import com.example.datn.repository.ChiTietPhieuGiamGiaRepository;
+import com.example.datn.repository.PhieuGiamGiaRepository;
 import com.example.datn.service.ChiTietPhieuGiamGiaService;
 import com.example.datn.vo.chiTietPhieuGiamGiaVO.ChiTietPhieuGiamGiaUpdateVO;
 import com.example.datn.vo.chiTietPhieuGiamGiaVO.ChiTietPhieuGiamGiaVO;
@@ -11,18 +15,25 @@ import com.example.datn.exception.ErrorCode;
 import com.example.datn.mapper.ChiTietPhieuGiamGiaMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class PhieuGiamGiaKhachHangServiceimpl implements ChiTietPhieuGiamGiaService {
 
     @Autowired
     private ChiTietPhieuGiamGiaRepository phieuGiamGiaKhachHangRepository;
+    @Autowired
+    private PhieuGiamGiaRepository phieuGiamGiaRepository;
 
     @Override
     public List<ChiTietPhieuGiamGiaDTO> getAllPhieuGiamGiaKhachHang() {
@@ -77,10 +88,85 @@ public class PhieuGiamGiaKhachHangServiceimpl implements ChiTietPhieuGiamGiaServ
     }
 
     @Override
-    public Page<ChiTietPhieuGiamGiaDTO> queryPhieuGiamGiaKhachHang(int page, int size, ChiTietPhieuGiamGiaVO request) {
+    public Page<PhieuGiamGiaDTO> queryPhieuGiamGiaKhachHang(int page, int size, ChiTietPhieuGiamGiaVO request) {
+
         Pageable pageable = PageRequest.of(page, size);
-        Page<ChiTietPhieuGiamGia> phieuGiamGiaKhachHangs = phieuGiamGiaKhachHangRepository
+
+        Page<PhieuGiamGia> phieuGiamGias = phieuGiamGiaKhachHangRepository
                 .queryPhieuGiamGiaKhachHang(request.getKhachHang(), request.getPhieuGiamGia(), pageable);
-        return phieuGiamGiaKhachHangs.map(ChiTietPhieuGiamGiaMapper.INSTANCE::toResponse);
+
+        if(request.getTongTienHoaDon()!=null) {
+            List<PhieuGiamGia> combinedList = new ArrayList<>();
+            if (request.getKhachHang() != null) {
+                combinedList.addAll(phieuGiamGias.getContent());
+            }
+            combinedList.addAll(phieuGiamGiaRepository.getPhieuGiamGiaByTrangThai());
+            return getChiTietPhieuGiam(combinedList, request);
+        }
+        else {
+            return phieuGiamGias.map(PhieuGiamGiaMapper.INSTANCE::toResponse);
+        }
+    }
+
+    @Override
+    public Page<ChiTietPhieuGiamGiaDTO> getpggkh(int page, int size, ChiTietPhieuGiamGiaVO request) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<ChiTietPhieuGiamGia> chiTietPhieuGiamGias = phieuGiamGiaKhachHangRepository
+                .getChiTietPhieuGiamGias(request.getKhachHang(), request.getPhieuGiamGia(), pageable);
+        return chiTietPhieuGiamGias.map(ChiTietPhieuGiamGiaMapper.INSTANCE::toResponse);
+    }
+
+    public Page<PhieuGiamGiaDTO> getChiTietPhieuGiam(List<PhieuGiamGia> data, ChiTietPhieuGiamGiaVO request) {
+        List<PhieuGiamGia> sortPGG = new ArrayList<>();
+        for(PhieuGiamGia dataE : data){
+            if (request.getTongTienHoaDon().compareTo(new BigDecimal(dataE.getDieuKienGiam())) >= 0) {
+                if(dataE.getPhamTramGiamGia() != null){
+                    BigDecimal soTienGiam = dataE.getPhamTramGiamGia()
+                            .multiply(request.getTongTienHoaDon())
+                            .divide(BigDecimal.valueOf(100));
+
+                    dataE.setSoTienGiam(soTienGiam);
+                    sortPGG.add(dataE);
+                }
+                else {
+                    sortPGG.add(dataE);
+                }
+            }
+        }
+        sortPGG.sort(Comparator.comparing(
+                PhieuGiamGia::getSoTienGiam, Comparator.reverseOrder()
+        ));
+        List<PhieuGiamGia> oldList = new LinkedList<>();
+
+        for(PhieuGiamGia sortDTO : sortPGG){
+            if(sortDTO.getPhamTramGiamGia() != null){
+                sortDTO.setSoTienGiam(new BigDecimal(0));
+                oldList.add(sortDTO);
+            }
+            else {
+                oldList.add(sortDTO);
+            }
+        }
+        List<PhieuGiamGiaDTO> dtoList = oldList.stream()
+                .map(PhieuGiamGiaMapper.INSTANCE::toResponse)
+                .collect(Collectors.toList());
+        if (dtoList.isEmpty()) {
+            throw new AppException(ErrorCode.PHIEU_GIAM_GIA_KH_NULL);
+        }
+        return new PageImpl<>(dtoList, PageRequest.of(1, dtoList.size()), dtoList.size());
+    }
+    @Override
+    public ChiTietPhieuGiamGiaDTO findVoucherByCodeForCustomer(String maPhieu, Integer idKhachHang) {
+        ChiTietPhieuGiamGia chiTiet = phieuGiamGiaKhachHangRepository
+                .findByPhieuGiamGia_MaPhieuGiamGiaAndKhachHang_Id(maPhieu, idKhachHang)
+                .orElseThrow(() -> new AppException(ErrorCode.PHIEU_GIAM_GIA_NULL
+                ) );
+
+        // (Tùy chọn) Bạn có thể thêm các kiểm tra khác ở đây, ví dụ:
+        // if (chiTiet.getPhieuGiamGia().getNgayKetThuc().isBefore(LocalDate.now())) {
+        //     throw new AppException(ErrorCode.VOUCHER_EXPIRED, "Mã giảm giá đã hết hạn.");
+        // }
+
+        return ChiTietPhieuGiamGiaMapper.INSTANCE.toResponse(chiTiet);
     }
 }

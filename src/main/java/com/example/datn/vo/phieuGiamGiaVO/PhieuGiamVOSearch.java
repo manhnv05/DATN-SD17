@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -13,34 +12,15 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 
-public class PhieuGiamGiaVOUpdate {
-    int id;
-
+public class PhieuGiamVOSearch {
     String maPhieuGiamGia;
-
-    String dieuKienGiam;
 
     String tenPhieu;
 
-    int loaiPhieu;
-
-    BigDecimal phamTramGiamGia;
-
-    BigDecimal soTienGiam;
-
-    BigDecimal giamToiDa;
+    Integer trangThai;
 
     LocalDateTime ngayBatDau;
 
     LocalDateTime ngayKetThuc;
 
-    LocalDateTime ngayTao;
-
-    LocalDateTime ngayCapNhat;
-
-    String ghiChu;
-
-    int trangThai;
-
-    BigDecimal soLuong;
 }

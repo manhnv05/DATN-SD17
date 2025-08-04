@@ -15,16 +15,16 @@ const useNotify = () => {
   };
 
   const Notification = (
-    <Snackbar
-      open={state.open}
-      autoHideDuration={3000}
-      onClose={handleClose}
-      anchorOrigin={{ vertical: "top", horizontal: "center" }}
-    >
-      <Alert onClose={handleClose} severity={state.severity} sx={{ width: "100%" }}>
-        {state.message}
-      </Alert>
-    </Snackbar>
+      <Snackbar
+          open={state.open}
+          autoHideDuration={3000}
+          onClose={handleClose}
+          anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert onClose={handleClose} severity={state.severity} sx={{ width: "100%" }}>
+          {state.message}
+        </Alert>
+      </Snackbar>
   );
 
   return { notify, Notification };

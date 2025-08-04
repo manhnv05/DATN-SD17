@@ -1,14 +1,13 @@
 package com.example.datn.vo.chiTietDotGiamGiaVO;
 
-
 import lombok.Data;
 
-import java.io.Serializable;
 import java.sql.Date;
 
+
 @Data
-public class ChiTietDotGiamGiaQueryVO implements Serializable {
-    private static final long serialVersionUID = 1L;
+public class ChiTietDotGiamGiaVO {
+
     private Integer id;
 
     private Integer idDotGiamGia;

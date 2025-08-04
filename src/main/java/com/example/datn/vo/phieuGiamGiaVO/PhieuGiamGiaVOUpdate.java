@@ -1,4 +1,4 @@
-package com.example.datn.dto;
+package com.example.datn.vo.phieuGiamGiaVO;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -10,11 +10,11 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 
-public class PhieuGiamGiaDTO {
-    Integer id;
+public class PhieuGiamGiaVOUpdate {
+    int id;
 
     String maPhieuGiamGia;
 

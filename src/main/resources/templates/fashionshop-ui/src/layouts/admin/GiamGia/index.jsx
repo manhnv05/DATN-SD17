@@ -1,5 +1,5 @@
-import DashboardLayout from "../../../examples/LayoutContainers/DashboardLayout";
-import DashboardNavbar from "../../../examples/Navbars/DashboardNavbar";
+import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import React, { useState } from "react";
 import Filter from "./Filter";
 import TableList from "./TableList";
@@ -8,8 +8,7 @@ import { useNavigate } from "react-router-dom";
 import useNotify from "./hooks/useNotify";
 import ConfirmDialog from "./ConfirmDialog";
 import instanceAPIMain from "../../../configapi";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 
 export const updateDotGiamGia = (id, payload) =>
     instanceAPIMain.put(`/dotGiamGia/${id}`, payload);
@@ -69,7 +68,18 @@ const DisCountEvent = () => {
   const handleStatusChange = async (row, value) => {
     try {
       await updateDotGiamGia(row.id, { ...row, trangThai: value });
-      toast.success("Cập nhật thành công");
+      if (value == 1) {
+        toast.success("Đổi trạng thái thành thành công, Đang diễn ra")
+      }
+      else if (value == 3) {
+        toast.success("Đổi trạng thái thành thành công, Tạm dừng")
+      }
+      else if (value == 4) {
+        toast.success("Đổi trạng thái thành thành công, Kết thúc")
+      }
+      else{
+        toast.success("Cập nhật thành công");
+      }
       refresh();
     } catch (e) {
       toast.error("Cập nhật thất bại");
@@ -79,7 +89,6 @@ const DisCountEvent = () => {
   return (
       <DashboardLayout>
         <DashboardNavbar />
-        <ToastContainer position="top-right" autoClose={3000} />
         <Filter filter={filter} setFilter={setFilter} />
         <TableList
             data={data}

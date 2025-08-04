@@ -6,18 +6,17 @@ import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
-import SoftTypography from "../../../components/SoftTypography";
-import DashboardLayout from "../../../examples/LayoutContainers/DashboardLayout";
-import DashboardNavbar from "../../../examples/Navbars/DashboardNavbar";
+import SoftTypography from "components/SoftTypography";
+import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
+import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import React, { useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { FaArrowLeft, FaTimes } from "react-icons/fa";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { STATUS_LIST } from "./Filter";
-import Table from "../../../examples/Tables/Table";
-import SoftBox from "../../../components/SoftBox";
+import Table from "examples/Tables/Table";
+import SoftBox from "components/SoftBox";
 import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -28,6 +27,7 @@ import Modal from "@mui/material/Modal";
 import Grid from "@mui/material/Grid";
 import IconButton from "@mui/material/IconButton";
 import PropTypes from "prop-types";
+import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions } from '@mui/material';
 
 export function debounce(functionCallback, timeout = 500) {
     let timer;
@@ -200,6 +200,28 @@ function AddDiscountEventPage() {
     const [productTotalPages, setProductTotalPages] = useState(1);
     const [productPageSize, setProductPageSize] = useState(10);
 
+    const [confirmOpen, setConfirmOpen] = useState(false);
+
+    const handleConfirmOpen = () => {
+        setConfirmOpen(true);
+    };
+
+    const handleConfirmClose = () => {
+        setConfirmOpen(false);
+    };
+
+    const handleConfirmApply = () => {
+        handleConfirmClose();
+        handleApply(); // gọi hàm chính
+    };
+
+    const statusColorMap = {
+        1: "green",       // Đang diễn ra
+        2: "#1d4ed8",     // Chưa diễn ra
+        3: "gray",        // Tạm dừng
+        4: "red",         // Kết thúc
+    };
+
     const [filterModalOpen, setFilterModalOpen] = useState(false);
     const [productFilter, setProductFilter] = useState({ tenSanPham: "", tenDanhMuc: "" });
     const [categories, setCategories] = useState([]);
@@ -301,6 +323,10 @@ function AddDiscountEventPage() {
 
     useEffect(function () {
         fetchProductsList(productPage, productPageSize, productFilter);
+        if (eventId) {
+            document.querySelectorAll(".MuiBreadcrumbs-li")[2].innerHTML = "Update đợt giảm giá"
+            document.querySelector(".MuiTypography-root.MuiTypography-h6.MuiTypography-noWrap.css-1qv4ulp-MuiTypography-root").innerHTML = "Update đợt giảm giá"
+        }
     }, [productPage, productPageSize, productFilter]);
 
     const debounceRef = useRef(
@@ -409,8 +435,30 @@ function AddDiscountEventPage() {
                         );
                     },
                 },
-                { name: "tenSanPham", label: "Tên", align: "center" },
-                { name: "tenDanhMuc", label: "Danh mục", align: "center" },
+                {
+                    name: "tenSanPham",
+                    label: "Tên sản phẩm",
+                    align: "center",
+                    render: function (value) {
+                        return (
+                            <span style={{ textTransform: "none" }}>
+                                {value}
+                            </span>
+                        );
+                    }
+                },
+                {
+                    name: "tenDanhMuc",
+                    label: "Danh mục",
+                    align: "center",
+                    render: function (value) {
+                        return (
+                            <span style={{ textTransform: "none" }}>
+                                {value}
+                            </span>
+                        );
+                    }
+                },
             ];
         },
         [selectedProducts, details, preDetailMap, products]
@@ -556,7 +604,7 @@ function AddDiscountEventPage() {
                 phanTramGiamGia: Number(data.phanTramGiamGia),
                 ngayBatDau: start,
                 ngayKetThuc: end,
-                trangThai: data.trangThai,
+                trangThai: 2,
             };
             let res;
             console.log(payload)
@@ -611,7 +659,7 @@ function AddDiscountEventPage() {
             </Stack>
             <Stack direction="row" spacing={3} mb={3}>
                 <Card sx={{ p: { xs: 2, md: 3 }, mb: 2 }}>
-                    <SoftTypography sx={{ fontWeight: 500 }}>Chỉnh sửa đợt giảm giá</SoftTypography>
+                    <SoftTypography sx={{ fontWeight: 500 }}>{eventId ? "Sửa đợt giảm giá" : "Thêm đợt giảm giá"}</SoftTypography>
                     <Stack
                         spacing={1}
                         component="form"
@@ -743,31 +791,6 @@ function AddDiscountEventPage() {
                                     </LocalizationProvider>
                                 </Box>
                             </Box>
-                        </Stack>
-                        <Stack>
-                            <InputLabel>Trạng thái</InputLabel>
-                            <Controller
-                                name="trangThai"
-                                control={control}
-                                render={function ({ field: { onChange, ...otherFieldProps } }) {
-                                    return (
-                                        <Select
-                                            onChange={function (event, child) {
-                                                onChange(event, child);
-                                            }}
-                                            {...otherFieldProps}
-                                        >
-                                            {STATUS_LIST.map(function (item) {
-                                                return (
-                                                    <MenuItem key={item.id} value={item.id}>
-                                                        {item.label}
-                                                    </MenuItem>
-                                                );
-                                            })}
-                                        </Select>
-                                    );
-                                }}
-                            />
                         </Stack>
                         <Stack direction="row" spacing={2} pt={2}>
                             <Button
@@ -958,12 +981,26 @@ function AddDiscountEventPage() {
                         <Button
                             variant="contained"
                             size="small"
-                            onClick={handleApply}
+                            onClick={handleConfirmOpen}
                             disabled={!eventId || selectedDetails.length === 0}
                         >
                             Áp dụng
                         </Button>
                     </Stack>
+                    <Dialog open={confirmOpen} onClose={handleConfirmClose}>
+                        <DialogTitle>Xác nhận áp dụng</DialogTitle>
+                        <DialogContent>
+                            <DialogContentText>
+                                Bạn có chắc chắn muốn áp dụng những thay đổi này không?
+                            </DialogContentText>
+                        </DialogContent>
+                        <DialogActions>
+                            <Button onClick={handleConfirmClose} color="inherit">Hủy</Button>
+                            <Button onClick={handleConfirmApply} variant="contained" color="primary">
+                                Xác nhận
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
                 </Card>
             )}
         </DashboardLayout>
