@@ -35,18 +35,6 @@ import com.example.datn.dto.HoaDonPdfResult;
 public class HoaDonController {
     HoaDonService hoaDonService;
 
-    //    @PostMapping("/create")
-//    public ResponseEntity<ApiResponse<HoaDonDTO>> createHoaDon(@RequestBody @Valid HoaDonCreateVO request) {
-//        HoaDonDTO hoaDonResponse = hoaDonService.taoHoaDon(request);
-//
-//        ApiResponse<HoaDonDTO> response = ApiResponse.<HoaDonDTO>builder()
-//                .code(1000)
-//                .message("Hóa đơn đã được tạo thành công")
-//                .data(hoaDonResponse)
-//                .build();
-//
-//        return new ResponseEntity<>(response, HttpStatus.CREATED);
-//    }
     @GetMapping("/{id}/pdf")
     public ResponseEntity<byte[]> exportPdf(@PathVariable String id) {
 
