@@ -16,6 +16,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,7 +40,10 @@ public class ThongKeServiceImpl implements ThongKeService {
     @Override
     public Map<String, ThongKeDTO> getThongKe() {
         Map<String, ThongKeDTO> thongKeDTOMap = new HashMap<>();
-        List<HoaDon> hoaDons = thongKeRepository.getThongKeHomNay();
+        LocalDateTime startOfDay = LocalDate.now().atStartOfDay(); // 00:00:00
+        LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX); // 23:59:59.999999999
+
+        List<HoaDon> hoaDons = thongKeRepository.getThongKeHomNay(startOfDay, endOfDay);
         List<HoaDon> hoaDonsCuaTuanNay = thongKeRepository.getThongKeTuanNay();
         List<HoaDon> hoaDonsCuaThangNay = thongKeRepository.getThongKeThangNay();
         List<HoaDon> hoaDonsCuaNamNay = thongKeRepository.getThongKeNamNay();
@@ -52,7 +58,9 @@ public class ThongKeServiceImpl implements ThongKeService {
     public Page<ThongKeSPBanChayDTO> getThongKeSpBanChayByQuery(ThongKeVoSearch thongKeVoSearch, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
         if (thongKeVoSearch.getBoLocNgayTuanThangNam() == 0){
-            List<HoaDonChiTiet> hoaDoncts = thongKeSanPhamRepository.getThongKeHomNay();
+            LocalDateTime startOfDay = LocalDate.now().atStartOfDay(); // 00:00:00
+            LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
+            List<HoaDonChiTiet> hoaDoncts = thongKeSanPhamRepository.getThongKeHomNay(startOfDay, endOfDay);
             return getSanPhamCt(hoaDoncts, pageable);
         }
         else if(thongKeVoSearch.getBoLocNgayTuanThangNam() == 1){
@@ -89,7 +97,10 @@ public class ThongKeServiceImpl implements ThongKeService {
     @Override
     public ThongKeBieuDoDTO getBieuDo(int check) {
         if(check == 1){
-            List<HoaDon> hoaDon = thongKeRepository.getThongKeHomNay();
+            LocalDateTime startOfDay = LocalDate.now().atStartOfDay(); // 00:00:00
+            LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX); // 23:59:59.999999999
+
+            List<HoaDon> hoaDon = thongKeRepository.getThongKeHomNay(startOfDay, endOfDay);
             return getBieuDoAll(hoaDon);
         }
         else if(check == 2){

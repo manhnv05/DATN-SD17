@@ -847,7 +847,7 @@ public class HoaDonServiceImpl implements HoaDonService {
                     }
                 } else if (pgg.getSoTienGiam() != null) {
                     // Giảm theo số tiền cố định
-                    soTienDuocGiam = pgg.getSoTienGiam();
+                    soTienDuocGiam = pgg.getGiamToiDa();
                 }
 
                 BigDecimal tongTienCuoiCung = tongTienGocBD.subtract(soTienDuocGiam);
