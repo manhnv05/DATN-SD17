@@ -17,9 +17,9 @@ import {
 import axios from "axios";
 
 // Import components và icons
-import SoftBox from "../../../../components/SoftBox";
-import SoftTypography from "../../../../components/SoftTypography";
-import SoftButton from "../../../../components/SoftButton";
+import SoftBox from "components/SoftBox";
+import SoftTypography from "components/SoftTypography";
+import SoftButton from "components/SoftButton";
 import Card from "@mui/material/Card";
 import PersonSearchIcon from "@mui/icons-material/PersonSearch";
 import CloseIcon from "@mui/icons-material/Close";
@@ -115,18 +115,18 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
       try {
         // Bước 1: Kiểm tra dịch vụ khả dụng
         const serviceResponse = await axios.get(
-          `${GHN_API_BASE_URL}/v2/shipping-order/available-services`,
-          {
-            params: {
-              shop_id: shop_id,
-              from_district: from_district_id,
-              to_district: to_district_id,
-            },
-            headers: {
-              token: GHN_TOKEN,
-              "Content-Type": "application/json",
-            },
-          }
+            `${GHN_API_BASE_URL}/v2/shipping-order/available-services`,
+            {
+              params: {
+                shop_id: shop_id,
+                from_district: from_district_id,
+                to_district: to_district_id,
+              },
+              headers: {
+                token: GHN_TOKEN,
+                "Content-Type": "application/json",
+              },
+            }
         );
 
         if (!serviceResponse.data?.data || serviceResponse.data.data.length === 0) {
@@ -156,15 +156,15 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
         };
 
         const feeResponse = await axios.post(
-          `${GHN_API_BASE_URL}/v2/shipping-order/fee`,
-          feePayload,
-          {
-            headers: {
-              token: GHN_TOKEN,
-              ShopId: shop_id,
-              "Content-Type": "application/json",
-            },
-          }
+            `${GHN_API_BASE_URL}/v2/shipping-order/fee`,
+            feePayload,
+            {
+              headers: {
+                token: GHN_TOKEN,
+                ShopId: shop_id,
+                "Content-Type": "application/json",
+              },
+            }
         );
 
         if (feeResponse.data?.code === 200) {
@@ -196,7 +196,7 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
 
     const estimatedFee = getEstimatedShippingFee(to_district_id);
     toast.warning(
-      `Không thể tính phí chính xác. Sử dụng phí ước tính: ${formatCurrency(estimatedFee)}`
+        `Không thể tính phí chính xác. Sử dụng phí ước tính: ${formatCurrency(estimatedFee)}`
     );
 
     return estimatedFee;
@@ -400,7 +400,7 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
 
     try {
       const response = await axios.get(
-        `http://localhost:8080/diaChi/khachhang/${selectedCustomer.id}`
+          `http://localhost:8080/diaChi/get-all-dia-chi-by-khach-hang/${selectedCustomer.id}`
       );
       const addresses = response.data;
       if (addresses && addresses.length > 0) {
@@ -449,9 +449,9 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
 
       if (totalPaid < finalTotal) {
         toast.error(
-          `Thanh toán chưa đủ! Khách hàng cần trả thêm ${formatCurrency(
-            finalTotal - totalPaid
-          )}. Vui lòng hoàn tất thanh toán.`
+            `Thanh toán chưa đủ! Khách hàng cần trả thêm ${formatCurrency(
+                finalTotal - totalPaid
+            )}. Vui lòng hoàn tất thanh toán.`
         );
 
         return;
@@ -487,18 +487,41 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
   };
 
   const handleClearCustomer = async () => {
-    setCustomer({ id: null, tenKhachHang: "Khách lẻ" });
-    setShippingAddress(null);
+    // Nếu không có hóa đơn đang hoạt động thì không làm gì cả
+    if (!hoaDonId) {
+      toast.warn("Chưa có hóa đơn nào được chọn.");
+      return;
+    }
 
-    // Reset voucher khi bỏ chọn khách hàng
-    setVoucherCode("");
-    setAppliedVoucher(null);
-    setSuggestedVoucher(null);
-    setDiscountValue(0);
+    try {
+      // 1. Chuẩn bị dữ liệu gửi đi
+      const payload = {
+        idHoaDon: hoaDonId,
+        idKhachHang: null, // Gán khách hàng về null
+      };
 
-    // Gọi API để tìm phiếu giảm giá cho khách lẻ (null)
-    if (totalAmount > 0) {
-      await fetchBestVoucherForCustomer(null);
+      // 2. Gọi API để cập nhật khách hàng về null
+      await axios.put("http://localhost:8080/api/hoa-don/cap-nhat-khach-hang", payload);
+
+      // 3. Nếu API thành công, cập nhật state của giao diện
+      setCustomer({ id: null, tenKhachHang: "Khách lẻ" });
+      setShippingAddress(null);
+
+      // Reset voucher khi bỏ chọn khách hàng
+      setVoucherCode("");
+      setAppliedVoucher(null);
+      setSuggestedVoucher(null);
+      setDiscountValue(0);
+
+      toast.success("Đã bỏ chọn khách hàng.");
+
+      // Gọi API để tìm phiếu giảm giá cho khách lẻ (truyền vào null)
+      if (totalAmount > 0) {
+        await fetchBestVoucherForCustomer(null);
+      }
+    } catch (error) {
+      console.error("Lỗi khi bỏ chọn khách hàng:", error);
+      toast.error("Có lỗi xảy ra khi cố gắng bỏ chọn khách hàng. Vui lòng thử lại.");
     }
   };
 
@@ -510,7 +533,7 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
 
     try {
       const response = await axios.get(
-        `http://localhost:8080/diaChi/khachhang/${customer.id}`
+          `http://localhost:8080/diaChi/get-all-dia-chi-by-khach-hang/${customer.id}`
       );
       setAddressList(response.data || []);
       setIsAddressModalOpen(true);
@@ -539,9 +562,9 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
         tongTienHoaDon: totalAmount,
       };
       const response = await axios.post(
-        "http://localhost:8080/PhieuGiamGiaKhachHang/query",
-        requestBody,
-        { params: { page: 0, size: 999 } }
+          "http://localhost:8080/PhieuGiamGiaKhachHang/query",
+          requestBody,
+          { params: { page: 0, size: 999 } }
       );
 
       const vouchers = response.data.data.content;
@@ -583,7 +606,7 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
           calculatedDiscount = appliedVoucher.giamToiDa;
         }
       } else if (appliedVoucher.soTienGiam) {
-        calculatedDiscount = appliedVoucher.soTienGiam;
+        calculatedDiscount = appliedVoucher.giamToiDa;
       }
       setDiscountValue(calculatedDiscount);
     } else {
@@ -596,7 +619,7 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
       setAppliedVoucher(suggestedVoucher);
       setVoucherCode(suggestedVoucher ? suggestedVoucher.phieuGiamGia.maPhieuGiamGia : "");
       toast.info(
-        suggestedVoucher ? "Đã quay về mã giảm giá tốt nhất!" : "Đã bỏ áp dụng mã giảm giá."
+          suggestedVoucher ? "Đã quay về mã giảm giá tốt nhất!" : "Đã bỏ áp dụng mã giảm giá."
       );
       return;
     }
@@ -614,9 +637,9 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
 
       if (totalAmount < foundVoucher.phieuGiamGia.dieuKienGiam) {
         toast.error(
-          `Mã này yêu cầu hóa đơn tối thiểu ${formatCurrency(
-            foundVoucher.phieuGiamGia.dieuKienGiam
-          )}!`
+            `Mã này yêu cầu hóa đơn tối thiểu ${formatCurrency(
+                foundVoucher.phieuGiamGia.dieuKienGiam
+            )}!`
         );
         return;
       }
@@ -628,222 +651,245 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
       setAppliedVoucher(null);
     }
   };
+
   const isDisabled = totalAmount <= 0;
   return (
-    <>
-      {/* Thẻ Card là thẻ bao bọc chính cho toàn bộ giao diện */}
-      <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-        <SoftBox p={2} sx={{ flexGrow: 1 }}>
-          <Grid container spacing={3}>
-            {/* CỘT TRÁI */}
-            <Grid item xs={12} lg={7}>
-              <SoftBox display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-                <SoftTypography variant="h5" fontWeight="bold">
-                  Khách hàng
-                </SoftTypography>
-
-                <Box display="flex" gap={1}>
-                  {customer.id && (
-                    <SoftButton
-                      variant="outlined"
-                      color="secondary"
-                      startIcon={<CloseIcon />}
-                      onClick={handleClearCustomer}
-                    >
-                      BỎ CHỌN
-                    </SoftButton>
-                  )}
-                  <SoftButton
-                    variant="outlined"
-                    color="info"
-                    startIcon={<PersonSearchIcon />}
-                    onClick={() => setIsCustomerModalOpen(true)}
-                  >
-                    CHỌN KHÁCH HÀNG
-                  </SoftButton>
-                </Box>
-              </SoftBox>
-              <Divider sx={{ mb: 3 }} />
-
-              {isDelivery ? (
-                <ShippingForm
-                  initialCustomer={customer}
-                  initialAddress={shippingAddress}
-                  onOpenAddressModal={handleOpenAddressModal}
-                  onFormChange={handleFormChange}
-                />
-              ) : (
-                <Box>
-                  <SoftTypography variant="body1" color="text" fontWeight="medium">
-                    TÊN KHÁCH HÀNG
+      <>
+        {/* Thẻ Card là thẻ bao bọc chính cho toàn bộ giao diện */}
+        <Card sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+          <SoftBox p={2} sx={{ flexGrow: 1 }}>
+            <Grid container spacing={3}>
+              {/* CỘT TRÁI */}
+              <Grid item xs={12} lg={7}>
+                <SoftBox display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+                  <SoftTypography variant="h5" fontWeight="bold">
+                    Khách hàng
                   </SoftTypography>
-                  <Box sx={{ p: 1.5, border: "1px solid #ddd", borderRadius: "8px", mt: 1 }}>
-                    <SoftTypography variant="h6">{customer.tenKhachHang}</SoftTypography>
-                  </Box>
-                </Box>
-              )}
-            </Grid>
 
-            {/* CỘT PHẢI (Thanh toán) */}
-            <Grid item xs={12} lg={5}>
-              <FormControlLabel
-                control={<Switch checked={isDelivery} onChange={handleDeliveryToggle} />}
-                label={<Typography variant="h6">Giao hàng</Typography>}
-                sx={{ mb: 2 }}
-              />
-              <TextField
-                fullWidth
-                label="Phiếu giảm giá"
-                sx={{ mb: 3 }}
-                value={voucherCode}
-                onChange={(e) => setVoucherCode(e.target.value)}
-                helperText={
-                  appliedVoucher
-                    ? `Đang áp dụng mã giảm giá tốt nhất : ${appliedVoucher.maPhieuGiamGia}`
-                    : "Nhập mã giảm giá (nếu có)"
-                }
-              />
-
-              <SoftBox display="flex" flexDirection="column" gap={2}>
-                <Box display="flex" justifyContent="space-between">
-                  <Typography variant="body1">Tiền hàng</Typography>
-                  <Typography variant="body1" fontWeight="bold">
-                    {formatCurrency(totalAmount)}
-                  </Typography>
-                </Box>
-                {/* --- MODIFIED: Hiển thị phí ship động và cho phép nhập liệu --- */}
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Typography variant="body1">Phí vận chuyển</Typography>
-                  <Box sx={{ width: "150px" }}>
-                    <TextField
-                      variant="outlined"
-                      size="small"
-                      fullWidth
-                      disabled={!isDelivery || isCalculatingFee} // CHANGE: Disable when not delivery or calculating
-                      value={isCalculatingFee ? "Đang tính..." : shippingFeeInput} // CHANGE: Bind to input state
-                      onChange={handleShippingFeeChange} // CHANGE: Add change handler
-                      type="text" // Use text to allow typing
-                      inputMode="numeric" // Hint for numeric keyboard on mobile
-                      InputProps={{
-                        endAdornment: <InputAdornment position="end">đ</InputAdornment>,
-                      }}
-                    />
-                  </Box>
-                </Box>
-                <Box display="flex" justifyContent="space-between">
-                  <Typography variant="body1">Giảm giá</Typography>
-                  <Typography variant="body1" fontWeight="bold" color="error">
-                    - {formatCurrency(discountValue)}
-                  </Typography>
-                </Box>
-                <Divider />
-                <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Typography variant="h5" fontWeight="bold">
-                    Tổng tiền
-                  </Typography>
-                  <Typography variant="h5" fontWeight="bold" color="error.main">
-                    {formatCurrency(finalTotal)}
-                  </Typography>
-                </Box>
-              </SoftBox>
-              <Box display="flex" justifyContent="space-between" alignItems="center">
-                <Box display="flex" alignItems="center" gap={1}>
-                  <Typography variant="h6" fontWeight="medium">
-                    Khách thanh toán:
-                  </Typography>
-                  {totalPaid < finalTotal && (
-                    <IconButton
-                      onClick={() => setIsPaymentModalOpen(true)}
-                      sx={{ border: "1px solid #ddd", borderRadius: "8px" }}
+                  <Box display="flex" gap={1}>
+                    {customer.id && (
+                        <SoftButton
+                            variant="outlined"
+                            color="secondary"
+                            startIcon={<CloseIcon />}
+                            onClick={handleClearCustomer}
+                        >
+                          BỎ CHỌN
+                        </SoftButton>
+                    )}
+                    <SoftButton
+                        variant="outlined"
+                        color="info"
+                        startIcon={<PersonSearchIcon />}
+                        onClick={() => setIsCustomerModalOpen(true)}
                     >
-                      <PaymentIcon />
-                    </IconButton>
-                  )}
+                      CHỌN KHÁCH HÀNG
+                    </SoftButton>
+                  </Box>
+                </SoftBox>
+                <Divider sx={{ mb: 3 }} />
+
+                {isDelivery ? (
+                    <ShippingForm
+                        initialCustomer={customer}
+                        initialAddress={shippingAddress}
+                        onOpenAddressModal={handleOpenAddressModal}
+                        onFormChange={handleFormChange}
+                    />
+                ) : (
+                    <Box>
+                      <SoftTypography variant="body1" color="text" fontWeight="medium">
+                        TÊN KHÁCH HÀNG
+                      </SoftTypography>
+                      <Box sx={{ p: 1.5, border: "1px solid #ddd", borderRadius: "8px", mt: 1 }}>
+                        <SoftTypography variant="h6">{customer.tenKhachHang}</SoftTypography>
+                      </Box>
+                    </Box>
+                )}
+              </Grid>
+
+              {/* CỘT PHẢI (Thanh toán) */}
+              <Grid item xs={12} lg={5}>
+                <FormControlLabel
+                    control={<Switch checked={isDelivery} onChange={handleDeliveryToggle} />}
+                    label={<Typography variant="h6">Giao hàng</Typography>}
+                    sx={{ mb: 2 }}
+                />
+                <TextField
+                    fullWidth
+                    label="Phiếu giảm giá"
+                    sx={{ mb: 3 }}
+                    value={voucherCode}
+                    onChange={(e) => setVoucherCode(e.target.value)}
+                    helperText={
+                      appliedVoucher
+                          ? `Đang áp dụng mã giảm giá tốt nhất : ${appliedVoucher.maPhieuGiamGia}`
+                          : "Nhập mã giảm giá (nếu có)"
+                    }
+                />
+
+                <SoftBox display="flex" flexDirection="column" gap={2}>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body1">Tiền hàng</Typography>
+                    <Typography variant="body1" fontWeight="bold">
+                      {formatCurrency(totalAmount)}
+                    </Typography>
+                  </Box>
+                  {/* --- MODIFIED: Hiển thị phí ship động và cho phép nhập liệu --- */}
+                  <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <Typography variant="body1">Phí vận chuyển</Typography>
+                    <Box sx={{ width: "150px" }}>
+                      <TextField
+                          variant="outlined"
+                          size="small"
+                          fullWidth
+                          disabled={!isDelivery || isCalculatingFee} // CHANGE: Disable when not delivery or calculating
+                          value={isCalculatingFee ? "Đang tính..." : shippingFeeInput} // CHANGE: Bind to input state
+                          onChange={handleShippingFeeChange} // CHANGE: Add change handler
+                          type="text" // Use text to allow typing
+                          inputMode="numeric" // Hint for numeric keyboard on mobile
+                          InputProps={{
+                            endAdornment: <InputAdornment position="end">đ</InputAdornment>,
+                          }}
+                      />
+                    </Box>
+                  </Box>
+                  <Box display="flex" justifyContent="space-between">
+                    <Typography variant="body1">Giảm giá</Typography>
+                    <Typography variant="body1" fontWeight="bold" color="error">
+                      - {formatCurrency(discountValue)}
+                    </Typography>
+                  </Box>
+                  <Divider />
+                  <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <Typography variant="h5" fontWeight="bold">
+                      Tổng tiền
+                    </Typography>
+                    <Typography variant="h5" fontWeight="bold" color="error.main">
+                      {formatCurrency(finalTotal)}
+                    </Typography>
+                  </Box>
+                </SoftBox>
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <Typography variant="h6" fontWeight="medium">
+                      Khách thanh toán:
+                    </Typography>
+                    {totalPaid < finalTotal && (
+                        <IconButton
+                            onClick={() => setIsPaymentModalOpen(true)}
+                            sx={{ border: "1px solid #ddd", borderRadius: "8px" }}
+                        >
+                          <PaymentIcon />
+                        </IconButton>
+                    )}
+                  </Box>
+                  <Typography variant="h6" color="info.main" fontWeight="bold">
+                    {formatCurrency(totalPaid)}
+                  </Typography>
                 </Box>
-                <Typography variant="h6" color="info.main" fontWeight="bold">
-                  {formatCurrency(totalPaid)}
-                </Typography>
-              </Box>
-              <Divider sx={{ my: 3 }} />
+                <Divider sx={{ my: 3 }} />
+              </Grid>
             </Grid>
-          </Grid>
-        </SoftBox>
+          </SoftBox>
 
-        <SoftBox p={2} mt="auto">
-          <SoftButton
-            variant="outlined"
-            size="medium"
-            sx={{
-              borderRadius: 2,
-              textTransform: "none",
-              fontWeight: 400,
-              color: "#49a3f1",
-              borderColor: "#49a3f1",
-              boxShadow: "none",
-              "&:hover": {
-                borderColor: "#1769aa",
-                background: "#f0f6fd",
-                color: "#1769aa",
-              },
-            }}
+          <SoftBox p={2} mt="auto">
+            <SoftButton
+                variant="outlined"
+                size="medium"
+                sx={{
+                  borderRadius: 2,
+                  textTransform: "none",
+                  fontWeight: 400,
+                  color: "#49a3f1",
+                  borderColor: "#49a3f1",
+                  boxShadow: "none",
+                  "&:hover": {
+                    borderColor: "#1769aa",
+                    background: "#f0f6fd",
+                    color: "#1769aa",
+                  },
+                }}
+                fullWidth
+                disabled={isDisabled}
+                onClick={handleFinalSave}
+            >
+              <Typography variant="h6" color="#49a3f1" fontWeight="bold">
+                {isDelivery ? " ĐẶT HÀNG" : " THANH TOÁN"}
+              </Typography>
+            </SoftButton>
+          </SoftBox>
+        </Card>
+
+        {/* MODAL CHỌN KHÁCH HÀNG */}
+        <Dialog
+            open={isCustomerModalOpen}
+            onClose={() => setIsCustomerModalOpen(false)}
             fullWidth
-            disabled={isDisabled}
-            onClick={handleFinalSave}
-          >
-            <Typography variant="h6" color="#49a3f1" fontWeight="bold">
-              {isDelivery ? " ĐẶT HÀNG" : " THANH TOÁN"}
-            </Typography>
-          </SoftButton>
-        </SoftBox>
-      </Card>
-
-      {/* MODAL CHỌN KHÁCH HÀNG */}
-      <Dialog
-        open={isCustomerModalOpen}
-        onClose={() => setIsCustomerModalOpen(false)}
-        fullWidth
-        maxWidth="lg"
-      >
-        <DialogTitle>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
-            <SoftTypography variant="h5">Chọn khách hàng</SoftTypography>
-            <IconButton onClick={() => setIsCustomerModalOpen(false)}>
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers>
-          <CustomerTable isSelectionMode={true} onSelectCustomer={handleSelectCustomer} />
-        </DialogContent>
-      </Dialog>
-      <AddressSelectionModal
-        open={isAddressModalOpen}
-        onClose={() => setIsAddressModalOpen(false)}
-        addresses={addressList}
-        onSelectAddress={handleSelectAddressFromModal}
-        onOpenAddAddressModal={handleOpenAddModalFromSelectModal}
-      />
-      <AddAddressModal
-        open={isAddAddressModalOpen}
-        onClose={() => setIsAddAddressModalOpen(false)}
-        customerId={customer.id}
-        onAddressAdded={handleAddressAdded}
-      />
-      <PaymentModal
-        open={isPaymentModalOpen}
-        onClose={() => setIsPaymentModalOpen(false)}
-        totalAmount={finalTotal}
-        onConfirm={handleConfirmPayment}
-        hoaDonId={hoaDonId}
-      />
-      {invoiceToPrintId && (
-        <InHoaDon
-          isOpen={isInvoiceModalOpen}
-          onClose={() => setIsInvoiceModalOpen(false)}
-          hoaDonId={invoiceToPrintId}
+            maxWidth="lg"
+        >
+          <DialogTitle>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              <SoftTypography
+                  variant="outlined"
+                  size="medium"
+                  sx={{
+                    borderRadius: 2,
+                    textTransform: "none",
+                    fontWeight: 400,
+                    color: "#49a3f1",
+                    borderColor: "#49a3f1",
+                    boxShadow: "none",
+                    "&:hover": {
+                      borderColor: "#1769aa",
+                      background: "#f0f6fd",
+                      color: "#1769aa",
+                    },
+                  }}
+              >
+                Chọn khách hàng
+              </SoftTypography>
+              <IconButton onClick={() => setIsCustomerModalOpen(false)}>
+                <CloseIcon />
+              </IconButton>
+            </Box>
+          </DialogTitle>
+          <DialogContent dividers>
+            <CustomerTable
+                isSelectionMode={true}
+                onSelectCustomer={handleSelectCustomer}
+                idHoaDon={hoaDonId}
+            />
+          </DialogContent>
+        </Dialog>
+        <AddressSelectionModal
+            open={isAddressModalOpen}
+            onClose={() => setIsAddressModalOpen(false)}
+            addresses={addressList}
+            onSelectAddress={handleSelectAddressFromModal}
+            onOpenAddAddressModal={handleOpenAddModalFromSelectModal}
         />
-      )}
-    </>
+        <AddAddressModal
+            open={isAddAddressModalOpen}
+            onClose={() => setIsAddAddressModalOpen(false)}
+            customerId={customer.id}
+            onAddressAdded={handleAddressAdded}
+        />
+        <PaymentModal
+            open={isPaymentModalOpen}
+            onClose={() => setIsPaymentModalOpen(false)}
+            totalAmount={finalTotal}
+            onConfirm={handleConfirmPayment}
+            hoaDonId={hoaDonId}
+        />
+        {invoiceToPrintId && (
+            <InHoaDon
+                isOpen={isInvoiceModalOpen}
+                onClose={() => setIsInvoiceModalOpen(false)}
+                hoaDonId={invoiceToPrintId}
+            />
+        )}
+      </>
   );
 }
 

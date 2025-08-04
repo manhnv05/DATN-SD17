@@ -27,6 +27,7 @@ import Notifications from "../../Notifications";
 import dayjs from "dayjs";
 import SoftButton from "../../../../components/SoftButton";
 import PropTypes from "prop-types";
+import { toast } from "react-toastify";
 
 // Import component AddCustomerDialog
 import AddCustomerDialog from "./AddCustomerDialog"; // Đảm bảo đường dẫn này đúng
@@ -55,7 +56,7 @@ function getPaginationItems(current, total) {
 }
 
 // === BẮT ĐẦU COMPONENT ===
-function CustomerTable({ isSelectionMode = false, onSelectCustomer = () => {} }) {
+function CustomerTable({ isSelectionMode = false, onSelectCustomer = () => {} ,idHoaDon = null }) {
   const [customersData, setCustomersData] = useState({
     content: [],
     totalPages: 0,
@@ -63,6 +64,7 @@ function CustomerTable({ isSelectionMode = false, onSelectCustomer = () => {} })
     first: true,
     last: true,
   });
+  const [assigningId, setAssigningId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
@@ -96,6 +98,42 @@ function CustomerTable({ isSelectionMode = false, onSelectCustomer = () => {} })
   // Function to close the Add Customer Dialog
   const handleCloseAddCustomerDialog = () => {
     setAddCustomerDialogOpen(false);
+  };
+
+  const handleSelectAndAssignCustomer = async (customer) => {
+    // Kiểm tra xem idHoaDon có được cung cấp không khi ở chế độ chọn
+    if (!idHoaDon) {
+      console.error("idHoaDon is required in selection mode.");
+      setNotification({
+        open: true,
+        message: "Lỗi: Không tìm thấy mã hóa đơn để cập nhật.",
+        severity: "error",
+      });
+      return;
+    }
+
+    setAssigningId(customer.id); // Bắt đầu loading cho khách hàng này
+
+    try {
+      const payload = {
+        idHoaDon: idHoaDon,
+        idKhachHang: customer.id,
+      };
+
+      // Gọi API bằng phương thức PUT (thường dùng cho cập nhật)
+      await axios.put("http://localhost:8080/api/hoa-don/cap-nhat-khach-hang", payload);
+
+      toast.success("Thêm khách hàng thành công!");
+
+      // Gọi callback onSelectCustomer để component cha có thể thực hiện hành động khác (ví dụ: đóng dialog)
+      onSelectCustomer(customer);
+
+    } catch (err) {
+      console.error("Failed to assign customer:", err);
+      toast.error("Thêm khách hàng thất bại!");
+    } finally {
+      setAssigningId(null); // Dừng loading bất kể thành công hay thất bại
+    }
   };
 
   // Callback function to refresh customer list after a new customer is added
@@ -192,16 +230,18 @@ function CustomerTable({ isSelectionMode = false, onSelectCustomer = () => {} })
       render: (_, row) => {
         // If in selection mode, only show the "Chọn" button
         if (isSelectionMode) {
+          const isAssigning = assigningId === row.id;
           return (
-            <SoftButton
-              variant="contained"
-              color="info"
-              size="small"
-              onClick={() => onSelectCustomer(row)}
-            >
-              Chọn
-            </SoftButton>
-          );
+              <SoftButton
+                  variant="contained"
+                  color="info"
+                  size="small"
+                  onClick={() => handleSelectAndAssignCustomer(row)}
+                  disabled={assigningId !== null}
+              >
+                {isAssigning ? <CircularProgress size={16} color="inherit" /> : "Chọn"}
+              </SoftButton>
+          )
         }
         // Otherwise, show normal actions (detail, delete)
         return (
@@ -360,6 +400,7 @@ function CustomerTable({ isSelectionMode = false, onSelectCustomer = () => {} })
 CustomerTable.propTypes = {
   isSelectionMode: PropTypes.bool,
   onSelectCustomer: PropTypes.func,
+  idHoaDon: PropTypes.number,
 };
 
 export default CustomerTable;

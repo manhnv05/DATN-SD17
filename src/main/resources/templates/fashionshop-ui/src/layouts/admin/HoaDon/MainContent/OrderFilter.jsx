@@ -3,15 +3,18 @@ import PropTypes from "prop-types";
 
 // --- BƯỚC 1: IMPORT CÁC COMPONENT GIAO DIỆN CHUẨN ---
 import Grid from "@mui/material/Grid";
-import SoftBox from "../../../../components/SoftBox";
-import SoftTypography from "../../../../components/SoftTypography";
-import SoftInput from "../../../../components/SoftInput";
-import SoftButton from "../../../../components/SoftButton";
+import SoftBox from "components/SoftBox";
+import SoftTypography from "components/SoftTypography";
+import SoftInput from "components/SoftInput";
+import SoftButton from "components/SoftButton";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
 import Card from "@mui/material/Card";
 import InputAdornment from "@mui/material/InputAdornment";
 import Icon from "@mui/material/Icon";
+import QRCodeScanner from "../../BanHangTaiQuay/QRCodeScanner/QRCodeScanner";
+import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
+import { toast } from "react-toastify";
 
 // Helper function để lấy ngày hiện tại dưới định dạng YYYY-MM-DD
 const getTodayDateString = () => {
@@ -59,7 +62,26 @@ function OrderFilter({ onFilterChange, filterValues, onClearFilters }) {
     const handleApply = () => {
         onFilterChange(localFilters);
     };
+    const [isScannerOpen, setIsScannerOpen] = useState(false);
+    const handleScanSuccess = (decodedText) => {
+        // 1. Cập nhật giá trị cho ô tìm kiếm
+        handleInputChange("searchTerm", decodedText);
 
+        // 2. Tự động đóng modal scanner
+        setIsScannerOpen(false);
+
+        toast.success(`Đã quét mã: ${decodedText}`);
+    };
+    const handleScanError = (errorMessage) => {
+        if (
+            errorMessage.includes("NotFoundException") ||
+            errorMessage.includes("The source width is 0")
+        ) {
+            return; // Không làm gì cả với các lỗi này
+        }
+
+        toast.error("Không thể quét mã QR.");
+    };
     // Hàm xử lý khi bấm nút "Xóa lọc"
     // HÀM NÀY SẼ GỌI onClearFilters TỪ CHA
     // VÀ SAU ĐÓ useEffect TRÊN SẼ CẬP NHẬT localFilters VỀ MẶC ĐỊNH (NGÀY HÔM NAY)
@@ -154,30 +176,54 @@ function OrderFilter({ onFilterChange, filterValues, onClearFilters }) {
 
                     {/* Nút Tìm kiếm và Xóa lọc */}
                     <Grid item xs={12} md={3} sx={{ display: "flex", gap: "10px" }}>
-                        <SoftButton  variant="outlined"
-                                     size="small"
-
-                                     sx={{
-                                         borderRadius: 2,
-                                         textTransform: "none",
-                                         fontWeight: 400,
-                                         color: "#49a3f1",
-                                         borderColor: "#49a3f1",
-                                         boxShadow: "none",
-                                         "&:hover": {
-                                             borderColor: "#1769aa",
-                                             background: "#f0f6fd",
-                                             color: "#1769aa",
-                                         },
-                                     }}fullWidth onClick={handleApply}>
+                        <SoftButton
+                            variant="outlined"
+                            size="small"
+                            sx={{
+                                borderRadius: 2,
+                                textTransform: "none",
+                                fontWeight: 400,
+                                color: "#49a3f1",
+                                borderColor: "#49a3f1",
+                                boxShadow: "none",
+                                "&:hover": {
+                                    borderColor: "#1769aa",
+                                    background: "#f0f6fd",
+                                    color: "#1769aa",
+                                },
+                            }}
+                            fullWidth
+                            onClick={handleApply}
+                        >
                             Tìm kiếm
+                        </SoftButton>
+                        <SoftButton
+                            variant="outlined"
+
+                            sx={{
+                                borderRadius: 2,
+                                textTransform: "none",
+                                fontWeight: 400,
+                                color: "#49a3f1",
+                                borderColor: "#49a3f1",
+                                boxShadow: "none",
+                                "&:hover": {
+                                    borderColor: "#1769aa",
+                                    background: "#f0f6fd",
+                                    color: "#1769aa",
+                                },
+                            }}
+                            onClick={() => setIsScannerOpen(true)} // Mở modal khi bấm
+                        >
+                            <QrCodeScannerIcon />
                         </SoftButton>
                         <SoftButton
                             variant="outlined"
                             color="secondary"
                             sx={{
                                 borderRadius: 2,
-                                textTransform: "none",}}
+                                textTransform: "none",
+                            }}
                             fullWidth
                             onClick={handleClearFiltersInternal}
                         >
@@ -186,7 +232,14 @@ function OrderFilter({ onFilterChange, filterValues, onClearFilters }) {
                     </Grid>
                 </Grid>
             </SoftBox>
+            <QRCodeScanner
+                open={isScannerOpen}
+                onClose={() => setIsScannerOpen(false)}
+                onScanSuccess={handleScanSuccess}
+                onScanError={handleScanError}
+            />
         </Card>
+
     );
 }
 

@@ -175,6 +175,11 @@ public class ThongKeServiceImpl implements ThongKeService {
         int start = (int) pageable.getOffset();
         int end = Math.min(start + pageable.getPageSize(), mergedList.size());
 
+// Sửa lỗi phân trang
+        if (start >= mergedList.size() || start > end) {
+            return new PageImpl<>(new ArrayList<>(), pageable, mergedList.size());
+        }
+
         List<ThongKeSPBanChayDTO> pagedList = mergedList.subList(start, end).stream()
                 .map(ctsp -> {
                     ThongKeSPBanChayDTO dto = new ThongKeSPBanChayDTO();
