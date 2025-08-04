@@ -83,12 +83,7 @@ function parseCurrencyVND(value) {
     return String(value).replace(/[^\d]/g, "");
 }
 
-function ProductDetailUpdateModal({
-                                      open,
-                                      onClose,
-                                      detail,
-                                      onSuccess,
-                                  }) {
+function ProductDetailUpdateModal({ open, onClose, detail, onSuccess }) {
     const [brandOptions, setBrandOptions] = useState([]);
     const [materialOptions, setMaterialOptions] = useState([]);
     const [collarOptions, setCollarOptions] = useState([]);
@@ -96,7 +91,6 @@ function ProductDetailUpdateModal({
     const [colorOptions, setColorOptions] = useState([]);
     const [sizeOptions, setSizeOptions] = useState([]);
     const [isLoadingOptions, setIsLoadingOptions] = useState(true);
-
     const [form, setForm] = useState({
         idThuongHieu: "",
         idChatLieu: "",
@@ -110,13 +104,13 @@ function ProductDetailUpdateModal({
         trangThai: 1,
         images: [],
     });
-
     const [imagePreview, setImagePreview] = useState([]);
     const [imageFiles, setImageFiles] = useState([]);
+    const [systemImages, setSystemImages] = useState([]);
+    const [selectedSystemImages, setSelectedSystemImages] = useState([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formError, setFormError] = useState("");
     const qrRef = useRef();
-
     useEffect(() => {
         if (!open) return;
         setIsLoadingOptions(true);
@@ -127,7 +121,8 @@ function ProductDetailUpdateModal({
             fetch(apiUrl("/tayAo/all")).then(response => response.json()),
             fetch(apiUrl("/mauSac/all")).then(response => response.json()),
             fetch(apiUrl("/kichThuoc/all")).then(response => response.json()),
-        ]).then(([brands, materials, collars, sleeves, colors, sizes]) => {
+            fetch(apiUrl("/hinhAnh/all")).then(response => response.json()),
+        ]).then(([brands, materials, collars, sleeves, colors, sizes, images]) => {
             setBrandOptions((brands || []).map(item => ({
                 value: String(item.id), label: item.tenThuongHieu
             })));
@@ -146,12 +141,12 @@ function ProductDetailUpdateModal({
             setSizeOptions((sizes || []).map(item => ({
                 value: String(item.id), label: item.tenKichCo || item.tenKichThuoc
             })));
+            setSystemImages((images || []).filter(i => !!i.duongDanAnh));
             setIsLoadingOptions(false);
         }).catch(() => {
             setIsLoadingOptions(false);
         });
     }, [open]);
-
     useEffect(() => {
         if (!open || !detail?.id) return;
         fetch(apiUrl(`/hinhAnh/by-product-detail/${detail.id}`))
@@ -165,10 +160,13 @@ function ProductDetailUpdateModal({
                 });
                 setImagePreview(urls);
                 setImageFiles([]);
+                setSelectedSystemImages([]);
             })
-            .catch(() => setImagePreview([]));
+            .catch(() => {
+                setImagePreview([]);
+                setSelectedSystemImages([]);
+            });
     }, [open, detail?.id]);
-
     useEffect(() => {
         if (!isLoadingOptions && detail) {
             setForm({
@@ -186,11 +184,9 @@ function ProductDetailUpdateModal({
             });
         }
     }, [detail, isLoadingOptions]);
-
     function handleChange(key, value) {
         setForm(previous => ({ ...previous, [key]: value }));
     }
-
     function handleGiaChange(event) {
         const input = event.target.value;
         const numericValue = parseCurrencyVND(input);
@@ -199,27 +195,37 @@ function ProductDetailUpdateModal({
             gia: formatCurrencyVND(numericValue)
         }));
     }
-
     function handleImageChange(event) {
         const files = Array.from(event.target.files);
         const previews = files.map(file => URL.createObjectURL(file));
         setImagePreview(previous => [...previous, ...previews]);
         setImageFiles(previous => [...previous, ...files]);
     }
-
     function handleImageRemove(image) {
         setImagePreview(previous => previous.filter(i => i !== image));
+        setSelectedSystemImages(prev => prev.filter(i => i !== image));
         setImageFiles(previous => {
-            const index = imagePreview.indexOf(image);
-            if (index !== -1) {
-                const array = [...previous];
-                array.splice(index, 1);
-                return array;
+            const idx = imagePreview.indexOf(image);
+            if (idx !== -1) {
+                const arr = [...previous];
+                arr.splice(idx, 1);
+                return arr;
             }
             return previous;
         });
     }
-
+    function handleSystemImageToggle(url) {
+        setSelectedSystemImages(prev =>
+            prev.includes(url)
+                ? prev.filter((x) => x !== url)
+                : [...prev, url]
+        );
+        setImagePreview(prev =>
+            prev.includes(url)
+                ? prev.filter((x) => x !== url)
+                : [...prev, url]
+        );
+    }
     function validateForm() {
         if (!form.idThuongHieu) {
             toast.error("Vui lòng chọn thương hiệu");
@@ -252,7 +258,6 @@ function ProductDetailUpdateModal({
         }
         return true;
     }
-
     async function handleUpdate() {
         setIsSubmitting(true);
         setFormError("");
@@ -273,11 +278,6 @@ function ProductDetailUpdateModal({
         formData.append("soLuong", form.soLuong);
         formData.append("trongLuong", form.trongLuong);
         formData.append("trangThai", form.trangThai);
-
-        imageFiles.forEach((file) => {
-            formData.append("images", file);
-        });
-
         try {
             const response = await fetch(apiUrl(`/chiTietSanPham/${detail?.id}`), {
                 method: "PUT",
@@ -290,6 +290,46 @@ function ProductDetailUpdateModal({
                 toast.error(error.message || "Cập nhật thất bại");
                 return;
             }
+            if (imageFiles.length > 0) {
+                const imgForm = new window.FormData();
+                imgForm.append("ma_anh", `SPCT_${detail.id}`);
+                imgForm.append("anh_mac_dinh", 0);
+                imgForm.append("mo_ta", "");
+                imgForm.append("trang_thai", 1);
+                imgForm.append("id_san_pham_chi_tiet", detail.id);
+                imageFiles.forEach(f => imgForm.append("duong_dan_anh", f));
+                await fetch(apiUrl("/hinhAnh/multi"), {
+                    method: "POST",
+                    body: imgForm,
+                });
+            }
+            for (const imgUrl of selectedSystemImages) {
+                const img = systemImages.find(i => i.duongDanAnh === imgUrl);
+                if (!img) continue;
+                await fetch(apiUrl(`/hinhAnh/${img.id}`), {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        maAnh: img.moTa || `Ảnh ${img.id}`,
+                        duongDanAnh: img.duongDanAnh,
+                        anhMacDinh: 0,
+                        moTa: img.moTa || "",
+                        trangThai: 1,
+                        idSanPhamChiTiet: detail.id,
+                    }),
+                });
+            }
+            const resImg = await fetch(apiUrl(`/hinhAnh/by-product-detail/${detail.id}`));
+            const images = await resImg.json();
+            const urls = [];
+            (images || []).forEach(img => {
+                if (img.duongDanAnh && !urls.includes(img.duongDanAnh)) {
+                    urls.push(img.duongDanAnh);
+                }
+            });
+            setImagePreview(urls);
+            setImageFiles([]);
+            setSelectedSystemImages([]);
             toast.success("Cập nhật thành công!");
             setIsSubmitting(false);
             onClose();
@@ -302,7 +342,6 @@ function ProductDetailUpdateModal({
             toast.error("Có lỗi hệ thống");
         }
     }
-
     function handleDownloadQRCode() {
         const canvas = qrRef.current.querySelector("canvas");
         if (canvas) {
@@ -315,7 +354,6 @@ function ProductDetailUpdateModal({
             document.body.removeChild(link);
         }
     }
-
     function renderSelectOrLoading(component) {
         if (isLoadingOptions) {
             return (
@@ -326,7 +364,6 @@ function ProductDetailUpdateModal({
         }
         return component;
     }
-
     return (
         <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth PaperProps={{ sx: { borderRadius: 6, p: 0 } }}>
             <DialogTitle sx={{ fontWeight: 800, fontSize: 26, pb: 1.5, color: "#1976d2", letterSpacing: 0.5 }}>
@@ -577,7 +614,7 @@ function ProductDetailUpdateModal({
                                     />
                                 </Box>
                             ))}
-                            <Tooltip title="Thêm ảnh">
+                            <Tooltip title="Tải ảnh lên từ máy">
                                 <Button
                                     variant="outlined"
                                     component="label"
@@ -612,6 +649,65 @@ function ProductDetailUpdateModal({
                         <Typography variant="caption" color="#bdbdbd" mt={1} display="block">
                             Bạn có thể chọn nhiều ảnh, ảnh đầu tiên là ảnh đại diện.
                         </Typography>
+                        <Box mt={2}>
+                            <Typography fontWeight={700} mb={1} color="#1769aa">
+                                Chọn ảnh từ hệ thống
+                            </Typography>
+                            <Box display="flex" alignItems="center" gap={2} flexWrap="wrap" minHeight={60}>
+                                {systemImages.length === 0 ? (
+                                    <Typography color="textSecondary">
+                                        Không có ảnh hệ thống nào
+                                    </Typography>
+                                ) : (
+                                    systemImages.map((img) => (
+                                        <Box
+                                            key={img.id}
+                                            sx={{
+                                                border: selectedSystemImages.includes(img.duongDanAnh)
+                                                    ? "2px solid #1976d2"
+                                                    : "1px dashed #bbb",
+                                                borderRadius: 2,
+                                                p: 0.5,
+                                                width: 70,
+                                                height: 70,
+                                                cursor: "pointer",
+                                                position: "relative",
+                                                boxShadow: selectedSystemImages.includes(img.duongDanAnh)
+                                                    ? "0 2px 8px rgba(25,118,210,0.10)"
+                                                    : "none",
+                                                background: "#fff",
+                                            }}
+                                            onClick={() => handleSystemImageToggle(img.duongDanAnh)}
+                                        >
+                                            <img
+                                                src={img.duongDanAnh}
+                                                alt={img.moTa}
+                                                style={{
+                                                    width: "100%",
+                                                    height: "100%",
+                                                    objectFit: "cover",
+                                                    borderRadius: 6,
+                                                }}
+                                            />
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedSystemImages.includes(img.duongDanAnh)}
+                                                readOnly
+                                                style={{
+                                                    position: "absolute",
+                                                    left: 2,
+                                                    top: 2,
+                                                    zIndex: 2,
+                                                }}
+                                            />
+                                        </Box>
+                                    ))
+                                )}
+                            </Box>
+                            <Typography variant="caption" color="#bdbdbd" mt={1} display="block">
+                                Nhấn vào ảnh để chọn hoặc bỏ chọn. Có thể chọn cả ảnh hệ thống và tải lên ảnh mới.
+                            </Typography>
+                        </Box>
                     </Grid>
                 </Grid>
                 {formError && (

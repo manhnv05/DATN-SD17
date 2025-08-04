@@ -66,7 +66,6 @@ export default function App() {
         return null;
       });
 
-  // Messenger button (dưới cùng)
   const configsButton = (
       <SoftBox
           display="flex"

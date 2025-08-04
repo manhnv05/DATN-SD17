@@ -581,13 +581,13 @@ public class HoaDonServiceImpl implements HoaDonService {
                                               Pageable pageable) {
 
 
-        Sort sortByIdDesc = Sort.by(Sort.Direction.DESC, "id");
+//        Sort sortByIdDesc = Sort.by(Sort.Direction.DESC, "id");
 
 
         Pageable newPageable = PageRequest.of(
                 pageable.getPageNumber(),
-                pageable.getPageSize(),
-                sortByIdDesc
+                pageable.getPageSize()
+                //sortByIdDesc
         );
 
         Specification<HoaDon> spec = HoaDonSpecification.filterHoaDon(
