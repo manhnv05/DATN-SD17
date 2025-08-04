@@ -124,17 +124,20 @@ public class PhieuGiamGiaKhachHangServiceimpl implements ChiTietPhieuGiamGiaServ
                     BigDecimal soTienGiam = dataE.getPhamTramGiamGia()
                             .multiply(request.getTongTienHoaDon())
                             .divide(BigDecimal.valueOf(100));
-
-                    dataE.setSoTienGiam(soTienGiam);
+                    if (soTienGiam.compareTo(dataE.getGiamToiDa()) < 0) {
+                        dataE.setGiamToiDa(soTienGiam);
+                    }
                     sortPGG.add(dataE);
                 }
                 else {
-                    sortPGG.add(dataE);
+                    if (request.getTongTienHoaDon().compareTo(dataE.getGiamToiDa()) > 0) {
+                        sortPGG.add(dataE);
+                    }
                 }
             }
         }
         sortPGG.sort(Comparator.comparing(
-                PhieuGiamGia::getSoTienGiam, Comparator.reverseOrder()
+                PhieuGiamGia::getGiamToiDa, Comparator.reverseOrder()
         ));
         List<PhieuGiamGia> oldList = new LinkedList<>();
 

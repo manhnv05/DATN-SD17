@@ -4,17 +4,19 @@ import com.example.datn.entity.HoaDonChiTiet;
 import com.example.datn.vo.thongKeVO.ThongKeVoSearch;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface ThongKeSanPhamRepository extends JpaRepository<HoaDonChiTiet, Integer> {
     @Query("""
     SELECT hdct FROM HoaDonChiTiet hdct
-    WHERE FUNCTION('DATE', hdct.hoaDon.ngayTao) = CURRENT_DATE
-    AND hdct.hoaDon.trangThai = 5
+    WHERE hdct.hoaDon.ngayTao >= :startOfDay AND hdct.hoaDon.ngayTao <= :endOfDay
     """)
-    List<HoaDonChiTiet> getThongKeHomNay();
+    List<HoaDonChiTiet> getThongKeHomNay(@Param("startOfDay") LocalDateTime startOfDay,
+                                         @Param("endOfDay") LocalDateTime endOfDay);
 
     @Query("""
     SELECT hdct FROM HoaDonChiTiet hdct

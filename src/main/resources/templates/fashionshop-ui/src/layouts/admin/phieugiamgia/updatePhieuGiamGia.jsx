@@ -175,7 +175,7 @@ export default function UpdatePhieuGiam() {
         const result = await updateVouchers(data);
         if (result) {
             sendMail(datasendMail)
-            navigate("/PhieuGiam", {
+            navigate("/discount", {
                 state: {
                     message: "Cập nhật voucher thành công!",
                 },

@@ -348,7 +348,7 @@ export default function AddPhieuGiam() {
             if (danhSachPhieuGiamGiaKhachHang.length !== 0) {
                 await addPDDKH(danhSachPhieuGiamGiaKhachHang);
             }
-            navigate("/PhieuGiam", {
+            navigate("/discount", {
                 state: {
                     message: "Thêm voucher thành công!",
                 },
