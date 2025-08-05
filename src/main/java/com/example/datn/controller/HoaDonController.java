@@ -2,9 +2,11 @@ package com.example.datn.controller;
 
 import com.example.datn.config.ResponseHelper;
 import com.example.datn.dto.*;
+import com.example.datn.entity.HoaDon;
 import com.example.datn.vo.hoaDonVO.*;
 import com.example.datn.vo.khachHangVO.CapNhatKhachRequestVO;
 import com.example.datn.vo.lichSuHoaDonVO.LichSuVO;
+import com.example.datn.vo.phieuGiamGiaVO.CapNhatPGG;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -246,5 +248,10 @@ public class HoaDonController {
                 .data(result)
                 .build();
         return ResponseEntity.ok(apiResponse);
+    }
+    @PutMapping("/cap-nhat-phieu-giam")
+    public ResponseEntity<ApiResponse<PhieuGiamGiaDTO>> capNhatPhieuGiamGia(@RequestBody CapNhatPGG capNhatPGG){
+        HoaDonDTOMess result = hoaDonService.capnhatPGGVaoHoaDon(capNhatPGG);
+        return ResponseHelper.success(result.getMess(), result.getPhieuGiamGiaDTO());
     }
 }

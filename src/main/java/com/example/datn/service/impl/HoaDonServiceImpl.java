@@ -3,11 +3,13 @@ import java.math.BigDecimal;
 import com.example.datn.dto.*;
 import com.example.datn.mapper.HoaDonChiTietMapper;
 import com.example.datn.mapper.HoaDonUpdateMapper;
+import com.example.datn.mapper.PhieuGiamGiaMapper;
 import com.example.datn.vo.hoaDonVO.CapNhatSanPhamChiTietDonHangVO;
 import com.example.datn.vo.hoaDonVO.HoaDonChoRequestVO;
 import com.example.datn.vo.hoaDonVO.HoaDonRequestUpdateVO;
 import com.example.datn.vo.hoaDonVO.HoaDonUpdateVO;
 import com.example.datn.vo.khachHangVO.CapNhatKhachRequestVO;
+import com.example.datn.vo.phieuGiamGiaVO.CapNhatPGG;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.BaseFont;
 import jakarta.transaction.Transactional;
@@ -74,10 +76,10 @@ public class HoaDonServiceImpl implements HoaDonService {
     HoaDonMapper hoaDonMapper;
     LichSuHoaDonService lichSuHoaDonService;
     HoaDonChiTietMapper hoaDonChiTietMapper;
-    private final PhieuGiamGiaRepository phieuGiamGiaRepository;
     ChiTietThanhToanRepository chiTietThanhToanRepository;
     HinhThucThanhToanRepository hinhThucThanhToanRepository;
     DotGiamGiaRepository dotGiamGiaRepository;
+    PhieuGiamGiaRepository phieuGiamGiaRepository;
 
     @Override
     @Transactional
@@ -451,6 +453,57 @@ public class HoaDonServiceImpl implements HoaDonService {
         }
         hoaDonRepository.save(hoaDon);
         return "Cập nhật khách hàng thành công!";
+    }
+
+    @Override
+    public HoaDonDTOMess capnhatPGGVaoHoaDon(CapNhatPGG capNhatPGG) {
+        HoaDon hoaDon = hoaDonRepository.findById(capNhatPGG.getIdHoaDon())
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+
+        String newMaPgg = capNhatPGG.getMaPgg();
+
+        // Nếu không truyền mã PGG thì xóa PGG khỏi hóa đơn
+        if ((newMaPgg == null || newMaPgg.trim().isEmpty()) && hoaDon.getPhieuGiamGia() != null) {
+            hoaDon.setPhieuGiamGia(null);
+            hoaDonRepository.save(hoaDon);
+            PhieuGiamGiaDTO hoaDonDTO = PhieuGiamGiaMapper.INSTANCE.toResponse(hoaDon.getPhieuGiamGia());
+            HoaDonDTOMess hoaDonDTOMess = new HoaDonDTOMess();
+            hoaDonDTOMess.setPhieuGiamGiaDTO(hoaDonDTO);
+            hoaDonDTOMess.setMess("Đã xóa phiếu giảm giá khỏi hóa đơn!");
+            return hoaDonDTOMess;
+        }
+
+        // Tìm phiếu giảm giá
+        PhieuGiamGia newPGG = phieuGiamGiaRepository.findByMaPhieuGiamGia(newMaPgg);
+        if (newPGG != null) {
+            PhieuGiamGia currentPGG = hoaDon.getPhieuGiamGia();
+
+            // Nếu hóa đơn chưa có PGG hoặc mã khác với mã mới => cập nhật
+            if (currentPGG == null) {
+                hoaDon.setPhieuGiamGia(newPGG);
+                hoaDonRepository.save(hoaDon);
+                PhieuGiamGiaDTO hoaDonDTO = PhieuGiamGiaMapper.INSTANCE.toResponse(hoaDon.getPhieuGiamGia());
+                HoaDonDTOMess hoaDonDTOMess = new HoaDonDTOMess();
+
+                hoaDonDTOMess.setPhieuGiamGiaDTO(hoaDonDTO);
+                hoaDonDTOMess.setMess("Đã thêm phiếu giảm giá vào hóa đơn!");
+                return hoaDonDTOMess;
+            } else if (!currentPGG.getMaPhieuGiamGia().equals(newMaPgg)) {
+                hoaDon.setPhieuGiamGia(newPGG);
+                hoaDonRepository.save(hoaDon);
+                PhieuGiamGiaDTO hoaDonDTO = PhieuGiamGiaMapper.INSTANCE.toResponse(hoaDon.getPhieuGiamGia());
+                HoaDonDTOMess hoaDonDTOMess = new HoaDonDTOMess();
+
+                hoaDonDTOMess.setPhieuGiamGiaDTO(hoaDonDTO);
+                hoaDonDTOMess.setMess("Đã cập nhật phiếu giảm giá mới cho hóa đơn!");
+                return hoaDonDTOMess;
+            }
+        }
+        // Nếu giống nhau thì không cần làm gì
+        HoaDonDTOMess hoaDonDTOMess = new HoaDonDTOMess();
+        hoaDonDTOMess.setMess("");
+        hoaDonDTOMess.setPhieuGiamGiaDTO(null);
+        return hoaDonDTOMess;
     }
 
     @Override
@@ -836,6 +889,9 @@ public class HoaDonServiceImpl implements HoaDonService {
             PhieuGiamGia pgg = phieuGiamGiaRepository.findById(Integer.valueOf(request.getPhieuGiamGia())).orElse(null);
             hoaDon.setPhieuGiamGia(pgg);
             if (pgg != null) {
+                if (pgg.getTrangThai() != 1){
+                    throw new AppException(ErrorCode.PHIEU_GIAM_GIA_DA_HET_HAN);
+                }
                 BigDecimal tongTienGocBD = BigDecimal.valueOf(tongTienBanDau);
                 BigDecimal soTienDuocGiam = BigDecimal.ZERO;
 

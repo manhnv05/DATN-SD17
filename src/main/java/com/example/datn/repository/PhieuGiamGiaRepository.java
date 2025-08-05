@@ -48,4 +48,10 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
 
     List<PhieuGiamGia> getPhieuGiamGiaByMaPhieuGiamGia(String maPhieuGiamGia);
 
+    @Query("""
+    SELECT p FROM PhieuGiamGia p
+    WHERE p.maPhieuGiamGia = :ma
+    """)
+    PhieuGiamGia findByMaPhieuGiamGia(@Param("ma") String maPhieuGiamGia);
+
 }
