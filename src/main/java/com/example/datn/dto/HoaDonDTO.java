@@ -18,6 +18,7 @@ public class HoaDonDTO {
     private LocalDateTime ngayTao;
     private LocalDateTime ngayGiaoDuKien;
     private TrangThai trangThai;
+    private String maPhieu;
     private String ghiChu;
     private String maHoaDon;
     private String tenKhachHang;

@@ -104,7 +104,7 @@ function SalesDashboardPage() {
         setCompletedOrderId(selectedInvoiceId);
       } catch (error) {
         console.error("Đã có lỗi xảy ra:", error);
-        toast.error("Xác nhận thất bại");
+        toast.error("Xác nhận thất bại" + "," + error.response.data.message);
       }
     },
     [selectedInvoiceId, currentProducts]
