@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 // react-router components
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 // prop-types is a library for typechecking of props.
 import PropTypes from "prop-types";
@@ -12,11 +12,12 @@ import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
 import Icon from "@mui/material/Icon";
+import Divider from "@mui/material/Divider";
+import Avatar from "@mui/material/Avatar";
+import Box from "@mui/material/Box";
 
 // Soft UI Dashboard React components
 import SoftBox from "components/SoftBox";
-import SoftTypography from "components/SoftTypography";
-import SoftInput from "components/SoftInput";
 
 // Soft UI Dashboard React examples
 import Breadcrumbs from "examples/Breadcrumbs";
@@ -85,8 +86,18 @@ function DashboardNavbar({ absolute, light, isMini }) {
   const [controller, dispatch] = useSoftUIController();
   const { miniSidenav, transparentNavbar, fixedNavbar, openConfigurator } = controller;
   const [openMenu, setOpenMenu] = useState(null);
+  const [openAccountMenu, setOpenAccountMenu] = useState(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const route = location.pathname.split("/").filter(Boolean);
+
+  // Giả lập thông tin user
+  const user = {
+    name: "ADMIN SYSTEM",
+    email: "hoangbamamh5x12@gmail.com",
+    role: "Quản trị viên",
+    avatarText: "A",
+  };
 
   // Lấy đường dẫn đầy đủ dạng "/a/b/c"
   const fullPath = "/" + route.join("/");
@@ -115,6 +126,9 @@ function DashboardNavbar({ absolute, light, isMini }) {
   const handleConfiguratorOpen = () => setOpenConfigurator(dispatch, !openConfigurator);
   const handleOpenMenu = (event) => setOpenMenu(event.currentTarget);
   const handleCloseMenu = () => setOpenMenu(null);
+
+  const handleOpenAccountMenu = (event) => setOpenAccountMenu(event.currentTarget);
+  const handleCloseAccountMenu = () => setOpenAccountMenu(null);
 
   // Render the notifications menu
   const renderMenu = () => (
@@ -154,6 +168,105 @@ function DashboardNavbar({ absolute, light, isMini }) {
       </Menu>
   );
 
+  // Render the account dropdown menu (UI giống hình, không bị select text khi click)
+  const renderAccountMenu = () => (
+      <Menu
+          anchorEl={openAccountMenu}
+          anchorOrigin={{
+            vertical: "bottom",
+            horizontal: "left",
+          }}
+          open={Boolean(openAccountMenu)}
+          onClose={handleCloseAccountMenu}
+          sx={{
+            mt: 2,
+            "& .MuiPaper-root": {
+              minWidth: 280,
+              borderRadius: 3,
+              p: 1,
+              userSelect: "none",
+            },
+          }}
+          MenuListProps={{
+            sx: {
+              userSelect: "none",
+            }
+          }}
+      >
+        {/* User info */}
+        <Box sx={{ display: "flex", alignItems: "center", px: 2, pt: 2, userSelect: "none" }}>
+          <Avatar sx={{ bgcolor: "#f50057", mr: 1.5 }}>{user.avatarText}</Avatar>
+          <Box>
+            <Box sx={{ fontWeight: 600, fontSize: 16, color: "#1a1a1a" }}>{user.name}</Box>
+            <Box sx={{ fontSize: 13, color: "#888" }}>{user.email}</Box>
+            <Box sx={{ fontSize: 12, color: "#d81b60", fontWeight: 500, mt: 0.5 }}>{user.role}</Box>
+          </Box>
+        </Box>
+        <Divider sx={{ my: 1.5 }} />
+        {/* Menu items */}
+        <Box sx={{ px: 2, pb: 1 }}>
+          <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                py: 1,
+                px: 1,
+                borderRadius: 2,
+                cursor: "pointer",
+                userSelect: "none",
+                "&:hover": { background: "#f5f5f5" },
+              }}
+              onMouseDown={e => e.preventDefault()}
+              onClick={handleCloseAccountMenu}
+          >
+            <Icon sx={{ mr: 1, color: "#8e24aa" }}>person</Icon>
+            <span style={{ fontSize: 15, userSelect: "none" }}>TÀI KHOẢN</span>
+          </Box>
+          <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                py: 1,
+                px: 1,
+                borderRadius: 2,
+                cursor: "pointer",
+                userSelect: "none",
+                "&:hover": { background: "#f5f5f5" },
+              }}
+              onMouseDown={e => e.preventDefault()}
+              onClick={handleConfiguratorOpen}
+          >
+            <Icon sx={{ mr: 1, color: "#039be5" }}>settings</Icon>
+            <span style={{ fontSize: 15, userSelect: "none" }}>CÀI ĐẶT</span>
+          </Box>
+        </Box>
+        <Divider sx={{ my: 1 }} />
+        <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              px: 2,
+              pb: 2,
+              cursor: "pointer",
+              color: "#d32f2f",
+              fontWeight: 600,
+              borderRadius: 2,
+              userSelect: "none",
+              "&:hover": { background: "#fff0f0" },
+            }}
+            onMouseDown={e => e.preventDefault()}
+            onClick={() => {
+              // Xử lý đăng xuất: chuyển hướng sang trang đăng nhập
+              handleCloseAccountMenu();
+              navigate("/authentication/sign-in");
+            }}
+        >
+          <Icon sx={{ mr: 1, color: "#d32f2f" }}>logout</Icon>
+          <span style={{ fontSize: 15, userSelect: "none" }}>ĐĂNG XUẤT</span>
+        </Box>
+      </Menu>
+  );
+
   return (
       <AppBar
           position={absolute ? "absolute" : navbarType}
@@ -190,8 +303,8 @@ function DashboardNavbar({ absolute, light, isMini }) {
           </SoftBox>
           {!isMini && (
               <SoftBox sx={(theme) => navbarRow(theme, { isMini })}>
-                {/**/}
                 <SoftBox color={light ? "white" : "inherit"} display="flex" alignItems="center">
+                  {/* Notification */}
                   <IconButton
                       size="large"
                       color="inherit"
@@ -208,18 +321,23 @@ function DashboardNavbar({ absolute, light, isMini }) {
                       notifications
                     </Icon>
                   </IconButton>
-                  <Link to="/authentication/sign-in">
-                    <IconButton sx={navbarIconButton} size="large">
-                      <Icon
-                          fontSize="large"
-                          sx={({ palette: { dark, white } }) => ({
-                            color: light ? white.main : dark.main,
-                          })}
-                      >
-                        account_circle
-                      </Icon>
-                    </IconButton>
-                  </Link>
+                  {/* Account Dropdown */}
+                  <IconButton
+                      sx={navbarIconButton}
+                      size="large"
+                      onClick={handleOpenAccountMenu}
+                  >
+                    <Icon
+                        fontSize="large"
+                        sx={({ palette: { dark, white } }) => ({
+                          color: light ? white.main : dark.main,
+                        })}
+                    >
+                      account_circle
+                    </Icon>
+                  </IconButton>
+                  {renderAccountMenu()}
+                  {/* Configurator */}
                   <IconButton
                       size="large"
                       color="inherit"
