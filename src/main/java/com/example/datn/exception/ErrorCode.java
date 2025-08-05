@@ -43,6 +43,7 @@ public enum ErrorCode {
     MAIL_ERROR(2003, "ERROR MAIL", HttpStatus.BAD_REQUEST),
     PHIEU_GIAM_GIA_KH_NULL(2002, "Không có phiếu gia giá nào", HttpStatus.NOT_FOUND),
     MA_PHIEU_GIAM_GIA_TON_TAI(2002, "Mã phiếu giảm giá tồn tại", HttpStatus.BAD_REQUEST),
+    PHIEU_GIAM_GIA_DA_HET_HAN(400, "Phiếu giảm giá đã hết hạn", HttpStatus.BAD_REQUEST),
 
     INVALID_QUANTITY_PGG(1015, "Số lượng PGG hết", HttpStatus.BAD_REQUEST);
 
