@@ -20,7 +20,7 @@ import Socials from "../components/Socials";
 import Separator from "../components/Separator";
 
 // Images
-import curved6 from "../../../../assets/images/curved-images/curved14.jpg";
+import curved6 from "../../../../assets/images/curved-images/backgroundsignup.jpg";
 
 function SignUp() {
   const [agreement, setAgremment] = useState(true);
@@ -29,14 +29,14 @@ function SignUp() {
 
   return (
     <BasicLayout
-      title="Welcome!"
-      description="Use these awesome forms to login or create new account in your project for free."
+      title="Chào mừng!"
+      description="Đăng ký để bắt đầu hành trình mua sắm của bạn"
       image={curved6}
     >
       <Card>
         <SoftBox p={3} mb={1} textAlign="center">
           <SoftTypography variant="h5" fontWeight="medium">
-            Register with
+            Đăng ký
           </SoftTypography>
         </SoftBox>
         <SoftBox mb={2}>
@@ -46,13 +46,16 @@ function SignUp() {
         <SoftBox pt={2} pb={3} px={3}>
           <SoftBox component="form" role="form">
             <SoftBox mb={2}>
-              <SoftInput placeholder="Name" />
+              <label>Email</label>
+              <SoftInput placeholder="Email" />
             </SoftBox>
             <SoftBox mb={2}>
-              <SoftInput type="email" placeholder="Email" />
+              <label>Mật khẩu</label>
+              <SoftInput type="email" placeholder="Mật khẩu" />
             </SoftBox>
             <SoftBox mb={2}>
-              <SoftInput type="password" placeholder="Password" />
+                <label>Xác nhận mật khẩu</label>
+              <SoftInput type="password" placeholder="Xác nhận lại mật khẩu" />
             </SoftBox>
             <SoftBox display="flex" alignItems="center">
               <Checkbox checked={agreement} onChange={handleSetAgremment} />
@@ -62,7 +65,7 @@ function SignUp() {
                 onClick={handleSetAgremment}
                 sx={{ cursor: "poiner", userSelect: "none" }}
               >
-                &nbsp;&nbsp;I agree the&nbsp;
+                Tôi đồng ý với&nbsp;
               </SoftTypography>
               <SoftTypography
                 component="a"
@@ -71,17 +74,17 @@ function SignUp() {
                 fontWeight="bold"
                 textGradient
               >
-                Terms and Conditions
+                Điều khoản và điều kiện
               </SoftTypography>
             </SoftBox>
             <SoftBox mt={4} mb={1}>
               <SoftButton variant="gradient" color="dark" fullWidth>
-                sign up
+                Đăng ký
               </SoftButton>
             </SoftBox>
             <SoftBox mt={3} textAlign="center">
               <SoftTypography variant="button" color="text" fontWeight="regular">
-                Already have an account?&nbsp;
+                Đã có tài khoản?&nbsp;
                 <SoftTypography
                   component={Link}
                   to="/authentication/sign-in"
@@ -90,7 +93,7 @@ function SignUp() {
                   fontWeight="bold"
                   textGradient
                 >
-                  Sign in
+                    Đăng nhập
                 </SoftTypography>
               </SoftTypography>
             </SoftBox>
