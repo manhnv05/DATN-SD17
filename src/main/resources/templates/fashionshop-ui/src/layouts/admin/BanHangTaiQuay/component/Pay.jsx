@@ -616,44 +616,64 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
     }
   }, [appliedVoucher, totalAmount]);
 
+
   useEffect(() => {
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-    let isCancelled = false; 
-
-    if (typeof hoaDonId === "number" && hoaDonId > 0) {
+    let isCancelled = false;
+    
+    if (
+      typeof hoaDonId === "number" &&
+      hoaDonId > 0 &&
+      totalAmount > 0 &&  
+      customer?.id !== undefined
+    ) {
       const run = async () => {
-        while (!isCancelled) { 
+        while (!isCancelled) {
           try {
-            fetchBestVoucherForCustomer(customer.id)
+            fetchBestVoucherForCustomer(customer.id);
             await sleep(5000);
-            const requestBody = {
-              idHoaDon: hoaDonId,
-              maPgg: appliedVoucher.maPhieuGiamGia,
-            };
-            const response = await axios.put(
-              "http://localhost:8080/api/hoa-don/cap-nhat-phieu-giam",
-              requestBody
-            );
-            if (response.data.message !== "") {
-              toast.success(response.data.message);
-              setSuggestedVoucher(response.data.data);
-              setAppliedVoucher(response.data.data);
-              setVoucherCode(response.data.data.maPhieuGiamGia);
+
+            if (isCancelled) {
+              break;
             }
+
+            if (appliedVoucher?.maPhieuGiamGia) {
+              const requestBody = {
+                idHoaDon: hoaDonId,
+                maPgg: appliedVoucher.maPhieuGiamGia,
+              };
+
+              const response = await axios.put(
+                "http://localhost:8080/api/hoa-don/cap-nhat-phieu-giam",
+                requestBody
+              );
+
+              if (response.data.message !== "") {
+                toast.success(response.data.message);
+                setSuggestedVoucher(response.data.data);
+                setAppliedVoucher(response.data.data);
+                setVoucherCode(response.data.data.maPhieuGiamGia);
+              }
+            }
+
           } catch (e) {
             await sleep(5000);
           }
         }
       };
+
       run();
     }
 
     return () => {
-      // Cleanup khi hoaDonId đổi hoặc component unmount
       isCancelled = true;
     };
-  }, [hoaDonId, appliedVoucher, customer?.id]);
+  }, [hoaDonId, customer?.id, totalAmount, appliedVoucher?.maPhieuGiamGia]);
+
+
+
+
+
 
   useEffect(() => {
     if (hoaDonId != null) {
