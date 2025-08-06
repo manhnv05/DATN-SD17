@@ -1,5 +1,3 @@
-import dayjs from 'dayjs';
-
 export async function loadThongKe() {
     try {
         const response = await fetch("http://localhost:8080/thong_ke", {
@@ -7,6 +5,7 @@ export async function loadThongKe() {
             headers: {
                 "Content-Type": "application/json",
             },
+            credentials: "include", // <-- Thêm dòng này!
         });
 
         if (!response.ok) {
@@ -24,29 +23,28 @@ export async function loadThongKe() {
         return null;
     }
 }
+
 export async function fetchThongKeAlternative(page, size, search, startDate, endDate) {
     try {
         const searchObject = {};
         if (search) {
-            // Nếu backend tìm theo OR thì nên chỉ truyền 1 trường, nếu AND thì truyền cả hai
             searchObject.boLocNgayTuanThangNam = search.trim();
         }
         if (startDate && endDate) {
             searchObject.tuNgay = dayjs(startDate).format('YYYY-MM-DDTHH:mm:ss');
             searchObject.denNgay = dayjs(endDate).format('YYYY-MM-DDTHH:mm:ss');
         }
-        // Bộ lọc trạng thái
-       
+
         const response = await fetch(`http://localhost:8080/thong_ke?page=${page}&size=${size}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(searchObject),
+            credentials: "include", // <-- Thêm dòng này!
         });
 
         if (!response.ok) {
-            // Có thể lấy thêm response json để lấy thông điệp lỗi chi tiết
             let errorMsg = 'Không thể lấy dữ liệu phiếu giảm giá';
             try {
                 const err = await response.json();
@@ -69,6 +67,7 @@ export async function loadBieuDo(check) {
             headers: {
                 "Content-Type": "application/json",
             },
+            credentials: "include", // <-- Thêm dòng này!
         });
 
         if (!response.ok) {

@@ -104,12 +104,13 @@ const validateForm = () => {
     };
 
     try {
-      
-      const response = await fetch(`http://localhost:8080/chiTietThanhToan`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(paymentData),
-      });
+
+        const response = await fetch(`http://localhost:8080/chiTietThanhToan`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(paymentData),
+            credentials: "include" // <-- SỬA ở đây, thêm dòng này
+        });
 
       if (!response.ok) {
         const errData = await response.json();

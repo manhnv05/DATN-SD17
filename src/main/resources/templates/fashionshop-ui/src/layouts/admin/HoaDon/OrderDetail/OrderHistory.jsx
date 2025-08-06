@@ -82,7 +82,7 @@ const OrderHistory = ({ orderId }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`http://localhost:8080/api/hoa-don/lich-su/${orderId}`);
+      const response = await fetch(`http://localhost:8080/api/hoa-don/lich-su/${orderId}`, { credentials: "include" });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
       console.log("Dữ liệu lịch sử từ API:", data);

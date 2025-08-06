@@ -151,7 +151,7 @@ function AddressFormSection({ open, onClose, onSubmit, initialData, isEdit }) {
   useEffect(() => {
     if (!open) return;
     axios
-        .get(provinceAPI)
+        .get(provinceAPI, { withCredentials: true })
         .then((res) => {
           setProvinces(res.data?.data || []);
         })
@@ -447,13 +447,14 @@ function AddressDialog({ customerId, open, onClose }) {
 
   useEffect(() => {
     if (open && customerId) initialize();
+    // eslint-disable-next-line
   }, [open, customerId]);
 
   const initialize = async () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`${API_BASE_URL}/khachHang/${customerId}`);
+      const response = await axios.get(`${API_BASE_URL}/khachHang/${customerId}`, { withCredentials: true });
       const customerRes = response?.data?.data || response?.data;
       setCustomerInfo(customerRes);
       setAddresses(sortAddressesWithDefaultFirst(customerRes?.diaChis || []));
@@ -464,8 +465,8 @@ function AddressDialog({ customerId, open, onClose }) {
     }
   };
 
-  const sortAddressesWithDefaultFirst = (addresses) => {
-    return addresses.sort((a, b) => {
+  const sortAddressesWithDefaultFirst = (addressesArr) => {
+    return [...addressesArr].sort((a, b) => {
       if (a.trangThai === 1 && b.trangThai !== 1) return -1;
       if (a.trangThai !== 1 && b.trangThai === 1) return 1;
       return 0;
@@ -476,7 +477,7 @@ function AddressDialog({ customerId, open, onClose }) {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get(`${API_BASE_URL}/khachHang/${customerId}/diaChis`);
+      const res = await axios.get(`${API_BASE_URL}/khachHang/${customerId}/diaChis`, { withCredentials: true });
       setAddresses(sortAddressesWithDefaultFirst(res.data.data || []));
     } catch (e) {
       toast.error("Không thể tải danh sách địa chỉ của khách hàng.");
@@ -487,7 +488,7 @@ function AddressDialog({ customerId, open, onClose }) {
 
   const handleSetDefault = async (addressId) => {
     try {
-      await axios.patch(`${API_BASE_URL}/khachHang/${customerId}/diaChi/${addressId}/setDefault`);
+      await axios.patch(`${API_BASE_URL}/khachHang/${customerId}/diaChi/${addressId}/setDefault`, null, { withCredentials: true });
       toast.success("Thiết lập địa chỉ mặc định thành công!");
       fetchAddressesCustomer();
     } catch (error) {
@@ -568,7 +569,7 @@ function AddressDialog({ customerId, open, onClose }) {
 
   const handleEditAddress = async (data) => {
     try {
-      await axios.patch(`${API_BASE_URL}/khachHang/${customerId}/diaChi/${data.id}`, data);
+      await axios.patch(`${API_BASE_URL}/khachHang/${customerId}/diaChi/${data.id}`, data, { withCredentials: true });
       toast.success("Cập nhật địa chỉ thành công!");
       fetchAddressesCustomer();
     } catch (error) {
@@ -580,9 +581,9 @@ function AddressDialog({ customerId, open, onClose }) {
   const doDelete = async (addressId, newDefaultId) => {
     try {
       if (newDefaultId) {
-        await axios.patch(`${API_BASE_URL}/khachHang/${customerId}/diaChi/${newDefaultId}/setDefault`);
+        await axios.patch(`${API_BASE_URL}/khachHang/${customerId}/diaChi/${newDefaultId}/setDefault`, null, { withCredentials: true });
       }
-      await axios.delete(`${API_BASE_URL}/khachHang/${customerId}/diaChi/${addressId}`);
+      await axios.delete(`${API_BASE_URL}/khachHang/${customerId}/diaChi/${addressId}`, { withCredentials: true });
       setConfirmDelete(null);
       setSelectDefaultId(null);
       toast.success("Xóa địa chỉ thành công!");
@@ -597,7 +598,7 @@ function AddressDialog({ customerId, open, onClose }) {
 
   const handleAddAddress = async (data) => {
     try {
-      await axios.post(`${API_BASE_URL}/khachHang/${customerId}/diaChi`, data);
+      await axios.post(`${API_BASE_URL}/khachHang/${customerId}/diaChi`, data, { withCredentials: true });
       toast.success("Thêm địa chỉ thành công!");
       fetchAddressesCustomer();
     } catch (error) {

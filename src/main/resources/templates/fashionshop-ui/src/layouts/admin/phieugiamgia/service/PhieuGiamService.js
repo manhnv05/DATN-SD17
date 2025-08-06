@@ -1,10 +1,10 @@
 import dayjs from 'dayjs';
 
+// Lấy danh sách phiếu giảm giá với filter động (phân trang, tìm kiếm, lọc trạng thái, ngày)
 export async function fetchVouchersAlternative(page, size, search, startDate, endDate, statusFilter) {
     try {
         const searchObject = {};
         if (search && search.trim() !== "") {
-            // Nếu backend tìm theo OR thì nên chỉ truyền 1 trường, nếu AND thì truyền cả hai
             searchObject.maPhieuGiamGia = search.trim();
             searchObject.tenPhieu = search.trim();
         }
@@ -12,7 +12,6 @@ export async function fetchVouchersAlternative(page, size, search, startDate, en
             searchObject.ngayBatDau = dayjs(startDate).format('YYYY-MM-DDTHH:mm:ss');
             searchObject.ngayKetThuc = dayjs(endDate).format('YYYY-MM-DDTHH:mm:ss');
         }
-        // Bộ lọc trạng thái
         if (statusFilter && statusFilter !== "Tất cả") {
             const statusMap = {
                 "Đang diễn ra": 1,
@@ -30,10 +29,10 @@ export async function fetchVouchersAlternative(page, size, search, startDate, en
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify(searchObject),
+            credentials: "include", // <-- THÊM ĐỂ GIỮ SESSION
         });
 
         if (!response.ok) {
-            // Có thể lấy thêm response json để lấy thông điệp lỗi chi tiết
             let errorMsg = 'Không thể lấy dữ liệu phiếu giảm giá';
             try {
                 const err = await response.json();
@@ -52,13 +51,13 @@ export async function fetchVouchersAlternative(page, size, search, startDate, en
 // Cập nhật trạng thái phiếu giảm giá (POST)
 export async function updateStatustVoucher(id, status) {
     try {
-        // status nên là số nguyên, không phải object
         const response = await fetch(`http://localhost:8080/phieu_giam_gia/updateStatus/${id}`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(status),
+            credentials: "include",
         });
 
         if (!response.ok) {
@@ -86,6 +85,7 @@ export async function addVouchers(data) {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(data),
+            credentials: "include",
         });
 
         if (!response.ok) {
@@ -99,7 +99,7 @@ export async function addVouchers(data) {
         const result = await response.json();
         return result;
     } catch (error) {
-
+        console.error("Error adding voucher:", error);
         return error;
     }
 }
@@ -107,7 +107,9 @@ export async function addVouchers(data) {
 // Lấy 1 phiếu giảm giá theo id
 export async function fetchOneVouchers(id) {
     try {
-        const response = await fetch(`http://localhost:8080/phieu_giam_gia/${id}`);
+        const response = await fetch(`http://localhost:8080/phieu_giam_gia/${id}`, {
+            credentials: "include",
+        });
         if (!response.ok) {
             let errorMsg = "Failed to fetch vouchers";
             try {
@@ -133,6 +135,7 @@ export async function updateVouchers(data) {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(data),
+            credentials: "include",
         });
 
         if (!response.ok) {
@@ -160,6 +163,7 @@ export async function sendMail(data) {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(data),
+            credentials: "include",
         });
 
         if (!response.ok) {

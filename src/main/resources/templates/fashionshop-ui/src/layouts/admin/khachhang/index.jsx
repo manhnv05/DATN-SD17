@@ -28,10 +28,8 @@ import Table from "../../../examples/Tables/Table";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import * as XLSX from "xlsx";
-// --- sửa ở đây ---
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-// --- end sửa ---
 import AddressDialog from "./dialog";
 import dayjs from "dayjs";
 
@@ -150,7 +148,7 @@ function CustomerTable() {
             if (maxAge) params.maxAge = maxAge;
 
             axios
-                .get(API_BASE_URL, { params })
+                .get(API_BASE_URL, { params, withCredentials: true })
                 .then((response) => {
                     setCustomers(response.data.content || []);
                     setPagination({
@@ -266,7 +264,6 @@ function CustomerTable() {
         const doc = new jsPDF({ orientation: "landscape" });
         doc.setFontSize(17);
         doc.text("Danh sách khách hàng", 14, 18);
-        // --- sửa ở đây ---
         autoTable(doc, {
             head: [
                 [
@@ -284,7 +281,6 @@ function CustomerTable() {
             styles: { fontSize: 10 },
             headStyles: { fillColor: [73, 163, 241] },
         });
-        // --- end sửa ---
         doc.save("danh_sach_khach_hang.pdf");
     }
 
@@ -392,7 +388,6 @@ function CustomerTable() {
         <DashboardLayout>
             <DashboardNavbar />
             <SoftBox py={3} sx={{ background: "#F4F6FB", minHeight: "150vh", userSelect: "none" }}>
-                {/* Filter and action buttons */}
                 <Card sx={{ p: { xs: 2, md: 3 }, mb: 2 }}>
                     <SoftBox display="flex" flexDirection={{ xs: "column", md: "row" }} alignItems="center" justifyContent="space-between" gap={2}>
                         <SoftBox flex={1} display="flex" alignItems="center" gap={2} maxWidth={600}>
@@ -415,19 +410,6 @@ function CustomerTable() {
                                     color: "#222",
                                 }}
                             />
-                            {/*<Input*/}
-                            {/*    fullWidth*/}
-                            {/*    placeholder="Nhập email"*/}
-                            {/*    value={filterEmail}*/}
-                            {/*    onChange={e => handleFilterChange(setFilterEmail)(e.target.value)}*/}
-                            {/*    sx={{*/}
-                            {/*        background: "#f5f6fa",*/}
-                            {/*        borderRadius: 2,*/}
-                            {/*        p: 0.5,*/}
-                            {/*        color: "#222",*/}
-                            {/*        minWidth: 120,*/}
-                            {/*    }}*/}
-                            {/*/>*/}
                             <IconButton
                                 onClick={() => setShowFilterSection(s => !s)}
                                 sx={{
@@ -501,8 +483,6 @@ function CustomerTable() {
                         </SoftBox>
                     </SoftBox>
                 </Card>
-
-                {/* Bộ lọc hiện đại */}
                 {showFilterSection && (
                     <Card sx={{ p: { xs: 2, md: 2.5 }, mb: 2, background: "#f8fafc", border: "1px solid #e5e7eb" }}>
                         <SoftBox>
@@ -528,7 +508,6 @@ function CustomerTable() {
                                 alignItems="center"
                                 mb={2}
                             >
-                                {/* Giới tính */}
                                 <Box minWidth={120}>
                                     <label style={{ fontWeight: 600, color: "#1769aa", mb: 0.5, fontSize: 13, display: "block" }}>Giới tính</label>
                                     <StyledRadioGroup
@@ -547,7 +526,6 @@ function CustomerTable() {
                                         ))}
                                     </StyledRadioGroup>
                                 </Box>
-                                {/* Trạng thái */}
                                 <Box minWidth={150}>
                                     <label style={{ fontWeight: 600, color: "#1769aa", mb: 0.5, fontSize: 13, display: "block" }}>Trạng thái</label>
                                     <StyledRadioGroup
@@ -566,7 +544,6 @@ function CustomerTable() {
                                         ))}
                                     </StyledRadioGroup>
                                 </Box>
-                                {/* Khoảng tuổi */}
                                 <Box minWidth={180} maxWidth={260}>
                                     <label style={{ fontWeight: 600, color: "#1769aa", mb: 0.5, fontSize: 13, display: "block" }}>
                                         Khoảng tuổi: <strong>{ageRange[0]} - {ageRange[1]}</strong>
@@ -610,8 +587,6 @@ function CustomerTable() {
                         </SoftBox>
                     </Card>
                 )}
-
-                {/* Table and pagination */}
                 <Card sx={{ p: { xs: 2, md: 3 }, mb: 2 }}>
                     <SoftBox>
                         {error ? (

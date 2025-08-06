@@ -75,7 +75,7 @@ function OrderTable({ filterValues, currentPage, pageSize, setCurrentPage, setPa
   useEffect(() => {
     const fetchStatusCounts = async () => {
       try {
-        const response = await fetch("http://localhost:8080/api/hoa-don/status-counts");
+        const response = await fetch("http://localhost:8080/api/hoa-don/status-counts", { credentials: "include" });
         if (!response.ok) throw new Error("Không thể lấy dữ liệu trạng thái");
         const data = await response.json();
         setStatusCounts(data.data || {});
@@ -104,7 +104,7 @@ function OrderTable({ filterValues, currentPage, pageSize, setCurrentPage, setPa
         }
 
         const apiUrl = `http://localhost:8080/api/hoa-don?${params.toString()}`;
-        const response = await fetch(apiUrl);
+        const response = await fetch(apiUrl, { credentials: "include" });
         if (!response.ok) throw new Error(`Lỗi HTTP! Trạng thái: ${response.status}`);
 
         const rawResponseData = await response.json();

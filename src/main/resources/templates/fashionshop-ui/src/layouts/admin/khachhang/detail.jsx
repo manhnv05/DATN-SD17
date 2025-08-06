@@ -26,10 +26,10 @@ import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 import Tooltip from "@mui/material/Tooltip";
 
-// API
+// API endpoint
 const khachHangDetailAPI = "http://localhost:8080/khachHang";
 
-// Styled Components (Copy từ nhân viên form)
+// Styled Components
 const StyledCard = styled(Card)(({ theme }) => ({
     borderRadius: 20,
     background: "linear-gradient(135deg, #ffffff 0%, #f8faff 100%)",
@@ -127,7 +127,7 @@ const GenderChip = styled(Chip)(({ gender, theme }) => {
 });
 
 // Utility functions
-const formatDate = (dateString) => {
+function formatDate(dateString) {
     if (!dateString) return "Chưa cập nhật";
     try {
         let parts = [];
@@ -175,10 +175,10 @@ const formatDate = (dateString) => {
         console.error("Error formatting date:", error);
         return "Chưa cập nhật";
     }
-};
+}
 
-const getGenderLabel = (gioiTinh) => {
-    if (!gioiTinh && gioiTinh !== 0) return "Chưa cập nhật";
+function getGenderLabel(gioiTinh) {
+    if (gioiTinh === undefined || gioiTinh === null) return "Chưa cập nhật";
     if (typeof gioiTinh === "number") {
         return gioiTinh === 1 ? "Nam" : gioiTinh === 0 ? "Nữ" : "Khác";
     }
@@ -186,9 +186,9 @@ const getGenderLabel = (gioiTinh) => {
     if (gt === "nam" || gt === "male") return "Nam";
     if (gt === "nữ" || gt === "nu" || gt === "female") return "Nữ";
     return "Khác";
-};
+}
 
-const getStatusLabel = (trangThai) => {
+function getStatusLabel(trangThai) {
     if (trangThai === undefined || trangThai === null) return "Chưa cập nhật";
     if (typeof trangThai === "number") {
         return trangThai === 1 ? "Online" : trangThai === 0 ? "Offline" : "Không xác định";
@@ -197,38 +197,40 @@ const getStatusLabel = (trangThai) => {
     if (st === "1" || st === "online" || st === "đang hoạt động" || st === "active") return "Online";
     if (st === "0" || st === "offline" || st === "ngừng hoạt động" || st === "inactive") return "Offline";
     return "Không xác định";
-};
+}
 
-const InfoField = ({ icon, label, value, color = "#1769aa" }) => (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-        <Box
-            sx={{
-                display: "flex", alignItems: "center", justifyContent: "center",
-                width: 40, height: 40,
-                borderRadius: "50%", backgroundColor: `${color}15`, color: color,
-            }}
-        >
-            {icon}
-        </Box>
-        <Box sx={{ flex: 1 }}>
-            <Typography
-                variant="caption"
+function InfoField({ icon, label, value, color = "#1769aa" }) {
+    return (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
+            <Box
                 sx={{
-                    color: "#666", fontSize: "0.75rem", fontWeight: 500,
-                    textTransform: "uppercase", letterSpacing: "0.5px",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    width: 40, height: 40,
+                    borderRadius: "50%", backgroundColor: `${color}15`, color: color,
                 }}
             >
-                {label}
-            </Typography>
-            <Typography
-                variant="body1"
-                sx={{ color: "#1a1a1a", fontSize: "0.95rem", fontWeight: 600, mt: 0.5, }}
-            >
-                {value || "Chưa cập nhật"}
-            </Typography>
+                {icon}
+            </Box>
+            <Box sx={{ flex: 1 }}>
+                <Typography
+                    variant="caption"
+                    sx={{
+                        color: "#666", fontSize: "0.75rem", fontWeight: 500,
+                        textTransform: "uppercase", letterSpacing: "0.5px",
+                    }}
+                >
+                    {label}
+                </Typography>
+                <Typography
+                    variant="body1"
+                    sx={{ color: "#1a1a1a", fontSize: "0.95rem", fontWeight: 600, mt: 0.5, }}
+                >
+                    {value || "Chưa cập nhật"}
+                </Typography>
+            </Box>
         </Box>
-    </Box>
-);
+    );
+}
 
 InfoField.propTypes = {
     icon: PropTypes.node.isRequired,
@@ -237,7 +239,7 @@ InfoField.propTypes = {
     color: PropTypes.string,
 };
 
-const calculateAge = (dateString) => {
+function calculateAge(dateString) {
     if (!dateString) return null;
     let day, month, year;
     if (typeof dateString === 'string' && dateString.includes('-')) {
@@ -278,7 +280,7 @@ const calculateAge = (dateString) => {
         return age;
     }
     return null;
-};
+}
 
 function getDiaChiFormatted(diaChis) {
     if (!Array.isArray(diaChis) || diaChis.length === 0) return "Chưa cập nhật";
@@ -309,7 +311,7 @@ export default function KhachHangDetail(props) {
             setError(null);
 
             try {
-                const response = await axios.get(`${khachHangDetailAPI}/${id}`);
+                const response = await axios.get(`${khachHangDetailAPI}/${id}`, { withCredentials: true });
                 await new Promise(resolve => setTimeout(resolve, 500));
                 setKhachHang(response.data.data || response.data);
             } catch (err) {
@@ -613,7 +615,7 @@ export default function KhachHangDetail(props) {
                                         </Grid>
                                     </InfoCard>
                                 </Grid>
-                                {/* Nếu có thêm các trường khác, thêm vào đây */}
+                                {/* Có thể thêm các trường khác tại đây */}
                             </Grid>
                         </Grid>
                     </Grid>

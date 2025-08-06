@@ -54,7 +54,10 @@ const OrderHistoryModal = ({ maHoaDon, onClose }) => {
             setLoading(true);
             setError(null);
             try {
-                const response = await fetch(`http://localhost:8080/api/hoa-don/lich-su/${maHoaDon}`);
+                const response = await fetch(
+                    `http://localhost:8080/api/hoa-don/lich-su/${maHoaDon}`,
+                    { credentials: "include" } // <-- SỬA ở đây, thêm dòng này
+                );
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }

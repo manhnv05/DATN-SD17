@@ -101,12 +101,12 @@ function ProductDetailTable() {
 
         async function fetchOptions() {
             try {
-                const chatLieuRes = await axios.get("http://localhost:8080/chatLieu/all");
-                const thuongHieuRes = await axios.get("http://localhost:8080/thuongHieu/all");
-                const coAoRes = await axios.get("http://localhost:8080/coAo/all");
-                const tayAoRes = await axios.get("http://localhost:8080/tayAo/all");
-                const mauSacRes = await axios.get("http://localhost:8080/mauSac/all");
-                const kichCoRes = await axios.get("http://localhost:8080/kichThuoc/all");
+                const chatLieuRes = await axios.get("http://localhost:8080/chatLieu/all", { withCredentials: true });
+                const thuongHieuRes = await axios.get("http://localhost:8080/thuongHieu/all", { withCredentials: true });
+                const coAoRes = await axios.get("http://localhost:8080/coAo/all", { withCredentials: true });
+                const tayAoRes = await axios.get("http://localhost:8080/tayAo/all", { withCredentials: true });
+                const mauSacRes = await axios.get("http://localhost:8080/mauSac/all", { withCredentials: true });
+                const kichCoRes = await axios.get("http://localhost:8080/kichThuoc/all", { withCredentials: true });
                 setFilterOptions({
                     chatLieu: chatLieuRes.data || [],
                     thuongHieu: thuongHieuRes.data || [],
@@ -120,10 +120,11 @@ function ProductDetailTable() {
 
         async function fetchProductAndDetails() {
             try {
-                const prodRes = await axios.get("http://localhost:8080/sanPham/" + id);
+                const prodRes = await axios.get("http://localhost:8080/sanPham/" + id, { withCredentials: true });
                 setProduct(prodRes.data);
                 const detailsRes = await axios.get(
-                    "http://localhost:8080/chiTietSanPham/by-san-pham/" + id
+                    "http://localhost:8080/chiTietSanPham/by-san-pham/" + id,
+                    { withCredentials: true }
                 );
                 setDetails(detailsRes.data || []);
                 const giaArr = (detailsRes.data || [])

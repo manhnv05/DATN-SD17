@@ -11,7 +11,8 @@ export async function fetchKhachHang(page, size, search) {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-            }
+            },
+            credentials: "include", // <-- THÊM DÒNG NÀY để gửi cookie JSESSIONID
         });
 
         if (!response.ok) {

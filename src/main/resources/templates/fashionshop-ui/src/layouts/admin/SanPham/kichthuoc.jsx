@@ -107,7 +107,9 @@ function SizeTable() {
         if (queryParams.trangThai !== "Tất cả")
             url += `&trangThai=${queryParams.trangThai === "Hiển thị" ? 1 : 0}`;
 
-        fetch(url)
+        fetch(url, {
+            credentials: "include", // <-- Thêm dòng này để gửi cookie JSESSIONID cho backend
+        })
             .then((res) => {
                 if (!res.ok) throw new Error("Không thể tải dữ liệu. Vui lòng thử lại sau.");
                 return res.json();
@@ -130,6 +132,7 @@ function SizeTable() {
                 ...newSize,
                 trangThai: newSize.trangThai === "Hiển thị" ? 1 : 0,
             }),
+            credentials: "include",
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Có lỗi xảy ra khi thêm kích thước!");
@@ -169,6 +172,7 @@ function SizeTable() {
                 ...editSize,
                 trangThai: editSize.trangThai === "Hiển thị" ? 1 : 0,
             }),
+            credentials: "include",
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Có lỗi xảy ra khi cập nhật kích thước!");
@@ -195,6 +199,7 @@ function SizeTable() {
         setLoading(true);
         fetch(`http://localhost:8080/kichThuoc/${deleteId}`, {
             method: "DELETE",
+            credentials: "include",
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Có lỗi xảy ra khi xóa kích thước!");
