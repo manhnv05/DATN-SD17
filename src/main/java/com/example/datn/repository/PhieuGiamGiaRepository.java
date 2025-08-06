@@ -48,6 +48,7 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
 
     List<PhieuGiamGia> getPhieuGiamGiaByMaPhieuGiamGia(String maPhieuGiamGia);
 
+//    timfggg
     @Query("""
     SELECT p FROM PhieuGiamGia p
     WHERE p.maPhieuGiamGia = :ma

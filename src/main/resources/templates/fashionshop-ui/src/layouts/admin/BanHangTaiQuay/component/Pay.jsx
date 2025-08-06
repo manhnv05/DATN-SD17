@@ -620,41 +620,41 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
   useEffect(() => {
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     let isCancelled = false;
-    
+
     if (
       typeof hoaDonId === "number" &&
       hoaDonId > 0 &&
-      totalAmount > 0 &&  
+      totalAmount > 0 &&
       customer?.id !== undefined
     ) {
       const run = async () => {
         while (!isCancelled) {
           try {
             fetchBestVoucherForCustomer(customer.id);
-            await sleep(5000);
+            await sleep(1000);
 
             if (isCancelled) {
               break;
             }
 
-            if (appliedVoucher?.maPhieuGiamGia) {
-              const requestBody = {
-                idHoaDon: hoaDonId,
-                maPgg: appliedVoucher.maPhieuGiamGia,
-              };
 
-              const response = await axios.put(
-                "http://localhost:8080/api/hoa-don/cap-nhat-phieu-giam",
-                requestBody
-              );
+            const requestBody = {
+              idHoaDon: hoaDonId,
+              maPgg: appliedVoucher?.maPhieuGiamGia,
+            };
 
-              if (response.data.message !== "") {
-                toast.success(response.data.message);
-                setSuggestedVoucher(response.data.data);
-                setAppliedVoucher(response.data.data);
-                setVoucherCode(response.data.data.maPhieuGiamGia);
-              }
+            const response = await axios.put(
+              "http://localhost:8080/api/hoa-don/cap-nhat-phieu-giam",
+              requestBody
+            );
+
+            if (response.data.message !== "") {
+              toast.success(response.data.message);
+              setSuggestedVoucher(response.data.data);
+              setAppliedVoucher(response.data.data);
+              setVoucherCode(response.data.data.maPhieuGiamGia);
             }
+
 
           } catch (e) {
             await sleep(5000);
