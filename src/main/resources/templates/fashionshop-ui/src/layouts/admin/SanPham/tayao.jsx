@@ -110,7 +110,9 @@ function SleeveTable() {
         if (queryParams.trangThai !== "Tất cả")
             url += `&trangThai=${queryParams.trangThai === "Hiển thị" ? 1 : 0}`;
 
-        fetch(url)
+        fetch(url, {
+            credentials: "include", // <-- THÊM DÒNG NÀY để gửi cookie JSESSIONID/session
+        })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi tải dữ liệu tay áo");
                 return res.json();
@@ -133,6 +135,7 @@ function SleeveTable() {
                 ...newSleeve,
                 trangThai: newSleeve.trangThai === "Hiển thị" ? 1 : 0,
             }),
+            credentials: "include",
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi thêm tay áo");
@@ -172,6 +175,7 @@ function SleeveTable() {
                 ...editSleeve,
                 trangThai: editSleeve.trangThai === "Hiển thị" ? 1 : 0,
             }),
+            credentials: "include",
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi cập nhật tay áo");
@@ -198,6 +202,7 @@ function SleeveTable() {
         setLoading(true);
         fetch(`http://localhost:8080/tayAo/${deleteId}`, {
             method: "DELETE",
+            credentials: "include",
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi xóa tay áo");

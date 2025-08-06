@@ -109,7 +109,9 @@ function CollarTable() {
             url += `&tenCoAo=${encodeURIComponent(queryParams.tenCoAo)}`;
         if (queryParams.trangThai !== "Tất cả")
             url += `&trangThai=${queryParams.trangThai}`;
-        fetch(url)
+        fetch(url, {
+            credentials: "include", // <-- Thêm dòng này để gửi cookie JSESSIONID cho backend
+        })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi tải dữ liệu cổ áo");
                 return res.json();
@@ -132,6 +134,7 @@ function CollarTable() {
                 ...newCollar,
                 trangThai: Number(newCollar.trangThai),
             }),
+            credentials: "include",
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi thêm cổ áo");
@@ -168,6 +171,7 @@ function CollarTable() {
                 ...editCollar,
                 trangThai: Number(editCollar.trangThai),
             }),
+            credentials: "include",
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi cập nhật cổ áo");
@@ -195,6 +199,7 @@ function CollarTable() {
         setLoading(true);
         fetch(`http://localhost:8080/coAo/${deleteId}`, {
             method: "DELETE",
+            credentials: "include",
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi xóa cổ áo");

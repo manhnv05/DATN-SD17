@@ -177,30 +177,26 @@ export default function UpdateKhachHangForm({ id: propId, onClose }) {
     const [wardInput, setWardInput] = useState("");
     const [wardsLoading, setWardsLoading] = useState(false);
 
-    // Fetch provinces
     useEffect(function () {
-        axios.get(provinceAPI).then(function (response) {
+        axios.get(provinceAPI, { withCredentials: true }).then(function (response) {
             setProvinces(arraySafe(response.data?.data));
         });
     }, []);
 
-    // Fetch detail khách hàng, so sánh tỉnh chuỗi với API rồi hiển thị đúng tên/id
     useEffect(function () {
         async function fetchCustomer() {
             if (!id) return;
             try {
-                const res = await axios.get(khachHangDetailAPI(id));
+                const res = await axios.get(khachHangDetailAPI(id), { withCredentials: true });
                 let data = res.data.data || res.data;
 
-                // 1. Lấy địa chỉ chuẩn: lấy từ data.diaChis nếu có
                 let diaChiObj = Array.isArray(data.diaChis) ? data.diaChis.find(dc => dc.trangThai === 1) || data.diaChis[0] : null;
                 let tinhThanhPhoText = diaChiObj?.tinhThanhPho || data.tinhThanhPho || "";
                 let xaPhuong = diaChiObj?.xaPhuong || data.xaPhuong || "";
 
-                // 2. So sánh chuỗi với provinces để lấy đúng object/id
                 let foundProvince = findProvinceByName(tinhThanhPhoText, provinces);
-                let tinhThanhPho = foundProvince?.id || ""; // id chuẩn để lưu
-                let provinceInputName = foundProvince?.province || tinhThanhPhoText; // tên chuẩn để hiển thị
+                let tinhThanhPho = foundProvince?.id || "";
+                let provinceInputName = foundProvince?.province || tinhThanhPhoText;
 
                 setCustomer({
                     tenKhachHang: data.tenKhachHang || "",
@@ -225,7 +221,6 @@ export default function UpdateKhachHangForm({ id: propId, onClose }) {
         if (provinces.length) fetchCustomer();
     }, [id, provinces.length]);
 
-    // Sau khi detail tỉnh/thành đã có, mới load detail xã/phường
     useEffect(function () {
         async function loadWards() {
             setWardsLoading(true);
@@ -253,7 +248,6 @@ export default function UpdateKhachHangForm({ id: propId, onClose }) {
             }
             setWardsLoading(false);
         }
-        // Đảm bảo đã có tỉnh trước khi load xã
         if (customer.tinhThanhPho && provinces.length) {
             loadWards();
         }
@@ -363,15 +357,13 @@ export default function UpdateKhachHangForm({ id: propId, onClose }) {
                 hinhAnh: customer.hinhAnh
             };
 
-            // Dùng Blob để trường vO gửi lên đúng dạng JSON, không phải octet-stream
             const formData = new FormData();
             formData.append("vO", new Blob([JSON.stringify(data)], { type: "application/json" }));
             if (avatarFile) {
                 formData.append("imageFile", avatarFile);
             }
 
-            // ĐỪNG set Content-Type, để axios tự set boundary!
-            await axios.put(khachHangUpdateAPI(id), formData);
+            await axios.put(khachHangUpdateAPI(id), formData, { withCredentials: true });
 
             setSuccess(true);
             toast.success("Cập nhật khách hàng thành công!");
@@ -414,7 +406,6 @@ export default function UpdateKhachHangForm({ id: propId, onClose }) {
                         </Typography>
                         <form onSubmit={handleSubmit} autoComplete="off">
                             <Grid container spacing={4}>
-                                {/* Avatar + trạng thái + giới tính */}
                                 <Grid item xs={12} md={4}>
                                     <ProfileSection>
                                         <Avatar
@@ -479,7 +470,6 @@ export default function UpdateKhachHangForm({ id: propId, onClose }) {
                                         </FormControl>
                                     </ProfileSection>
                                 </Grid>
-                                {/* Các trường thông tin */}
                                 <Grid item xs={12} md={8}>
                                     <Grid container spacing={3}>
                                         <Grid item xs={12}>

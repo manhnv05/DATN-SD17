@@ -401,7 +401,8 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
 
     try {
       const response = await axios.get(
-        `http://localhost:8080/diaChi/get-all-dia-chi-by-khach-hang/${selectedCustomer.id}`
+          `http://localhost:8080/diaChi/get-all-dia-chi-by-khach-hang/${selectedCustomer.id}`,
+          { withCredentials: true } // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
       );
       const addresses = response.data;
       if (addresses && addresses.length > 0) {
@@ -432,7 +433,9 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
       const savedPayments = [];
       for (const payment of newPaymentsFromModal) {
         const payload = { ...payment, idHoaDon: hoaDonId };
-        const response = await axios.post("http://localhost:8080/chiTietThanhToan", payload);
+        const response = await axios.post("http://localhost:8080/chiTietThanhToan", payload, {
+          withCredentials: true // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
+        });
         savedPayments.push(response.data.data);
       }
 
@@ -502,7 +505,9 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
       };
 
       // 2. Gọi API để cập nhật khách hàng về null
-      await axios.put("http://localhost:8080/api/hoa-don/cap-nhat-khach-hang", payload);
+      await axios.put("http://localhost:8080/api/hoa-don/cap-nhat-khach-hang", payload,{
+        withCredentials: true, // Gửi kèm cookie/session nếu cần
+      });
 
       // 3. Nếu API thành công, cập nhật state của giao diện
       setCustomer({ id: null, tenKhachHang: "Khách lẻ" });
@@ -534,7 +539,8 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
 
     try {
       const response = await axios.get(
-        `http://localhost:8080/diaChi/get-all-dia-chi-by-khach-hang/${customer.id}`
+          `http://localhost:8080/diaChi/get-all-dia-chi-by-khach-hang/${customer.id}`,
+          { withCredentials: true } // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
       );
       setAddressList(response.data || []);
       setIsAddressModalOpen(true);
@@ -563,9 +569,12 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
         tongTienHoaDon: totalAmount,
       };
       const response = await axios.post(
-        "http://localhost:8080/PhieuGiamGiaKhachHang/query",
-        requestBody,
-        { params: { page: 0, size: 999 } }
+          "http://localhost:8080/PhieuGiamGiaKhachHang/query",
+          requestBody,
+          {
+            params: { page: 0, size: 999 },
+            withCredentials: true // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
+          }
       );
 
       const vouchers = response.data.data.content;
@@ -620,41 +629,44 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
   useEffect(() => {
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
     let isCancelled = false;
-
+    
     if (
       typeof hoaDonId === "number" &&
       hoaDonId > 0 &&
-      totalAmount > 0 &&
+      totalAmount > 0 &&  
       customer?.id !== undefined
     ) {
       const run = async () => {
         while (!isCancelled) {
           try {
             fetchBestVoucherForCustomer(customer.id);
-            await sleep(1000);
+            await sleep(5000);
 
             if (isCancelled) {
               break;
             }
 
+            if (appliedVoucher?.maPhieuGiamGia) {
+              const requestBody = {
+                idHoaDon: hoaDonId,
+                maPgg: appliedVoucher.maPhieuGiamGia,
+              };
 
-            const requestBody = {
-              idHoaDon: hoaDonId,
-              maPgg: appliedVoucher?.maPhieuGiamGia,
-            };
+              const response = await axios.put(
+                  "http://localhost:8080/api/hoa-don/cap-nhat-phieu-giam",
+                  requestBody,
+                  {
+                    withCredentials: true // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
+                  }
+              );
 
-            const response = await axios.put(
-              "http://localhost:8080/api/hoa-don/cap-nhat-phieu-giam",
-              requestBody
-            );
-
-            if (response.data.message !== "") {
-              toast.success(response.data.message);
-              setSuggestedVoucher(response.data.data);
-              setAppliedVoucher(response.data.data);
-              setVoucherCode(response.data.data.maPhieuGiamGia);
+              if (response.data.message !== "") {
+                toast.success(response.data.message);
+                setSuggestedVoucher(response.data.data);
+                setAppliedVoucher(response.data.data);
+                setVoucherCode(response.data.data.maPhieuGiamGia);
+              }
             }
-
 
           } catch (e) {
             await sleep(5000);
@@ -697,9 +709,13 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
     }
 
     try {
-      const response = await axios.get("http://localhost:8080/PhieuGiamGiaKhachHang/find-by-code", {
-        params: { maPhieu: voucherCode, idKhachHang: customer.id },
-      });
+      const response = await axios.get(
+          "http://localhost:8080/PhieuGiamGiaKhachHang/find-by-code",
+          {
+            params: { maPhieu: voucherCode, idKhachHang: customer.id },
+            withCredentials: true // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
+          }
+      );
       const foundVoucher = response.data.data;
 
       if (totalAmount < foundVoucher.phieuGiamGia.dieuKienGiam) {

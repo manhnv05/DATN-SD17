@@ -109,7 +109,9 @@ function BrandTable() {
         if (queryParams.trangThai !== "Tất cả")
             url += `&trangThai=${queryParams.trangThai === "Hiển thị" ? 1 : 0}`;
 
-        fetch(url)
+        fetch(url, {
+            credentials: "include", // <-- THÊM DÒNG NÀY để gửi cookie JSESSIONID/session
+        })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi tải dữ liệu thương hiệu");
                 return res.json();
@@ -132,6 +134,7 @@ function BrandTable() {
                 ...newBrand,
                 trangThai: newBrand.trangThai === "Hiển thị" ? 1 : 0,
             }),
+            credentials: "include",
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi thêm thương hiệu");
@@ -171,6 +174,7 @@ function BrandTable() {
                 ...editBrand,
                 trangThai: editBrand.trangThai === "Hiển thị" ? 1 : 0,
             }),
+            credentials: "include",
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi cập nhật thương hiệu");
@@ -197,6 +201,7 @@ function BrandTable() {
         setLoading(true);
         fetch(`http://localhost:8080/thuongHieu/${deleteId}`, {
             method: "DELETE",
+            credentials: "include",
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi xóa thương hiệu");

@@ -30,7 +30,8 @@ import Tooltip from "@mui/material/Tooltip";
 const nhanVienDetailAPI = "http://localhost:8080/nhanVien";
 const roleListAPI = "http://localhost:8080/vaiTro/list";
 
-// Styled Components
+// Styled Components (giữ nguyên như cũ...)
+
 const StyledCard = styled(Card)(({ theme }) => ({
     borderRadius: 20,
     background: "linear-gradient(135deg, #ffffff 0%, #f8faff 100%)",
@@ -131,7 +132,8 @@ const GenderChip = styled(Chip)(({ gender, theme }) => {
     };
 });
 
-// Utility functions
+// Utility functions (giữ nguyên...)
+
 const formatDate = (dateString) => {
     if (!dateString) return "Chưa cập nhật";
     try {
@@ -204,7 +206,6 @@ const getStatusLabel = (trangThai) => {
     return "Không xác định";
 };
 
-// Lấy vai trò từ danh sách vai trò theo idVaiTro hoặc tenVaiTro
 function getRoleName(idVaiTro, roleOptions, tenVaiTro) {
     if (tenVaiTro) return tenVaiTro;
     const role = roleOptions.find((r) => String(r.id) === String(idVaiTro));
@@ -309,7 +310,7 @@ export default function NhanVienDetail(props) {
             setError(null);
 
             try {
-                const response = await axios.get(`${nhanVienDetailAPI}/${id}`);
+                const response = await axios.get(`${nhanVienDetailAPI}/${id}`, { withCredentials: true }); // <-- Thêm { withCredentials: true }
                 await new Promise(resolve => setTimeout(resolve, 500));
                 setNhanVien(response.data.data || response.data);
             } catch (err) {
@@ -323,7 +324,7 @@ export default function NhanVienDetail(props) {
     }, [id]);
 
     useEffect(() => {
-        axios.get(roleListAPI).then((res) => {
+        axios.get(roleListAPI, { withCredentials: true }).then((res) => { // <-- Thêm { withCredentials: true }
             setRoleOptions(Array.isArray(res.data) ? res.data : []);
         });
     }, []);

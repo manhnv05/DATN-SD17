@@ -171,10 +171,10 @@ export default function UpdateNhanVienForm({ id: propId, onClose }) {
 
     // Fetch provinces & roles
     useEffect(function () {
-        axios.get(provinceAPI).then(function (response) {
+        axios.get(provinceAPI, { withCredentials: true }).then(function (response) {
             setProvinces(arraySafe(response.data?.data));
         });
-        axios.get(roleListAPI).then((res) => {
+        axios.get(roleListAPI, { withCredentials: true }).then((res) => {
             setRoleOptions(arraySafe(res.data));
         });
     }, []);
@@ -184,7 +184,7 @@ export default function UpdateNhanVienForm({ id: propId, onClose }) {
         async function fetchEmployee() {
             if (!id) return;
             try {
-                const res = await axios.get(nhanVienDetailAPI(id));
+                const res = await axios.get(nhanVienDetailAPI(id), { withCredentials: true });
                 let data = res.data.data || res.data;
                 let tinhThanhPho = data.tinhThanhPho || "";
                 let xaPhuong = data.xaPhuong || "";
@@ -450,7 +450,7 @@ export default function UpdateNhanVienForm({ id: propId, onClose }) {
             }
 
             // ĐỪNG set Content-Type, để axios tự set boundary!
-            await axios.put(nhanVienUpdateAPI(id), formData);
+            await axios.put(nhanVienUpdateAPI(id), formData, { withCredentials: true });
 
             setSuccess(true);
             toast.success("Cập nhật nhân viên thành công!");

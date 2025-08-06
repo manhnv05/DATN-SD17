@@ -111,7 +111,9 @@ function CategoryTable() {
             url += `&tenDanhMuc=${encodeURIComponent(queryParams.tenDanhMuc)}`;
         if (queryParams.trangThai !== "Tất cả")
             url += `&trangThai=${queryParams.trangThai === "Hiển thị" ? 1 : 0}`;
-        fetch(url)
+        fetch(url, {
+            credentials: "include", // <-- Thêm dòng này để gửi cookie JSESSIONID cho backend
+        })
             .then((res) => {
                 if (!res.ok) throw new Error("Không thể tải dữ liệu. Vui lòng thử lại sau.");
                 return res.json();
@@ -175,6 +177,7 @@ function CategoryTable() {
                 ...editCategory,
                 trangThai: editCategory.trangThai === "Hiển thị" ? 1 : 0,
             }),
+            credentials: "include",
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Có lỗi xảy ra khi cập nhật danh mục!");
@@ -202,6 +205,7 @@ function CategoryTable() {
         setLoading(true);
         fetch(`http://localhost:8080/danhMuc/${deleteId}`, {
             method: "DELETE",
+            credentials: "include",
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Có lỗi xảy ra khi xóa danh mục!");

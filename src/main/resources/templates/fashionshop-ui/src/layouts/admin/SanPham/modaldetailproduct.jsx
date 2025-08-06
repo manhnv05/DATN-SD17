@@ -26,7 +26,9 @@ function ProductDetailInfoModal(props) {
 
     useEffect(() => {
         if (props.open && props.detail?.id) {
-            fetch(apiUrl(`/hinhAnh/by-product-detail/${props.detail.id}`))
+            fetch(apiUrl(`/hinhAnh/by-product-detail/${props.detail.id}`), {
+                credentials: "include", // <-- Thêm dòng này để gửi cookie JSESSIONID khi gọi API
+            })
                 .then(res => res.json())
                 .then(imgList => {
                     if (Array.isArray(imgList)) {

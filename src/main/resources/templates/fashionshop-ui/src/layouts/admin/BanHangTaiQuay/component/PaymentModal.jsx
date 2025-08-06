@@ -54,7 +54,8 @@ function PaymentModal({ open, onClose, totalAmount, onConfirm, hoaDonId }) {
             }
             try {
                 const response = await axios.get(
-                    `http://localhost:8080/chiTietThanhToan/${hoaDonId}/chi-tiet-thanh-toan`
+                    `http://localhost:8080/chiTietThanhToan/${hoaDonId}/chi-tiet-thanh-toan`,
+                    { withCredentials: true } // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
                 );
                 setPreviousPayments(response.data || []);
             } catch (error) {

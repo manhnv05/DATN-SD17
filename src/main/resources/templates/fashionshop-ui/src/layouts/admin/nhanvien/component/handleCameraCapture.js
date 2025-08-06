@@ -15,7 +15,8 @@ export async function handleCameraCapture(file) {
         const res = await axios.post("http://localhost:8080/api/cccd/upload", formData, {
             headers: {
                 "Content-Type": "multipart/form-data"
-            }
+            },
+            withCredentials: true
         });
 
         toast.success("Đã nhận diện CCCD thành công!");

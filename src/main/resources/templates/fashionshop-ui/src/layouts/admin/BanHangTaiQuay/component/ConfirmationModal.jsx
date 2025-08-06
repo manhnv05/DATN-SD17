@@ -59,13 +59,14 @@ function ConfirmationModal({ open, onClose, onConfirm, product, quantity, setQua
     try {
       // BƯỚC 1: GỌI API ĐỂ GIẢM SỐ LƯỢNG TRONG KHO
       await axios.put(
-        `http://localhost:8080/api/hoa-don/giam-so-luong-san-pham/${product.idChiTietSanPham}`,
-        null,
-        {
-          params: {
-            soLuong: quantity,
-          },
-        }
+          `http://localhost:8080/api/hoa-don/giam-so-luong-san-pham/${product.idChiTietSanPham}`,
+          null,
+          {
+            params: {
+              soLuong: quantity,
+            },
+            withCredentials: true // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
+          }
       );
 
   
