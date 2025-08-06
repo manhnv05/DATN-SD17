@@ -879,7 +879,7 @@ function SalesCounter({ onTotalChange, onInvoiceIdChange, onProductsChange, comp
                                               min: 1,
                                               max: product.soLuongTonKho,
                                             }}
-                                            sx={{ width: "70px", mx: 1 }}
+                                              sx={{ minWidth: "70px", maxWidth: "120px", mx: 1 }}
                                         />
                                         <IconButton
                                             size="small"

@@ -3,6 +3,8 @@ package com.example.datn.repository;
 import com.example.datn.dto.HoaDonChiTietView;
 import com.example.datn.entity.HoaDon;
 import com.example.datn.entity.HoaDonChiTiet;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -50,4 +52,12 @@ public interface HoaDonChiTietRepository extends JpaRepository<HoaDonChiTiet, In
             "AND hdct.hoaDon.tenKhachHang IS NULL") // <<< THAY ĐỔI Ở ĐÂY
     Integer getSoLuongDangCho(@Param("sanPhamChiTietId") Integer sanPhamChiTietId);
 
+    @Query(value = """
+  SELECT hdct.id_san_pham_chi_tiet
+FROM hoa_don_chi_tiet hdct
+JOIN hoa_don hd ON hdct.id_hoa_don = hd.id
+GROUP BY hdct.id_san_pham_chi_tiet
+ORDER BY SUM(hdct.so_luong) DESC, MAX(hd.ngay_tao) DESC
+""",nativeQuery = true)
+    Page<Integer> findBestSellingProductIdsAllTime(Pageable pageable);
 }
