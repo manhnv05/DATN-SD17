@@ -155,7 +155,9 @@ function AddAddressModal({ open, onClose, customerId, onAddressAdded }) {
     };
 
     try {
-      await axios.post("http://localhost:8080/diaChi", payload);
+      await axios.post("http://localhost:8080/diaChi", payload, {
+        withCredentials: true // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
+      });
       onAddressAdded(); 
     } catch (error) {
       console.error("Lỗi khi thêm địa chỉ:", error);

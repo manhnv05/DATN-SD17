@@ -110,7 +110,9 @@ function MaterialTable() {
             url += `&tenChatLieu=${encodeURIComponent(queryParams.tenChatLieu)}`;
         if (queryParams.trangThai !== "Tất cả")
             url += `&trangThai=${queryParams.trangThai}`;
-        fetch(url)
+        fetch(url, {
+            credentials: "include", // <-- Thêm dòng này để gửi cookie JSESSIONID cho backend
+        })
             .then((response) => {
                 if (!response.ok) throw new Error("Lỗi khi tải dữ liệu chất liệu");
                 return response.json();
@@ -119,6 +121,7 @@ function MaterialTable() {
             .catch((err) => setError(err.message || "Lỗi không xác định"))
             .finally(() => setLoading(false));
     }, [queryParams]);
+
 
     const handleAddMaterial = () => {
         if (!newMaterial.tenChatLieu) {
@@ -133,6 +136,7 @@ function MaterialTable() {
                 ...newMaterial,
                 trangThai: Number(newMaterial.trangThai),
             }),
+            credentials: "include",
         })
             .then((response) => {
                 if (!response.ok) throw new Error("Lỗi khi thêm chất liệu");
@@ -169,6 +173,7 @@ function MaterialTable() {
                 ...editMaterial,
                 trangThai: Number(editMaterial.trangThai),
             }),
+            credentials: "include",
         })
             .then((response) => {
                 if (!response.ok) throw new Error("Lỗi khi cập nhật chất liệu");
@@ -196,6 +201,7 @@ function MaterialTable() {
         setLoading(true);
         fetch(`http://localhost:8080/chatLieu/${deleteId}`, {
             method: "DELETE",
+            credentials: "include",
         })
             .then((response) => {
                 if (!response.ok) throw new Error("Lỗi khi xóa chất liệu");

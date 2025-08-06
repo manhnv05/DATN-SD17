@@ -204,7 +204,9 @@ function AddCustomerDialog({ open, onClose, onCustomerAdded, showNotification })
     };
 
     try {
-      await axios.post("http://localhost:8080/khachHang/with-address", payload);
+      await axios.post("http://localhost:8080/khachHang/with-address", payload, {
+        withCredentials: true // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
+      });
       showNotification({ open: true, message: "Thêm khách hàng thành công!", severity: "success" });
       onCustomerAdded();
       onClose();

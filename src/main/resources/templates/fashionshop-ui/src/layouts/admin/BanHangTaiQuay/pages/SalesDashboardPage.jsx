@@ -98,8 +98,9 @@ function SalesDashboardPage() {
         // In ra "ảnh chụp" chính xác của payload bằng JSON.stringify
         console.log("Gửi payload cuối cùng lên backend:", JSON.stringify(finalPayload, null, 2));
 
-        await axios.put("http://localhost:8080/api/hoa-don/update_hoadon", finalPayload);
-
+        await axios.put("http://localhost:8080/api/hoa-don/update_hoadon", finalPayload, {
+          withCredentials: true // <-- SỬA ở đây, thêm option này để gửi cookie/session khi gọi API
+        });
         toast.success("Xác nhận thành công");
         setCompletedOrderId(selectedInvoiceId);
       } catch (error) {

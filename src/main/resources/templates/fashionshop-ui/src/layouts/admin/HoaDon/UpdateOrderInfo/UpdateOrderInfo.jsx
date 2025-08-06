@@ -347,8 +347,10 @@ const UpdateOrderInfo = ({ show, onClose, orderId, initialData, onUpdateSuccess 
 
     try {
       // IMPORTANT: Replace with your actual backend API URL
-      const backendApiUrl = `http://localhost:8080/api/hoa-don/cap-nhat-thong-tin/${orderId}`;
-      await axios.put(backendApiUrl, requestPayload);
+        const backendApiUrl = `http://localhost:8080/api/hoa-don/cap-nhat-thong-tin/${orderId}`;
+        await axios.put(backendApiUrl, requestPayload, {
+            withCredentials: true, // Sửa ở đây: gửi cookie/session
+        });
       toast.success("Cập nhật thông tin đơn hàng thành công!");
       
       setTimeout(() => {

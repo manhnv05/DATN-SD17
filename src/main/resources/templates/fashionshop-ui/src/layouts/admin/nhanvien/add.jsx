@@ -175,10 +175,10 @@ export default function AddNhanVienForm() {
     }, []);
 
     useEffect(() => {
-        axios.get(provinceAPI).then((response) => {
+        axios.get(provinceAPI, { withCredentials: true }).then((response) => {
             setProvinces(arraySafe(response.data?.data));
         });
-        axios.get(roleListAPI).then((res) => {
+        axios.get(roleListAPI, { withCredentials: true }).then((res) => {
             setRoleOptions(arraySafe(res.data));
         });
     }, []);
@@ -391,7 +391,7 @@ export default function AddNhanVienForm() {
             }
 
             // Không set Content-Type, để axios tự động set boundary
-            await axios.post(nhanVienAddAPI, formData);
+            await axios.post(nhanVienAddAPI, formData, { withCredentials: true });
 
             setSuccess(true);
             toast.success("Thêm nhân viên thành công!");

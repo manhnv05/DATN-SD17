@@ -33,7 +33,8 @@ const PaymentHistory = ({ orderId }) => {
     try {
       // Fetch lịch sử thanh toán
       const paymentResponse = await fetch(
-          `http://localhost:8080/chiTietThanhToan/lich-su-thanh-toan/${orderId}`
+          `http://localhost:8080/chiTietThanhToan/lich-su-thanh-toan/${orderId}`,
+          { credentials: "include" } // <-- SỬA ở đây
       );
       if (paymentResponse.ok) {
         const paymentResult = await paymentResponse.json();
@@ -43,7 +44,10 @@ const PaymentHistory = ({ orderId }) => {
       }
 
       // Fetch thông tin hóa đơn
-      const orderResponse = await fetch(`http://localhost:8080/api/hoa-don/${orderId}`);
+      const orderResponse = await fetch(
+          `http://localhost:8080/api/hoa-don/${orderId}`,
+          { credentials: "include" } // <-- SỬA ở đây
+      );
       if (!orderResponse.ok) throw new Error('Không thể tải thông tin hóa đơn.');
 
       const orderResult = await orderResponse.json();

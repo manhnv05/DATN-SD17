@@ -121,7 +121,9 @@ function CustomerTable({ isSelectionMode = false, onSelectCustomer = () => {} ,i
       };
 
       // Gọi API bằng phương thức PUT (thường dùng cho cập nhật)
-      await axios.put("http://localhost:8080/api/hoa-don/cap-nhat-khach-hang", payload);
+      await axios.put("http://localhost:8080/api/hoa-don/cap-nhat-khach-hang", payload, {
+        withCredentials: true // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
+      });
 
       toast.success("Thêm khách hàng thành công!");
 
@@ -160,7 +162,10 @@ function CustomerTable({ isSelectionMode = false, onSelectCustomer = () => {} ,i
         trangThai: statusFilter !== "Tất cả" ? (statusFilter === "Online" ? 1 : 0) : undefined,
       };
 
-      const response = await axios.get("http://localhost:8080/khachHang", { params });
+      const response = await axios.get("http://localhost:8080/khachHang", {
+        params,
+        withCredentials: true // <-- Thêm dòng này!
+      });
       setCustomersData({ ...response.data, content: response.data.content || [] });
     } catch (error) {
       setError("Không thể tải dữ liệu.");

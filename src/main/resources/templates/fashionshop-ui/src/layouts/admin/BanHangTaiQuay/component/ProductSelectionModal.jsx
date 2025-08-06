@@ -68,7 +68,9 @@ const [products, setProducts] = useState([]);
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get(API_URL);
+        const response = await axios.get(API_URL, {
+            withCredentials: true // <-- BỔ SUNG: gửi kèm cookie/session khi gọi API backend
+        });
       const fetchedProducts = response.data.map(p => ({
         ...p,
         uniqueId: `${p.maSanPham || ''}-${p.kichThuoc || ''}-${p.mauSac || ''}-${p.id || Math.random()}`

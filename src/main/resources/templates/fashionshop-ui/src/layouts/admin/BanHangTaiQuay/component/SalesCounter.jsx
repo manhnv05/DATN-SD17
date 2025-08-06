@@ -106,8 +106,9 @@ function SalesCounter({ onTotalChange, onInvoiceIdChange, onProductsChange, comp
           "http://localhost:8080/chiTietSanPham/scan-san-pham",
           {
             params: {
-              maSanPhamChiTiet: decodedText, // axios sẽ tự động tạo URL: .../find-by-ma?ma=...
+              maSanPhamChiTiet: decodedText,
             },
+            withCredentials: true // <-- SỬA ở đây
           }
       );
 
@@ -185,10 +186,11 @@ function SalesCounter({ onTotalChange, onInvoiceIdChange, onProductsChange, comp
       return;
     }
     try {
-      const response = await axios.post("http://localhost:8080/api/hoa-don/tao-hoa-don-cho", {
-        loaiHoaDon: "Tại quầy",
-      });
-
+      const response = await axios.post(
+          "http://localhost:8080/api/hoa-don/tao-hoa-don-cho",
+          { loaiHoaDon: "Tại quầy" },
+          { withCredentials: true } // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
+      );
       const { id: idHoaDonBackend, maHoaDon: maHoaDon } = response.data.data;
 
       const nextId = (orders.length > 0 ? Math.max(...orders.map((o) => parseInt(o.id))) : 0) + 1;
@@ -222,7 +224,8 @@ function SalesCounter({ onTotalChange, onInvoiceIdChange, onProductsChange, comp
     try {
       await axios.post(
           `http://localhost:8080/api/hoa-don/cap-nhat-danh-sach-san-pham/${currentOrder.idHoaDonBackend}`,
-          danhSachCapNhat
+          danhSachCapNhat,
+          { withCredentials: true } // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
       );
       alert("Cập nhật đơn hàng thành công!");
     } catch (error) {
@@ -349,12 +352,16 @@ function SalesCounter({ onTotalChange, onInvoiceIdChange, onProductsChange, comp
     try {
       // BƯỚC 1: GỌI API
       // Gửi yêu cầu PUT với `soLuong` là giá trị thay đổi (luôn là số dương)
-      await axios.put(`http://localhost:8080/api/hoa-don${endpoint}`, null, {
-        // Truyền null cho body nếu không cần
-        params: {
-          soLuong: Math.abs(quantityChange),
-        },
-      });
+      await axios.put(
+          `http://localhost:8080/api/hoa-don${endpoint}`,
+          null,
+          {
+            params: {
+              soLuong: Math.abs(quantityChange),
+            },
+            withCredentials: true // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
+          }
+      );
 
       // BƯỚC 2: NẾU API THÀNH CÔNG, CẬP NHẬT GIAO DIỆN
       setOrders((prevOrders) =>
@@ -392,6 +399,7 @@ function SalesCounter({ onTotalChange, onInvoiceIdChange, onProductsChange, comp
             params: {
               soLuong: productToRemove.quantity,
             },
+            withCredentials: true // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
           }
       );
       setOrders((prevOrders) =>
@@ -465,6 +473,7 @@ function SalesCounter({ onTotalChange, onInvoiceIdChange, onProductsChange, comp
                   params: {
                     soLuong: product.quantity,
                   },
+                  withCredentials: true // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
                 }
             )
         );
@@ -515,7 +524,10 @@ function SalesCounter({ onTotalChange, onInvoiceIdChange, onProductsChange, comp
                 return axios.put(
                     `http://localhost:8080/api/hoa-don/tang-so-luong-san-pham/${product.idChiTietSanPham}`,
                     null,
-                    { params: { soLuong: product.quantity } }
+                    {
+                      params: { soLuong: product.quantity },
+                      withCredentials: true // <-- THÊM dòng này để gửi kèm cookie/session khi gọi API backend
+                    }
                 );
               })
           );

@@ -144,7 +144,7 @@ function ProductTable() {
     useEffect(function () {
         async function fetchCountries() {
             try {
-                const response = await axios.get("http://localhost:8080/xuatXu/quocGia");
+                const response = await axios.get("http://localhost:8080/xuatXu/quocGia", { withCredentials: true });
                 setXuatXuList(response.data || []);
             } catch (error) {
                 setXuatXuList([]);
@@ -156,7 +156,7 @@ function ProductTable() {
     useEffect(function () {
         async function fetchDanhMuc() {
             try {
-                const response = await axios.get("http://localhost:8080/danhMuc/all");
+                const response = await axios.get("http://localhost:8080/danhMuc/all", { withCredentials: true });
                 setDanhMucList(response.data || []);
                 setDanhMucOptions(
                     (response.data || []).map(function (danhMuc) {
@@ -186,14 +186,14 @@ function ProductTable() {
             if (statusFilter !== "Tất cả") {
                 params.trangThai = statusFilter === "Đang bán" ? 1 : 0;
             }
-            const response = await axios.get("http://localhost:8080/sanPham", { params: params });
+            const response = await axios.get("http://localhost:8080/sanPham", { params: params, withCredentials: true });
             const productList = (response.data.content || []).filter(function (product) {
                 return product.trangThai === 0 || product.trangThai === 1;
             });
             const results = await Promise.all(
                 productList.map(async function (product) {
                     try {
-                        const detailResponse = await axios.get("http://localhost:8080/chiTietSanPham/by-san-pham/" + product.id);
+                        const detailResponse = await axios.get("http://localhost:8080/chiTietSanPham/by-san-pham/" + product.id, { withCredentials: true });
                         const detailList = detailResponse.data || [];
                         const totalQuantity = detailList.reduce(function (sum, detail) { return sum + (detail.soLuong || 0); }, 0);
                         let minPrice;
@@ -283,7 +283,7 @@ function ProductTable() {
         setEditingProduct(product);
         setEditFormErrors({});
         try {
-            const response = await axios.get("http://localhost:8080/sanPham/" + product.id);
+            const response = await axios.get("http://localhost:8080/sanPham/" + product.id, { withCredentials: true });
             const detail = response.data;
             setEditForm({
                 tenSanPham: detail.tenSanPham || "",
@@ -342,7 +342,7 @@ function ProductTable() {
                 xuatXu: editForm.xuatXu,
                 trangThai: editForm.trangThai,
                 idDanhMuc: editForm.idDanhMuc,
-            });
+            },{ withCredentials: true });
             handleEditClose();
             toast.success("Cập nhật sản phẩm thành công!");
             fetchProducts();
@@ -367,7 +367,7 @@ function ProductTable() {
         if (!deletingProduct) return;
         setDeleteLoading(true);
         try {
-            await axios.delete("http://localhost:8080/sanPham/" + deletingProduct.id);
+            await axios.delete("http://localhost:8080/sanPham/" + deletingProduct.id, { withCredentials: true });
             handleDeleteClose();
             toast.success("Xóa sản phẩm thành công!");
             fetchProducts();

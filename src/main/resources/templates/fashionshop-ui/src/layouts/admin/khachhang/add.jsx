@@ -153,7 +153,7 @@ export default function AddKhachHangForm() {
     useEffect(() => {
         async function fetchProvinces() {
             try {
-                const res = await fetch(provinceAPI);
+                const res = await fetch(provinceAPI, { credentials: "include" });
                 const json = await res.json();
                 setProvinces(arraySafe(json.data));
             } catch {
@@ -234,7 +234,6 @@ export default function AddKhachHangForm() {
         const error = validate();
         if (Object.keys(error).length) {
             setErrors(error);
-            // Hiện toast lỗi cho từng trường thiếu
             toast.error(Object.values(error)[0]);
             return;
         }
@@ -243,7 +242,6 @@ export default function AddKhachHangForm() {
         const foundProvince = provinces.find((item) => item.id === diaChi.tinhThanhPho);
         const foundWard = wards.find((item) => item.name === diaChi.xaPhuong);
 
-        // Chuẩn bị object vO gửi cho backend
         const vO = {
             khachHang,
             diaChi: {
@@ -262,7 +260,8 @@ export default function AddKhachHangForm() {
         try {
             await fetch(API_URL, {
                 method: "POST",
-                body: formData
+                body: formData,
+                credentials: "include"
             });
             setSuccess(true);
             toast.success("Thêm khách hàng thành công!");

@@ -162,7 +162,7 @@ function NhanVienTable() {
     }
 
     useEffect(() => {
-        axios.get(roleListAPI).then((res) => {
+        axios.get(roleListAPI, { withCredentials: true }).then((res) => {
             setRoleOptions(Array.isArray(res.data) ? res.data : []);
         });
     }, []);
@@ -187,7 +187,7 @@ function NhanVienTable() {
             if (maxAge) params.maxAge = maxAge;
 
             axios
-                .get(API_BASE_URL, { params })
+                .get(API_BASE_URL, { params, withCredentials: true })
                 .then((response) => {
                     setEmployees(response.data.content || []);
                     setPagination({

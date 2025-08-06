@@ -15,7 +15,10 @@ const ProductList = ({ orderId, orderStatus }) => {
     const fetchListProductOrder = async () => {
       try {
         // Gọi API bằng fetch, 'await' sẽ đợi cho đến khi có phản hồi
-        const response = await fetch(`http://localhost:8080/api/hoa-don/${orderId}/san-pham`);
+        const response = await fetch(
+            `http://localhost:8080/api/hoa-don/${orderId}/san-pham`,
+            { credentials: "include" } // <-- SỬA ở đây
+        );
 
         if (!response.ok) {
           throw new Error(`Lỗi HTTP! Trạng thái: ${response.status}`);

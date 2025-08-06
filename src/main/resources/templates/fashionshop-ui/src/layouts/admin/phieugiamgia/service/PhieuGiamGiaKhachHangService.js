@@ -6,6 +6,7 @@ export async function findAllPDDKH(page, size, data) {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(data),
+            credentials: "include", // <-- Thêm để giữ session/cookie khi gọi API sau đăng nhập
         });
 
         if (!response.ok) {
@@ -19,13 +20,15 @@ export async function findAllPDDKH(page, size, data) {
         return null;
     }
 }
+
 export async function deletePDDKH(id) {
     try {
         const response = await fetch(`http://localhost:8080/PhieuGiamGiaKhachHang/${id}`, {
             method: "DELETE",
             headers: {
                 "Content-Type": "application/json",
-            }
+            },
+            credentials: "include", // <-- Thêm để giữ session/cookie khi gọi API sau đăng nhập
         });
 
         if (!response.ok) {
@@ -39,6 +42,7 @@ export async function deletePDDKH(id) {
         return null;
     }
 }
+
 export async function addPDDKH(data) {
     try {
         const response = await fetch("http://localhost:8080/PhieuGiamGiaKhachHang", {
@@ -47,6 +51,7 @@ export async function addPDDKH(data) {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify(data),
+            credentials: "include", // <-- Thêm để giữ session/cookie khi gọi API sau đăng nhập
         });
 
         if (!response.ok) {

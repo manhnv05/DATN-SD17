@@ -91,8 +91,9 @@ function ImageTable() {
           .filter((k) => params[k] !== undefined && params[k] !== "")
           .map((k) => encodeURIComponent(k) + "=" + encodeURIComponent(params[k]))
           .join("&");
-      const res = await fetch(`http://localhost:8080/hinhAnh?${queryString}`);
-      if (!res.ok) throw new Error("Không thể tải dữ liệu.");
+        const res = await fetch(`http://localhost:8080/hinhAnh?${queryString}`, {
+            credentials: "include", // <-- THÊM DÒNG NÀY
+        });      if (!res.ok) throw new Error("Không thể tải dữ liệu.");
       const data = await res.json();
       setImages(
           (data.content || []).map((img) => ({
@@ -210,6 +211,7 @@ function ImageTable() {
               //   idSanPhamChiTiet: formData.idSanPhamChiTiet
               // })
               body: data,
+                credentials: "include",
             }
         );
         if (!res.ok) throw new Error("Có lỗi xảy ra khi lưu hình ảnh!");
@@ -219,6 +221,7 @@ function ImageTable() {
         const res = await fetch("http://localhost:8080/hinhAnh", {
           method: "POST",
           body: data,
+            credentials: "include",
         });
         if (!res.ok) throw new Error("Có lỗi xảy ra khi lưu hình ảnh!");
         toast.success("Thêm thành công !")
@@ -236,6 +239,7 @@ function ImageTable() {
       try {
         const res = await fetch(`http://localhost:8080/hinhAnh/${id}`, {
           method: "DELETE",
+            credentials: "include",
         });
         if (!res.ok) throw new Error();
         toast.success("Xóa ảnh thành công")

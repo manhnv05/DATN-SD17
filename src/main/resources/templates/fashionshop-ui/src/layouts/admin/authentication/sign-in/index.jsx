@@ -11,24 +11,53 @@ import {
     Switch,
 } from "@mui/material";
 import { Google, X, Facebook, Visibility, VisibilityOff } from "@mui/icons-material";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
 import CoverLayout from "../components/CoverLayout";
 import curved9 from "../../../../assets/images/curved-images/backgroundlogin.jpg";
+import { signIn } from "../data/sign-in";
 
 function SignIn() {
     const [rememberMe, setRememberMe] = useState(true);
     const [showPassword, setShowPassword] = useState(false);
-    const [formData, setFormData] = useState({ email: "", password: "" });
+    // Sử dụng username để đúng với backend Spring Security (dù là nhập email cũng để name="username")
+    const [formData, setFormData] = useState({ username: "", password: "" });
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
+        setError(""); // Reset error khi user nhập lại
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // TODO: Xử lý đăng nhập tại đây
-        console.log(formData);
+        setError("");
+        setLoading(true);
+
+        // Validate cơ bản
+        if (!formData.username.trim() || !formData.password) {
+            setError("Vui lòng nhập đầy đủ email và mật khẩu.");
+            setLoading(false);
+            return;
+        }
+
+        try {
+            // Gửi API, username thực tế là email
+            const data = await signIn({ username: formData.username, password: formData.password });
+
+            // Không còn accessToken nữa, chỉ lưu role và username nếu cần
+            localStorage.setItem("role", data.role);
+            localStorage.setItem("username", data.username);
+
+            // Redirect hoặc navigate
+            navigate("/");
+        } catch (err) {
+            setError("Đăng nhập thất bại! " + (err?.message || ""));
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -41,20 +70,18 @@ function SignIn() {
                     Hãy đăng nhập để khám phá những sản phẩm thời trang mới nhất!
                 </Typography>
             </Box>
-
             <Paper elevation={10} sx={{ maxWidth: 400, mx: "auto", borderRadius: 5, p: 4, bgcolor: "#fff", boxShadow: "0 12px 32px -8px rgba(16,137,211,0.15)" }}>
                 <Typography variant="h4" fontWeight={900} color="#1089d3" align="center" gutterBottom>
                     Đăng Nhập
                 </Typography>
-
                 <Box component="form" onSubmit={handleSubmit} mt={2}>
                     <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Email</Typography>
                     <TextField
                         fullWidth
-                        name="email"
+                        name="username" // <-- phải là "username" để spring security nhận
                         type="email"
                         placeholder="Nhập email..."
-                        value={formData.email}
+                        value={formData.username}
                         onChange={handleChange}
                         autoComplete="username"
                         margin="dense"
@@ -121,9 +148,16 @@ function SignIn() {
                         </MuiLink>
                     </Box>
 
+                    {error && (
+                        <Typography color="error" sx={{ mb: 1 }}>
+                            {error}
+                        </Typography>
+                    )}
+
                     <Button
                         type="submit"
                         fullWidth
+                        disabled={loading}
                         sx={{
                             mt: 2,
                             mb: 1.8,
@@ -145,7 +179,7 @@ function SignIn() {
                             },
                         }}
                     >
-                        Đăng Nhập
+                        {loading ? "Đang đăng nhập..." : "Đăng Nhập"}
                     </Button>
                 </Box>
 
