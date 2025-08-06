@@ -20,6 +20,7 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import axios from "axios";
 import dayjs from "dayjs";
+import { toast } from "react-toastify";
 import PropTypes from "prop-types";
 
 // === THAY ĐỔI: API ENDPOINTS CỦA GIAO HÀNG NHANH ===
@@ -173,8 +174,7 @@ function AddCustomerDialog({ open, onClose, onCustomerAdded, showNotification })
     if (!selectedProvince) newErrors.tinhThanhPho = "Vui lòng chọn Tỉnh/Thành phố.";
     if (!selectedDistrict) newErrors.quanHuyen = "Vui lòng chọn Quận/Huyện."; // Thêm validate Quận/Huyện
     if (!selectedWard) newErrors.xaPhuong = "Vui lòng chọn Xã/Phường.";
-    if (!newCustomer.address.diaChiChiTiet.trim())
-      newErrors.diaChiChiTiet = "Vui lòng nhập địa chỉ chi tiết.";
+  
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -202,18 +202,18 @@ function AddCustomerDialog({ open, onClose, onCustomerAdded, showNotification })
         trangThai: 1,
       },
     };
-
+ console.log('Payload TRƯỚC KHI GỬI:', JSON.stringify(payload, null, 2));
     try {
-      await axios.post("http://localhost:8080/khachHang/with-address", payload, {
-        withCredentials: true // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
+      await axios.post("http://localhost:8080/khachHang/them-khach-hang-ban-tai-quay", payload, {
+        
+        withCredentials: true,
       });
-      showNotification({ open: true, message: "Thêm khách hàng thành công!", severity: "success" });
       onCustomerAdded();
       onClose();
     } catch (err) {
       console.error("Lỗi khi thêm khách hàng:", err.response || err);
       const apiError = err.response?.data?.message || "Đã xảy ra lỗi khi thêm khách hàng.";
-      showNotification({ open: true, message: apiError, severity: "error" });
+      toast.error(apiError);
       if (err.response?.data?.errors) {
         setErrors(err.response.data.errors);
       }
@@ -348,18 +348,7 @@ function AddCustomerDialog({ open, onClose, onCustomerAdded, showNotification })
           )}
         />
 
-        <TextField
-          label="Địa chỉ chi tiết (Số nhà, tên đường...)"
-          name="diaChiChiTiet"
-          fullWidth
-          margin="normal"
-          multiline
-          rows={2}
-          value={newCustomer.address.diaChiChiTiet}
-          onChange={handleChange}
-          error={!!errors.diaChiChiTiet}
-          helperText={errors.diaChiChiTiet}
-        />
+      
         {/* =================================================== */}
       </DialogContent>
       <DialogActions>

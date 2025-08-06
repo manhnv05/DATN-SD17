@@ -45,9 +45,15 @@ const formatNumber = (value) => {
   return new Intl.NumberFormat("vi-VN").format(value);
 };
 
-function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderId }) {
-  const hoaDonDataRef = useRef({});
-
+function Pay({
+  totalAmount,
+  hoaDonId,
+  onSaveOrder,
+  onDataChange,
+  completedOrderId,
+  ordersData,
+  setOrdersData,
+}) {
   const [isDelivery, setIsDelivery] = useState(false);
   const [shippingFee, setShippingFee] = useState(0);
   const [discountValue, setDiscountValue] = useState(0);
@@ -227,15 +233,13 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
       return feeRanges.other_provinces;
     }
   };
-  // Hàm lưu dữ liệu hiện tại vào ref
   const saveCurrentData = useCallback(() => {
     if (hoaDonId) {
-      hoaDonDataRef.current[hoaDonId] = {
+      const currentDataForInvoice = {
         isDelivery,
         shippingFee,
         shippingFeeInput,
         discountValue,
-
         voucherCode,
         appliedVoucher,
         suggestedVoucher,
@@ -244,9 +248,27 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
         shippingAddress,
         paymentDetails,
       };
+
+      setOrdersData((prevOrdersData) => {
+        // Lấy dữ liệu cũ để so sánh
+        const existingData = prevOrdersData[hoaDonId];
+
+        // Dùng JSON.stringify để so sánh sâu 2 object.
+        // Nếu dữ liệu không có gì thay đổi, trả về state cũ để không gây re-render.
+        if (JSON.stringify(existingData) === JSON.stringify(currentDataForInvoice)) {
+          return prevOrdersData;
+        }
+
+        // Nếu có thay đổi, tạo state mới. Đây là lúc vòng lặp bị phá vỡ.
+        return {
+          ...prevOrdersData,
+          [hoaDonId]: currentDataForInvoice,
+        };
+      });
     }
   }, [
     hoaDonId,
+    setOrdersData,
     isDelivery,
     shippingFee,
     discountValue,
@@ -260,6 +282,11 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
     paymentDetails,
   ]);
 
+  // useEffect để tự động gọi hàm lưu khi state cục bộ thay đổi
+  useEffect(() => {
+    saveCurrentData();
+  }, [saveCurrentData]);
+
   useEffect(() => {
     if (completedOrderId) {
       const orderToClose = orders.find((o) => o.idHoaDonBackend === completedOrderId);
@@ -269,31 +296,6 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
       }
     }
   }, [completedOrderId]);
-
-  const restoreData = useCallback(() => {
-    if (hoaDonId && hoaDonDataRef.current[hoaDonId]) {
-      const savedData = hoaDonDataRef.current[hoaDonId];
-      setIsDelivery(savedData.isDelivery);
-      setShippingFee(savedData.shippingFee);
-      setDiscountValue(savedData.discountValue);
-      setShippingFeeInput(savedData.shippingFeeInput || "0");
-      setVoucherCode(savedData.voucherCode);
-      setAppliedVoucher(savedData.appliedVoucher);
-      setSuggestedVoucher(savedData.suggestedVoucher);
-      setCustomer(savedData.customer);
-      setShippingFormData(savedData.shippingFormData);
-      setShippingAddress(savedData.shippingAddress);
-      setPaymentDetails(savedData.paymentDetails || []);
-    } else {
-      // Reset về giá trị mặc định nếu chưa có dữ liệu được lưu
-      resetToDefault();
-
-      // Sau khi reset, gọi API tìm voucher tốt nhất cho khách lẻ
-      if (totalAmount > 0) {
-        fetchBestVoucherForCustomer(null);
-      }
-    }
-  }, [hoaDonId, totalAmount]);
 
   const resetToDefault = useCallback(() => {
     setIsDelivery(false);
@@ -315,11 +317,36 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
   }, [saveCurrentData]);
 
   // Effect để khôi phục dữ liệu khi chuyển tab (hoaDonId thay đổi)
+  // ĐÂY LÀ LOGIC ĐÚNG: useEffect để khôi phục (restore) trạng thái khi hoaDonId thay đổi
   useEffect(() => {
+    // Chỉ chạy khi có hoaDonId hợp lệ
     if (hoaDonId) {
-      restoreData();
+      // Đọc dữ liệu từ state của cha, không dùng .current nữa
+      const savedData = ordersData[hoaDonId];
+
+      // Nếu có dữ liệu đã lưu cho hóa đơn này
+      if (savedData) {
+        setIsDelivery(savedData.isDelivery || false);
+        setShippingFee(savedData.shippingFee || 0);
+        setDiscountValue(savedData.discountValue || 0);
+        setShippingFeeInput(savedData.shippingFeeInput || "0");
+        setVoucherCode(savedData.voucherCode || "");
+        setAppliedVoucher(savedData.appliedVoucher || null);
+        setSuggestedVoucher(savedData.suggestedVoucher || null);
+        setCustomer(savedData.customer || { id: null, tenKhachHang: "Khách lẻ" });
+        setShippingFormData(savedData.shippingFormData || null);
+        setShippingAddress(savedData.shippingAddress || null);
+        setPaymentDetails(savedData.paymentDetails || []);
+      }
+      // Nếu chưa có dữ liệu cho hóa đơn này (hóa đơn mới)
+      else {
+        resetToDefault();
+      }
+    } else {
+      // Nếu không có hóa đơn nào được chọn, reset mọi thứ
+      resetToDefault();
     }
-  }, [hoaDonId, restoreData]);
+  }, [hoaDonId, resetToDefault]);
   // NEW FUNCTION: Handle manual input for shipping fee
   const handleShippingFeeChange = (event) => {
     const rawValue = event.target.value;
@@ -337,10 +364,16 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
   // Hàm reset form hoàn toàn (có thể dùng khi cần thiết)
   const resetForm = useCallback(() => {
     if (hoaDonId) {
-      delete hoaDonDataRef.current[hoaDonId]; // Xóa dữ liệu đã lưu
+      setOrdersData((prevOrdersData) => {
+        const newOrdersData = { ...prevOrdersData };
+        delete newOrdersData[hoaDonId];
+        return newOrdersData;
+      });
     }
-    resetToDefault();
-  }, [hoaDonId, resetToDefault]);
+    // Không cần gọi resetToDefault() ở đây nữa vì useEffect ở trên sẽ tự xử lý khi hoaDonId thay đổi
+  }, [hoaDonId, setOrdersData]);
+
+  // ... các phần còn lại của component ...
 
   const handleOpenAddModalFromSelectModal = () => {
     setIsAddressModalOpen(false);
@@ -390,7 +423,7 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
     }
   }, [customer, isDelivery, shippingFee, shippingFormData, onDataChange, paymentDetails]);
 
-  const handleSelectCustomer = async (selectedCustomer) => {
+  const handleSelectCustomer = async (selectedCustomer, addresses) => {
     setCustomer(selectedCustomer);
 
     // Reset voucher khi thay đổi khách hàng
@@ -399,21 +432,22 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
     setSuggestedVoucher(null);
     setDiscountValue(0);
 
-    try {
-      const response = await axios.get(
-          `http://localhost:8080/diaChi/get-all-dia-chi-by-khach-hang/${selectedCustomer.id}`,
-          { withCredentials: true } // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
-      );
-      const addresses = response.data;
-      if (addresses && addresses.length > 0) {
-        setShippingAddress(addresses[0]);
-      } else {
-        setShippingAddress(null);
-      }
-    } catch (error) {
-      console.error("Lỗi khi lấy danh sách địa chỉ:", error);
-      setShippingAddress(null);
-    }
+   if (addresses && addresses.length > 0) {
+    // Tìm địa chỉ có trangThai = 1 (mặc định), nếu không có thì lấy cái đầu tiên
+    const defaultAddress = addresses.find(addr => addr.trangThai === 1) || addresses[0];
+    setShippingAddress(defaultAddress);
+  } else {
+    // Nếu khách hàng không có địa chỉ nào
+    setShippingAddress(null);
+  }
+  
+  // Gọi API để tìm phiếu giảm giá tốt nhất cho khách hàng mới
+  if (totalAmount > 0) {
+    fetchBestVoucherForCustomer(selectedCustomer.id);
+  }
+
+  // Đóng modal chọn khách hàng
+  setIsCustomerModalOpen(false);
 
     // Gọi API để tìm phiếu giảm giá tốt nhất cho khách hàng mới
     if (totalAmount > 0) {
@@ -434,7 +468,7 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
       for (const payment of newPaymentsFromModal) {
         const payload = { ...payment, idHoaDon: hoaDonId };
         const response = await axios.post("http://localhost:8080/chiTietThanhToan", payload, {
-          withCredentials: true // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
+          withCredentials: true, // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
         });
         savedPayments.push(response.data.data);
       }
@@ -491,45 +525,50 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
   };
 
   const handleClearCustomer = async () => {
-    // Nếu không có hóa đơn đang hoạt động thì không làm gì cả
-    if (!hoaDonId) {
-      toast.warn("Chưa có hóa đơn nào được chọn.");
-      return;
+  // Nếu không có hóa đơn đang hoạt động thì không làm gì cả
+  if (!hoaDonId) {
+    toast.warn("Chưa có hóa đơn nào được chọn.");
+    return;
+  }
+
+  try {
+    // 1. Chuẩn bị dữ liệu gửi đi
+    const payload = {
+      idHoaDon: hoaDonId,
+      idKhachHang: null, // Gán khách hàng về null
+    };
+
+    // 2. Gọi API để cập nhật khách hàng về null
+    await axios.put("http://localhost:8080/api/hoa-don/cap-nhat-khach-hang", payload, {
+      withCredentials: true, // Gửi kèm cookie/session nếu cần
+    });
+
+    // 3. Nếu API thành công, cập nhật state của giao diện
+    setCustomer({ id: null, tenKhachHang: "Khách lẻ" });
+    
+    // Reset voucher
+    setVoucherCode("");
+    setAppliedVoucher(null);
+    setSuggestedVoucher(null);
+    setDiscountValue(0);
+    
+    // Reset địa chỉ và phí vận chuyển
+    setShippingAddress(null);     // Reset địa chỉ đã chọn (chỉ cần 1 lần)
+    setShippingFormData(null);    // Reset dữ liệu form giao hàng
+    setShippingFee(0);            // Reset phí ship về 0
+    setShippingFeeInput("0");     // Reset ô nhập phí ship (đã thêm dấu ;)
+
+    toast.success("Đã bỏ chọn khách hàng.");
+
+    // Gọi API để tìm phiếu giảm giá cho khách lẻ (truyền vào null)
+    if (totalAmount > 0) {
+      await fetchBestVoucherForCustomer(null);
     }
-
-    try {
-      // 1. Chuẩn bị dữ liệu gửi đi
-      const payload = {
-        idHoaDon: hoaDonId,
-        idKhachHang: null, // Gán khách hàng về null
-      };
-
-      // 2. Gọi API để cập nhật khách hàng về null
-      await axios.put("http://localhost:8080/api/hoa-don/cap-nhat-khach-hang", payload,{
-        withCredentials: true, // Gửi kèm cookie/session nếu cần
-      });
-
-      // 3. Nếu API thành công, cập nhật state của giao diện
-      setCustomer({ id: null, tenKhachHang: "Khách lẻ" });
-      setShippingAddress(null);
-
-      // Reset voucher khi bỏ chọn khách hàng
-      setVoucherCode("");
-      setAppliedVoucher(null);
-      setSuggestedVoucher(null);
-      setDiscountValue(0);
-
-      toast.success("Đã bỏ chọn khách hàng.");
-
-      // Gọi API để tìm phiếu giảm giá cho khách lẻ (truyền vào null)
-      if (totalAmount > 0) {
-        await fetchBestVoucherForCustomer(null);
-      }
-    } catch (error) {
-      console.error("Lỗi khi bỏ chọn khách hàng:", error);
-      toast.error("Có lỗi xảy ra khi cố gắng bỏ chọn khách hàng. Vui lòng thử lại.");
-    }
-  };
+  } catch (error) {
+    console.error("Lỗi khi bỏ chọn khách hàng:", error);
+    toast.error("Có lỗi xảy ra khi cố gắng bỏ chọn khách hàng. Vui lòng thử lại.");
+  }
+};
 
   const handleOpenAddressModal = async () => {
     if (!customer || !customer.id) {
@@ -539,8 +578,8 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
 
     try {
       const response = await axios.get(
-          `http://localhost:8080/diaChi/get-all-dia-chi-by-khach-hang/${customer.id}`,
-          { withCredentials: true } // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
+        `http://localhost:8080/diaChi/khachhang/${customer.id}`,
+        { withCredentials: true } // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
       );
       setAddressList(response.data || []);
       setIsAddressModalOpen(true);
@@ -569,12 +608,12 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
         tongTienHoaDon: totalAmount,
       };
       const response = await axios.post(
-          "http://localhost:8080/PhieuGiamGiaKhachHang/query",
-          requestBody,
-          {
-            params: { page: 0, size: 999 },
-            withCredentials: true // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
-          }
+        "http://localhost:8080/PhieuGiamGiaKhachHang/query",
+        requestBody,
+        {
+          params: { page: 0, size: 999 },
+          withCredentials: true, // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
+        }
       );
 
       const vouchers = response.data.data.content;
@@ -625,15 +664,14 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
     }
   }, [appliedVoucher, totalAmount]);
 
-
   useEffect(() => {
-    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
     let isCancelled = false;
-    
+
     if (
       typeof hoaDonId === "number" &&
       hoaDonId > 0 &&
-      totalAmount > 0 &&  
+      totalAmount > 0 &&
       customer?.id !== undefined
     ) {
       const run = async () => {
@@ -653,11 +691,11 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
               };
 
               const response = await axios.put(
-                  "http://localhost:8080/api/hoa-don/cap-nhat-phieu-giam",
-                  requestBody,
-                  {
-                    withCredentials: true // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
-                  }
+                "http://localhost:8080/api/hoa-don/cap-nhat-phieu-giam",
+                requestBody,
+                {
+                  withCredentials: true, // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
+                }
               );
 
               if (response.data.message !== "") {
@@ -667,7 +705,6 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
                 setVoucherCode(response.data.data.maPhieuGiamGia);
               }
             }
-
           } catch (e) {
             await sleep(5000);
           }
@@ -682,16 +719,11 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
     };
   }, [hoaDonId, customer?.id, totalAmount, appliedVoucher?.maPhieuGiamGia]);
 
-
-
-
-
-
   useEffect(() => {
     if (hoaDonId != null) {
-      setIdHoaDonNew(hoaDonId)
+      setIdHoaDonNew(hoaDonId);
     }
-  }, [hoaDonId])
+  }, [hoaDonId]);
 
   const handleApplyVoucher = async () => {
     if (!voucherCode.trim()) {
@@ -709,13 +741,10 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
     }
 
     try {
-      const response = await axios.get(
-          "http://localhost:8080/PhieuGiamGiaKhachHang/find-by-code",
-          {
-            params: { maPhieu: voucherCode, idKhachHang: customer.id },
-            withCredentials: true // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
-          }
-      );
+      const response = await axios.get("http://localhost:8080/PhieuGiamGiaKhachHang/find-by-code", {
+        params: { maPhieu: voucherCode, idKhachHang: customer.id },
+        withCredentials: true, // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
+      });
       const foundVoucher = response.data.data;
 
       if (totalAmount < foundVoucher.phieuGiamGia.dieuKienGiam) {
@@ -774,6 +803,7 @@ function Pay({ totalAmount, hoaDonId, onSaveOrder, onDataChange, completedOrderI
 
               {isDelivery ? (
                 <ShippingForm
+                 key={customer.id || "khach-le"}
                   initialCustomer={customer}
                   initialAddress={shippingAddress}
                   onOpenAddressModal={handleOpenAddressModal}
@@ -985,7 +1015,9 @@ Pay.propTypes = {
   hoaDonId: PropTypes.number,
   onSaveOrder: PropTypes.func.isRequired,
   onDataChange: PropTypes.func.isRequired,
-  completedOrderId: PropTypes.number,
+  completedOrderId: PropTypes.number, // Thêm prop mới vào đây
+  ordersData: PropTypes.object.isRequired,
+  setOrdersData: PropTypes.func.isRequired,
 };
 
 export default Pay;

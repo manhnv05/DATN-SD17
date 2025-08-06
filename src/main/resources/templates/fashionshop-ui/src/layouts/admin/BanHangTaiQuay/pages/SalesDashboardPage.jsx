@@ -1,6 +1,6 @@
 // src/layouts/sales/SalesDashboardPage.jsx
 
-import React, { useState, useCallback, useMemo ,useEffect } from "react";
+import React, { useState, useCallback, useMemo ,useEffect,useRef  } from "react";
 // Import các component layout chuẩn
 import DashboardLayout from "../../../../examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "../../../../examples/Navbars/DashboardNavbar";
@@ -13,12 +13,29 @@ import { toast } from "react-toastify";
 import SalesCounter from "../component/SalesCounter";
 
 function SalesDashboardPage() {
+
   const [completedOrderId, setCompletedOrderId] = useState(null);
   const [currentProducts, setCurrentProducts] = useState([]);
   const [paymentData, setPaymentData] = useState(null);
   const [cartTotal, setCartTotal] = useState(0);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(null);
-
+const [ordersData, setOrdersData] = useState(() => {
+    try {
+      const savedOrdersData = localStorage.getItem("allInvoicesData");
+      return savedOrdersData ? JSON.parse(savedOrdersData) : {}; // Nếu có thì dùng, không thì là object rỗng
+    } catch (error) {
+      console.error("Lỗi khi đọc dữ liệu hóa đơn từ localStorage:", error);
+      return {};
+    }
+  });
+    // THAY ĐỔI 2: Thêm useEffect để TỰ ĐỘNG LƯU DỮ LIỆU vào localStorage mỗi khi `ordersData` thay đổi.
+  useEffect(() => {
+    try {
+      localStorage.setItem("allInvoicesData", JSON.stringify(ordersData));
+    } catch (error) {
+      console.error("Lỗi khi lưu dữ liệu hóa đơn vào localStorage:", error);
+    }
+  }, [ordersData])
   const handleInvoiceIdChange = useCallback((invoiceId) => {
     setSelectedInvoiceId((prevId) => (prevId !== invoiceId ? invoiceId : prevId));
     
@@ -132,6 +149,9 @@ function SalesDashboardPage() {
               hoaDonId={selectedInvoiceId}
               onSaveOrder={handleSaveOrder}
               onDataChange={handlePaymentDataChange}
+             ordersData={ordersData} 
+              setOrdersData={setOrdersData}
+
             />
           </Grid>
         </Grid>

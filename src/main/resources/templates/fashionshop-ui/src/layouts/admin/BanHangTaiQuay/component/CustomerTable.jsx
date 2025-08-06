@@ -100,44 +100,42 @@ function CustomerTable({ isSelectionMode = false, onSelectCustomer = () => {} ,i
     setAddCustomerDialogOpen(false);
   };
 
-  const handleSelectAndAssignCustomer = async (customer) => {
-    // Kiểm tra xem idHoaDon có được cung cấp không khi ở chế độ chọn
-    if (!idHoaDon) {
-      console.error("idHoaDon is required in selection mode.");
-      setNotification({
-        open: true,
-        message: "Lỗi: Không tìm thấy mã hóa đơn để cập nhật.",
-        severity: "error",
-      });
-      return;
-    }
+ const handleSelectAndAssignCustomer = async (customer) => {
+  if (!idHoaDon) {
+    toast.error("Lỗi: Không tìm thấy mã hóa đơn để cập nhật.");
+    return;
+  }
 
-    setAssigningId(customer.id); // Bắt đầu loading cho khách hàng này
+  setAssigningId(customer.id);
 
-    try {
-      const payload = {
-        idHoaDon: idHoaDon,
-        idKhachHang: customer.id,
-      };
+  try {
+    // === BƯỚC 1: LẤY DANH SÁCH ĐỊA CHỈ CỦA KHÁCH HÀNG ===
+    const diaChiResponse = await axios.get(`http://localhost:8080/diaChi/khachhang/${customer.id}`, {
+      withCredentials: true,
+    });
+    const addresses = diaChiResponse.data || [];
 
-      // Gọi API bằng phương thức PUT (thường dùng cho cập nhật)
-      await axios.put("http://localhost:8080/api/hoa-don/cap-nhat-khach-hang", payload, {
-        withCredentials: true // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
-      });
+    // === BƯỚC 2: GỌI API CẬP NHẬT KHÁCH HÀNG VÀO HÓA ĐƠN ===
+    const payload = {
+      idHoaDon: idHoaDon,
+      idKhachHang: customer.id,
+    };
+    await axios.put("http://localhost:8080/api/hoa-don/cap-nhat-khach-hang", payload, {
+      withCredentials: true,
+    });
 
-      toast.success("Thêm khách hàng thành công!");
+    toast.success(`Đã chọn khách hàng: ${customer.tenKhachHang}`);
 
-      // Gọi callback onSelectCustomer để component cha có thể thực hiện hành động khác (ví dụ: đóng dialog)
-      onSelectCustomer(customer);
+    // === BƯỚC 3: GỬI CẢ KHÁCH HÀNG VÀ DANH SÁCH ĐỊA CHỈ VỀ CHO COMPONENT CHA ===
+    onSelectCustomer(customer, addresses);
 
-    } catch (err) {
-      console.error("Failed to assign customer:", err);
-      toast.error("Thêm khách hàng thất bại!");
-    } finally {
-      setAssigningId(null); // Dừng loading bất kể thành công hay thất bại
-    }
-  };
-
+  } catch (err) {
+    console.error("Failed to assign customer:", err);
+    toast.error("Thêm khách hàng vào hóa đơn thất bại!");
+  } finally {
+    setAssigningId(null);
+  }
+};
   // Callback function to refresh customer list after a new customer is added
   const handleCustomerAdded = () => {
     handleCloseAddCustomerDialog(); // Close the add customer dialog
@@ -238,9 +236,21 @@ function CustomerTable({ isSelectionMode = false, onSelectCustomer = () => {} ,i
           const isAssigning = assigningId === row.id;
           return (
               <SoftButton
-                  variant="contained"
-                  color="info"
-                  size="small"
+                 variant="outlined"
+                          size="small"
+                          sx={{
+                            borderRadius: 2,
+                            textTransform: "none",
+                            fontWeight: 400,
+                            color: "#49a3f1",
+                            borderColor: "#49a3f1",
+                            boxShadow: "none",
+                            "&:hover": {
+                              borderColor: "#1769aa",
+                              background: "#f0f6fd",
+                              color: "#1769aa",
+                            },
+                          }}
                   onClick={() => handleSelectAndAssignCustomer(row)}
                   disabled={assigningId !== null}
               >
