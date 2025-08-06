@@ -67,9 +67,22 @@ function AddressSelectionModal({ open, onClose, addresses = [], onSelectAddress 
                     <TableCell>{addr.xaPhuong}</TableCell>
                     <TableCell align="center">
                       <SoftButton 
-                        variant="contained" 
-                        color="info" 
-                        size="small"
+                        variant="outlined"
+                          size="medium"
+                          sx={{
+                           
+                            borderRadius: 2,
+                            textTransform: "none",
+                            fontWeight: 400,
+                            color: "#49a3f1",
+                            borderColor: "#49a3f1",
+                            boxShadow: "none",
+                            "&:hover": {
+                              borderColor: "#1769aa",
+                              background: "#f0f6fd",
+                              color: "#1769aa",
+                            },
+                          }}
                         onClick={() => handleSelect(addr)}
                       >
                         Chọn
@@ -91,12 +104,25 @@ function AddressSelectionModal({ open, onClose, addresses = [], onSelectAddress 
         </TableContainer>
           <SoftButton
 
-              variant="contained"
-              color="info"
-              size="small"
+               variant="outlined"
+                          size="medium"
+                          sx={{
+                            mt: 2,
+                            borderRadius: 2,
+                            textTransform: "none",
+                            fontWeight: 400,
+                            color: "#49a3f1",
+                            borderColor: "#49a3f1",
+                            boxShadow: "none",
+                            "&:hover": {
+                              borderColor: "#1769aa",
+                              background: "#f0f6fd",
+                              color: "#1769aa",
+                            },
+                          }}
               startIcon={<AddIcon />}
               onClick={onOpenAddAddressModal} // Gọi hàm từ component cha
-              sx={{ mt: 2 }}
+             
             >
               Thêm địa chỉ mới
             </SoftButton>

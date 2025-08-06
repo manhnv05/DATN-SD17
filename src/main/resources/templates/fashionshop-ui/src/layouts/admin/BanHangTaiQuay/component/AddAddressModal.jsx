@@ -130,9 +130,7 @@ function AddAddressModal({ open, onClose, customerId, onAddressAdded }) {
     if (!selectedWard) {
       newErrors.xaPhuong = "Vui lòng chọn Xã/Phường.";
     }
-    if (!detailedAddress.trim()) {
-      newErrors.diaChiChiTiet = "Vui lòng nhập địa chỉ chi tiết.";
-    }
+   
     setErrors(newErrors);
     return newErrors;
   };
@@ -243,18 +241,7 @@ function AddAddressModal({ open, onClose, customerId, onAddressAdded }) {
           )}
         />
 
-        <TextField
-          label="Địa chỉ chi tiết (Số nhà, tên đường...)"
-          fullWidth
-          margin="normal"
-          value={detailedAddress}
-          onChange={(e) => {
-            setDetailedAddress(e.target.value);
-            clearError('diaChiChiTiet');
-          }}
-          error={!!errors.diaChiChiTiet}
-          helperText={errors.diaChiChiTiet || ""}
-        />
+        
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} color="secondary">

@@ -1,20 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  Typography,
-  Box,
-  IconButton,
-  CircularProgress,
-  MenuItem,
-  Tooltip,
-  Chip,
-  FormControl,
-  Select,
-  Paper
+  Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box, IconButton, CircularProgress,
+  MenuItem, Tooltip, Chip, FormControl, Select, Paper, Autocomplete, TextField,Grid
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
@@ -36,7 +23,9 @@ const SOFT_GREEN = "#22c55e";
 const SOFT_BADGE_TEXT = "#fff";
 const SOFT_CARD_SHADOW = "0 1px 0 0 #dbeafe";
 const API_BASE_URL = "http://localhost:8080";
-const provinceAPI = "http://localhost:8080/api/vietnamlabs/province";
+const GHN_API_BASE_URL = "https://online-gateway.ghn.vn/shiip/public-api/master-data";
+const GHN_API_TOKEN = "03b71be1-6891-11f0-9e03-7626358ab3e0"; // Replace with your token
+const GHN_API_CONFIG = { headers: { token: GHN_API_TOKEN } };
 
 const GreenBadge = styled(Chip)(({ theme }) => ({
   background: SOFT_GREEN,
@@ -141,62 +130,80 @@ function AddressFormSection({ open, onClose, onSubmit, initialData, isEdit }) {
     xaPhuong: "",
     trangThai: 0
   });
-  const [defaultChecked, setDefaultChecked] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [validating, setValidating] = useState(false);
-  const [errorField, setErrorField] = useState("");
-  const [provinces, setProvinces] = useState([]);
+ const [provinces, setProvinces] = useState([]);
+  const [districts, setDistricts] = useState([]);
   const [wards, setWards] = useState([]);
 
-  useEffect(() => {
-    if (!open) return;
-    axios
-        .get(provinceAPI, { withCredentials: true })
-        .then((res) => {
+  // State for selected values in the form
+  const [selectedProvince, setSelectedProvince] = useState(null);
+  const [selectedDistrict, setSelectedDistrict] = useState(null);
+  const [selectedWard, setSelectedWard] = useState(null);
+  const [diaChiChiTiet, setDiaChiChiTiet] = useState("");
+  const [isDefault, setIsDefault] = useState(false);
+
+  // UI State
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+
+useEffect(() => {
+    if (open) {
+      const fetchProvinces = async () => {
+        try {
+          const res = await axios.get(`${GHN_API_BASE_URL}/province`, GHN_API_CONFIG);
           setProvinces(res.data?.data || []);
-        })
-        .catch(() => setProvinces([]));
+        } catch (error) { toast.error("Lỗi khi tải danh sách Tỉnh/Thành"); }
+      };
+      fetchProvinces();
+    }
   }, [open]);
 
+ // 2. Fetch districts when a province is selected
   useEffect(() => {
-    if (form.tinhThanhPho) {
-      const selected = provinces.find(
-          (p) => String(p.id) === String(form.tinhThanhPho)
-      );
-      setWards(selected && Array.isArray(selected.wards) ? selected.wards : []);
-    } else {
-      setWards([]);
+    if (selectedProvince) {
+      const fetchDistricts = async () => {
+        try {
+          const res = await axios.get(`${GHN_API_BASE_URL}/district?province_id=${selectedProvince.ProvinceID}`, GHN_API_CONFIG);
+          setDistricts(res.data?.data || []);
+        } catch (error) { toast.error("Lỗi khi tải danh sách Quận/Huyện"); }
+      };
+      fetchDistricts();
     }
-    setForm((prev) => ({ ...prev, xaPhuong: "" }));
-  }, [form.tinhThanhPho, provinces]);
+    setDistricts([]);
+    setWards([]);
+    setSelectedDistrict(null);
+    setSelectedWard(null);
+  }, [selectedProvince]);
 
   useEffect(() => {
-    if (!open) return;
-    if (isEdit && initialData) {
-      const prov = provinces.find(
-          (p) => p.province === initialData.tinhThanhPho
-      );
-      const provId = prov ? prov.id : "";
-      const ward =
-          prov && prov.wards
-              ? prov.wards.find((w) => w.name === initialData.xaPhuong)
-              : null;
-      const wardName = ward ? ward.name : initialData.xaPhuong || "";
-      setForm({
-        tinhThanhPho: provId,
-        xaPhuong: wardName,
-        trangThai: initialData.trangThai ?? 0
-      });
-      setDefaultChecked(initialData.trangThai === 1);
-      setWards(prov && prov.wards ? prov.wards : []);
-    } else {
-      setForm({ tinhThanhPho: "", xaPhuong: "", trangThai: 0 });
-      setDefaultChecked(false);
-      setWards([]);
+    if (selectedDistrict) {
+      const fetchWards = async () => {
+        try {
+          const res = await axios.get(`${GHN_API_BASE_URL}/ward?district_id=${selectedDistrict.DistrictID}`, GHN_API_CONFIG);
+          setWards(res.data?.data || []);
+        } catch (error) { toast.error("Lỗi khi tải danh sách Phường/Xã"); }
+      };
+      fetchWards();
     }
-    setErrorField("");
+    setWards([]);
+    setSelectedWard(null);
+  }, [selectedDistrict]);
+useEffect(() => {
+    if (open && isEdit && initialData && provinces.length > 0) {
+      const province = provinces.find(p => p.ProvinceName === initialData.tinhThanhPho);
+      if (province) setSelectedProvince(province);
+     
+      setIsDefault(initialData.trangThai === 1);
+    } else if (open && !isEdit) {
+      // Reset form when opening in "add new" mode
+      setSelectedProvince(null);
+      setSelectedDistrict(null);
+      setSelectedWard(null);
+      setDiaChiChiTiet("");
+      setIsDefault(false);
+      setErrors({});
+    }
   }, [open, isEdit, initialData, provinces]);
-
+  
   const labelStyle = {
     fontWeight: 600,
     color: "#1769aa",
@@ -205,16 +212,14 @@ function AddressFormSection({ open, onClose, onSubmit, initialData, isEdit }) {
     display: "block"
   };
 
-  const validate = () => {
-    if (!form.tinhThanhPho) {
-      setErrorField("tinhThanhPho");
-      return "Vui lòng chọn tỉnh/thành phố";
-    }
-    if (!form.xaPhuong) {
-      setErrorField("xaPhuong");
-      return "Vui lòng chọn xã/phường";
-    }
-    return null;
+   const validate = () => {
+    const newErrors = {};
+    if (!selectedProvince) newErrors.province = "Vui lòng chọn Tỉnh/Thành phố";
+    if (!selectedDistrict) newErrors.district = "Vui lòng chọn Quận/Huyện";
+    if (!selectedWard) newErrors.ward = "Vui lòng chọn Phường/Xã";
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const validateBeforeSubmit = () => {
@@ -236,177 +241,57 @@ function AddressFormSection({ open, onClose, onSubmit, initialData, isEdit }) {
   }
 
   const handleSubmit = async () => {
-    setValidating(true);
-    try {
-      const isValid = validateBeforeSubmit();
-      if (!isValid) return;
-
-      setLoading(true);
-      const submitData = {
-        tinhThanhPho: getProvinceNameById(form.tinhThanhPho),
-        xaPhuong: getWardNameById(form.xaPhuong),
-        trangThai: isEdit
-            ? initialData.trangThai
-            : defaultChecked
-                ? 1
-                : 0
-      };
-
-      if (isEdit && initialData?.id) {
-        submitData.id = initialData.id;
-      }
-
-      await onSubmit(submitData);
-      onClose();
-    } catch (error) {
-      toast.error("Lỗi khi thêm/cập nhật địa chỉ");
-    } finally {
-      setLoading(false);
-      setValidating(false);
+    if (!validate()) {
+        toast.error("Vui lòng điền đầy đủ thông tin địa chỉ.");
+        return;
     }
+    setLoading(true);
+    const submitData = {
+      tinhThanhPho: selectedProvince.ProvinceName,
+      quanHuyen: selectedDistrict.DistrictName,
+      xaPhuong: selectedWard.WardName,
+      diaChiChiTiet: diaChiChiTiet,
+      trangThai: isDefault ? 1 : 0,
+    };
+    if (isEdit && initialData?.id) {
+      submitData.id = initialData.id;
+    }
+    await onSubmit(submitData);
+    setLoading(false);
   };
-
   if (!open) return null;
 
   return (
-      <AnimatedCard
-          elevation={3}
-          className="fade-in"
-          sx={{
-            mt: 3,
-            p: { xs: 2, md: 4 },
-            borderRadius: 3,
-            background: "#fff",
-            border: "1.5px solid",
-            borderColor: "primary.main",
-            position: "relative"
-          }}
-      >
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-          <Typography variant="h6" fontWeight={700} fontSize={17}>
-            {isEdit ? "Chỉnh sửa địa chỉ" : "Thêm địa chỉ mới"}
-          </Typography>
-          <SmallActionIconButton onClick={onClose} aria-label="Đóng">
-            <CloseIcon sx={{ fontSize: 20 }} />
-          </SmallActionIconButton>
+     <AnimatedCard elevation={3} className="fade-in" sx={{ mt: 2, p: 3, borderColor: "primary.main" }}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+        <Typography variant="h6" fontWeight={700}>{isEdit ? "Chỉnh sửa địa chỉ" : "Thêm địa chỉ mới"}</Typography>
+        <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>
+      </Box>
+      <Grid container spacing={2}>
+        <Grid item xs={12} sm={6}>
+          <Autocomplete options={provinces} getOptionLabel={(o) => o.ProvinceName || ""} value={selectedProvince} isOptionEqualToValue={(option, value) => option.ProvinceID === value.ProvinceID} onChange={(e, v) => setSelectedProvince(v)} renderInput={(params) => <TextField {...params} label="Tỉnh/Thành phố" fullWidth error={!!errors.province} helperText={errors.province} />} />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <Autocomplete options={districts} getOptionLabel={(o) => o.DistrictName || ""} value={selectedDistrict} disabled={!selectedProvince} isOptionEqualToValue={(option, value) => option.DistrictID === value.DistrictID} onChange={(e, v) => setSelectedDistrict(v)} renderInput={(params) => <TextField {...params} label="Quận/Huyện" fullWidth error={!!errors.district} helperText={errors.district}/>} />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <Autocomplete options={wards} getOptionLabel={(o) => o.WardName || ""} value={selectedWard} disabled={!selectedDistrict} isOptionEqualToValue={(option, value) => option.WardCode === value.WardCode} onChange={(e, v) => setSelectedWard(v)} renderInput={(params) => <TextField {...params} label="Phường/Xã" fullWidth error={!!errors.ward} helperText={errors.ward}/>} />
+        </Grid>
+      
+      </Grid>
+      {!isEdit && (
+        <Box display="flex" alignItems="center" gap={1} mt={2}>
+            <input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} id="default-address-checkbox" style={{ cursor: 'pointer' }}/>
+            <label htmlFor="default-address-checkbox" style={{ fontWeight: 500, color: "#1976d2", cursor: "pointer" }}>
+                Đặt làm địa chỉ mặc định
+            </label>
         </Box>
-        <Box component="form" autoComplete="off">
-          <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "1fr 1fr" }} gap={3}>
-            <Box>
-              <label style={labelStyle}>Tỉnh/Thành phố</label>
-              <FormControl
-                  fullWidth
-                  size="small"
-                  sx={{
-                    bgcolor: errorField === "tinhThanhPho" ? "#fff8f7" : "#fafdff",
-                    borderRadius: 2,
-                    border: errorField === "tinhThanhPho" ? "1px solid #d32f2f" : "none"
-                  }}
-              >
-                <Select
-                    name="tinhThanhPho"
-                    value={form.tinhThanhPho}
-                    onChange={(e) => {
-                      setForm((prev) => ({ ...prev, tinhThanhPho: e.target.value, xaPhuong: "" }));
-                      setErrorField("");
-                    }}
-                    displayEmpty
-                >
-                  <MenuItem value="">
-                    <em>Chọn tỉnh/thành phố</em>
-                  </MenuItem>
-                  {provinces.map((opt) => (
-                      <MenuItem key={opt.id} value={opt.id}>
-                        {opt.province}
-                      </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
-            <Box>
-              <label style={labelStyle}>Xã/Phường</label>
-              <FormControl
-                  fullWidth
-                  size="small"
-                  sx={{
-                    bgcolor: errorField === "xaPhuong" ? "#fff8f7" : "#fafdff",
-                    borderRadius: 2,
-                    border: errorField === "xaPhuong" ? "1px solid #d32f2f" : "none"
-                  }}
-              >
-                <Select
-                    name="xaPhuong"
-                    value={form.xaPhuong}
-                    onChange={(e) => {
-                      setForm((prev) => ({ ...prev, xaPhuong: e.target.value }));
-                      setErrorField("");
-                    }}
-                    displayEmpty
-                    disabled={!form.tinhThanhPho}
-                >
-                  <MenuItem value="">
-                    <em>Chọn xã/phường</em>
-                  </MenuItem>
-                  {wards.map((opt) => (
-                      <MenuItem key={opt.name} value={opt.name}>
-                        {opt.name}
-                      </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
-          </Box>
-          {!isEdit && (
-              <Box display="flex" alignItems="center" gap={1} mt={2}>
-                <input
-                    type="checkbox"
-                    checked={defaultChecked}
-                    onChange={(e) => setDefaultChecked(e.target.checked)}
-                    id="default-address"
-                    style={{ accentColor: "#1976d2", cursor: "pointer" }}
-                />
-                <label
-                    htmlFor="default-address"
-                    style={{
-                      fontWeight: 500,
-                      color: "#1976d2",
-                      cursor: "pointer"
-                    }}
-                >
-                  Đặt làm địa chỉ mặc định
-                </label>
-              </Box>
-          )}
-          <Box display="flex" gap={2} mt={3}>
-            <Button
-                onClick={handleSubmit}
-                variant="contained"
-                color="primary"
-                disabled={loading || validating}
-                startIcon={(loading || validating) && <CircularProgress size={18} />}
-                sx={{ minWidth: 120, fontWeight: 600 }}
-            >
-              {validating ? "Đang kiểm tra..." : isEdit ? "Cập nhật" : "Lưu"}
-            </Button>
-            <Button
-                onClick={onClose}
-                variant="outlined"
-                sx={{
-                  minWidth: 100,
-                  fontWeight: 600,
-                  borderColor: "#bdbdbd",
-                  color: "#757575",
-                  "&:hover": {
-                    borderColor: "#9e9e9e",
-                    backgroundColor: "#f5f5f5"
-                  }
-                }}
-            >
-              Hủy
-            </Button>
-          </Box>
-        </Box>
-      </AnimatedCard>
+      )}
+      <Box display="flex" gap={2} mt={3}>
+        <Button onClick={handleSubmit} variant="contained" color="primary" disabled={loading}>{loading ? <CircularProgress size={24} /> : (isEdit ? "Cập nhật" : "Lưu")}</Button>
+        <Button onClick={onClose} variant="outlined">Hủy</Button>
+      </Box>
+    </AnimatedCard>
   );
 }
 
@@ -823,7 +708,7 @@ function AddressDialog({ customerId, open, onClose }) {
                         </Box>
                       </Box>
                       <Typography fontWeight={600} fontSize={15.5} color="#333">
-                        {address.tinhThanhPho}, {address.xaPhuong}
+                        {`${address.tinhThanhPho}, ${address.quanHuyen}, ${address.xaPhuong}`}
                       </Typography>
                     </AnimatedCard>
                 ))}

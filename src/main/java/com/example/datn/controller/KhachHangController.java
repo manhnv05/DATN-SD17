@@ -40,6 +40,12 @@ public class KhachHangController {
         return khachHangService.saveWithAddress(vO, imageFile).toString();
     }
 
+    @PostMapping("/them-khach-hang-ban-tai-quay")
+    public String saveKhachHangBanTaiQuay(
+            @RequestBody KhachHangWithDiaChiVO khachHangWithDiaChiVO
+    ) {
+        return khachHangService.saveKhachHangBanHangTaiQuay(khachHangWithDiaChiVO).toString();
+    }
     /** Xóa khách hàng theo id */
     @DeleteMapping("/{id}")
     public void delete(@PathVariable("id") Integer id) {

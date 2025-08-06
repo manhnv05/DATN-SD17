@@ -134,6 +134,26 @@ public class KhachHangService {
 
         return kh.getId();
     }
+    @Transactional
+    public Integer saveKhachHangBanHangTaiQuay(KhachHangWithDiaChiVO vO) {
+        // 1. Tạo khách hàng từ dữ liệu được cung cấp (VO)
+        KhachHang kh = new KhachHang();
+        BeanUtils.copyProperties(vO.getKhachHang(), kh);
+
+        // 2. Lưu khách hàng vào cơ sở dữ liệu
+        kh = khachHangRepository.save(kh);
+
+        // 3. Tạo địa chỉ gắn với khách hàng vừa tạo
+        DiaChi diaChi = new DiaChi();
+        BeanUtils.copyProperties(vO.getDiaChi(), diaChi);
+        diaChi.setKhachHang(kh); // Gán khách hàng cho địa chỉ
+        diaChiRepository.save(diaChi);
+
+        // 4. Phần gửi email đã được xóa bỏ
+
+        // 5. Trả về ID của khách hàng vừa được tạo
+        return kh.getId();
+    }
 
     public void delete(Integer id) {
         khachHangRepository.deleteById(id);
