@@ -2,10 +2,7 @@ package com.example.datn.service;
 
 import com.example.datn.dto.ChiTietSanPhamDTO;
 import com.example.datn.dto.ChiTietSanPhamDotGIamGIaDTO;
-import com.example.datn.entity.ChatLieu;
-import com.example.datn.entity.ChiTietSanPham;
-import com.example.datn.entity.DotGiamGia;
-import com.example.datn.entity.ThuongHieu;
+import com.example.datn.entity.*;
 import com.example.datn.repository.*;
 import com.example.datn.vo.chiTietSanPhamVO.ChiTietSanPhamBanHangTaiQuayVO;
 import com.example.datn.vo.chiTietSanPhamVO.ChiTietSanPhamQueryVO;
@@ -14,6 +11,8 @@ import com.example.datn.vo.chiTietSanPhamVO.ChiTietSanPhamVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 import jakarta.validation.Valid;
@@ -43,6 +42,8 @@ public class ChiTietSanPhamService {
     private CoAoRepository coAoRepository;
     @Autowired
     private TayAoRepository tayAoRepository;
+    @Autowired
+    private HoaDonChiTietRepository hoaDonChiTiet;
 
     @Autowired
     private ChiTietDotGiamGiaRepository chiTietDotGiamGiaRepository;
@@ -280,7 +281,74 @@ public class ChiTietSanPhamService {
         BigDecimal originalPrice = BigDecimal.valueOf(c.getGia());
         BigDecimal discountAmount = originalPrice.multiply(BigDecimal.valueOf(pggLonNhat)).divide(BigDecimal.valueOf(100));
         ctsp.setGiaTienSauKhiGiam(originalPrice.subtract(discountAmount).intValue());
-
         return ctsp;
+    }
+    public Page<ChiTietSanPhamDotGIamGIaDTO> getDanhSachSanPhamBanChay(Pageable pageable) {
+
+        // 1. Lấy ra một trang chứa các ID sản phẩm bán chạy nhất
+        Page<Integer> pageOfIds = hoaDonChiTiet.findBestSellingProductIdsAllTime(pageable);
+        List<Integer> productIdsOnPage = pageOfIds.getContent();
+
+        if (productIdsOnPage.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        // 2. Lấy thông tin chi tiết cho các sản phẩm trong trang hiện tại
+        List<ChiTietSanPham> bestSellingProducts = chiTietSanPhamRepository.findAllById(productIdsOnPage);
+
+        // 3. (Tối ưu) Lấy tất cả khuyến mãi liên quan trong 1 lần gọi DB
+        Map<Integer, List<DotGiamGia>> discountsByProductId =
+                chiTietDotGiamGiaRepository.findAllActiveDiscountsForProducts(productIdsOnPage)
+                        .stream()
+                        .collect(Collectors.groupingBy(ctdgg -> ctdgg.getChiTietSanPham().getId(),
+                                Collectors.mapping(ctdgg -> ctdgg.getDotGiamGia(), Collectors.toList())));
+
+        // 4. Chuyển đổi sản phẩm sang DTO và tính toán giá
+        Map<Integer, ChiTietSanPhamDotGIamGIaDTO> dtoMap = bestSellingProducts.stream().map(c -> {
+            ChiTietSanPhamDotGIamGIaDTO ctspDto = new ChiTietSanPhamDotGIamGIaDTO();
+
+            List<DotGiamGia> activeDiscounts = discountsByProductId.getOrDefault(c.getId(), new ArrayList<>());
+
+            DotGiamGia bestDiscount = activeDiscounts.stream()
+                    .max(Comparator.comparing(DotGiamGia::getPhanTramGiamGia))
+                    .orElse(null);
+
+            int pggLonNhat = 0;
+            Integer idDGG = null;
+            if (bestDiscount != null) {
+                pggLonNhat = bestDiscount.getPhanTramGiamGia();
+                idDGG = bestDiscount.getId();
+            }
+
+            // Map dữ liệu
+            ctspDto.setIdChiTietSanPham(c.getId());
+            ctspDto.setTenSanPham(c.getSanPham().getTenSanPham());
+            ctspDto.setMaSanPham(c.getMaSanPhamChiTiet());
+            ctspDto.setThuongHieu(c.getThuongHieu().getTenThuongHieu());
+            ctspDto.setSoLuongTonKho(c.getSoLuong());
+            ctspDto.setChatLieu(c.getChatLieu().getTenChatLieu());
+            ctspDto.setMauSac(c.getMauSac().getTenMauSac());
+            ctspDto.setKichThuoc(c.getKichThuoc().getTenKichCo());
+            ctspDto.setCoAo(c.getCoAo().getTenCoAo());
+            ctspDto.setTayAo(c.getTayAo().getTenTayAo());
+            ctspDto.setGia(c.getGia());
+            ctspDto.setPhanTramGiam(pggLonNhat);
+            ctspDto.setIdDotGiamGia(idDGG);
+
+            // Tính giá cuối cùng
+            BigDecimal originalPrice = BigDecimal.valueOf(c.getGia());
+            BigDecimal discountAmount = originalPrice.multiply(BigDecimal.valueOf(pggLonNhat)).divide(BigDecimal.valueOf(100));
+            ctspDto.setGiaTienSauKhiGiam(originalPrice.subtract(discountAmount).intValue());
+
+            return ctspDto;
+        }).collect(Collectors.toMap(ChiTietSanPhamDotGIamGIaDTO::getIdChiTietSanPham, dto -> dto));
+
+        // 5. Sắp xếp lại DTO theo đúng thứ tự bán chạy (vì findAllById không đảm bảo thứ tự)
+        List<ChiTietSanPhamDotGIamGIaDTO> finalOrderedList = productIdsOnPage.stream()
+                .map(id -> dtoMap.get(id))
+                .collect(Collectors.toList());
+
+        // 6. Tạo và trả về đối tượng Page hoàn chỉnh
+        return new PageImpl<>(finalOrderedList, pageable, pageOfIds.getTotalElements());
     }
 }

@@ -32,7 +32,9 @@ const normalizeUrl = (url) =>
 
 async function generateMaSanPhamUnique() {
     try {
-        const res = await fetch(apiUrl("/sanPham/all-ma"));
+        const res = await fetch(apiUrl("/sanPham/all-ma"), {
+            credentials: "include", // <-- THÊM DÒNG NÀY
+        });
         const data = await res.json();
         if (!Array.isArray(data)) {
             return "SP0001";
@@ -60,7 +62,9 @@ async function generateMaSanPhamUnique() {
 
 async function fetchAllMaSanPhamChiTiet() {
     try {
-        const res = await fetch(apiUrl("/chiTietSanPham/all-ma"));
+        const res = await fetch(apiUrl("/chiTietSanPham/all-ma"), {
+            credentials: "include", // <-- THÊM DÒNG NÀY
+        });
         const data = await res.json();
         if (!Array.isArray(data)) return [];
         return data;
@@ -203,7 +207,7 @@ function ProductForm() {
     }, [showAddProductModal]);
 
     useEffect(() => {
-        fetch(apiUrl("/danhMuc/all"))
+        fetch(apiUrl("/danhMuc/all"), { credentials: "include" })
             .then((res) => res.json())
             .then((data) => {
                 const opts = Array.isArray(data)
@@ -221,7 +225,7 @@ function ProductForm() {
     }, []);
 
     useEffect(() => {
-        fetch(apiUrl("/thuongHieu/all"))
+        fetch(apiUrl("/thuongHieu/all"), { credentials: "include" })
             .then((res) => res.json())
             .then((data) => {
                 const opts = Array.isArray(data)
@@ -239,7 +243,7 @@ function ProductForm() {
     }, []);
 
     useEffect(() => {
-        fetch(apiUrl("/chatLieu/all"))
+        fetch(apiUrl("/chatLieu/all"), { credentials: "include" })
             .then((res) => res.json())
             .then((data) => {
                 let opts = [];
@@ -260,7 +264,7 @@ function ProductForm() {
     }, []);
 
     useEffect(() => {
-        fetch(apiUrl("/xuatXu/quocGia"))
+        fetch(apiUrl("/xuatXu/quocGia"), { credentials: "include" })
             .then((res) => res.json())
             .then((data) => {
                 const opts = Array.isArray(data)
@@ -302,7 +306,7 @@ function ProductForm() {
     }, []);
 
     useEffect(() => {
-        fetch(apiUrl("/tayAo/all"))
+        fetch(apiUrl("/tayAo/all"), { credentials: "include" })
             .then((res) => res.json())
             .then((data) => {
                 const opts = Array.isArray(data)
@@ -328,7 +332,7 @@ function ProductForm() {
     }, []);
 
     useEffect(() => {
-        fetch(apiUrl("/mauSac/all"))
+        fetch(apiUrl("/mauSac/all"), { credentials: "include" })
             .then((res) => res.json())
             .then((data) =>
                 setColorOptions(
@@ -344,7 +348,7 @@ function ProductForm() {
             )
             .catch(() => setColorOptions([]));
 
-        fetch(apiUrl("/kichThuoc/all"))
+        fetch(apiUrl("/kichThuoc/all"), { credentials: "include" })
             .then((res) => res.json())
             .then((data) =>
                 setSizeOptions(
@@ -368,7 +372,7 @@ function ProductForm() {
             )
             .catch(() => setSizeOptions([]));
 
-        fetch(apiUrl("/hinhAnh/all"))
+        fetch(apiUrl("/hinhAnh/all"), { credentials: "include" })
             .then((res) => res.json())
             .then((data) =>
                 setImageOptions(
@@ -385,7 +389,7 @@ function ProductForm() {
             )
             .catch(() => setImageOptions([]));
 
-        fetch(apiUrl("/sanPham/all-ten"))
+        fetch(apiUrl("/sanPham/all-ten"), { credentials: "include" })
             .then((res) => res.json())
             .then((data) => {
                 const uniqueNames = Array.isArray(data)
@@ -411,7 +415,7 @@ function ProductForm() {
 
     useEffect(() => {
         if (productName) {
-            fetch(apiUrl(`/sanPham/search?keyword=${encodeURIComponent(productName)}`))
+            fetch(apiUrl(`/sanPham/search?keyword=${encodeURIComponent(productName)}`), { credentials: "include" })
                 .then(res => res.json())
                 .then(async data => {
                     if (Array.isArray(data) && data.length > 0) {
@@ -569,6 +573,7 @@ function ProductForm() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data),
+                credentials: "include",
             });
             if (!res.ok) throw new Error("Lỗi khi thêm sản phẩm");
             const result = await res.json();
@@ -658,6 +663,7 @@ function ProductForm() {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(ctsp),
+                    credentials: "include",
                 }).then((res) => {
                     if (!res.ok) throw new Error("Lỗi khi thêm chi tiết sản phẩm");
                     return res.json();
@@ -683,6 +689,7 @@ function ProductForm() {
                             headers: {
                                 "Content-Type": "application/json",
                             },
+                            credentials: "include",
                             body: JSON.stringify({
                                 maAnh: img.label ? img.label : `Ảnh ${img.value}`,
                                 duongDanAnh: img.url,
@@ -744,6 +751,7 @@ function ProductForm() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(productData),
+                credentials: "include",
             });
             if (!res.ok) throw new Error("Lỗi khi thêm sản phẩm mới");
             await res.json();
@@ -753,7 +761,7 @@ function ProductForm() {
             setTimeout(() => {
                 setShowAddProductModal(false);
                 setAddSuccess("");
-                fetch(apiUrl("/sanPham/all-ten"))
+                fetch(apiUrl("/sanPham/all-ten"), { credentials: "include" })
                     .then((res) => res.json())
                     .then((data) => {
                         const uniqueNames = Array.isArray(data)

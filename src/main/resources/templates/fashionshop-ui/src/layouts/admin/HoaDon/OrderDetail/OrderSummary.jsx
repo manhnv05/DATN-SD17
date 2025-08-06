@@ -20,7 +20,10 @@ const OrderSummary = ({ orderId }) => {
         const fetchOrderSummary = async () => {
             setLoading(true);
             try {
-                const response = await fetch(`http://localhost:8080/api/hoa-don/get-thong-tin-hoa-don/${orderId}`);
+                const response = await fetch(
+                    `http://localhost:8080/api/hoa-don/get-thong-tin-hoa-don/${orderId}`,
+                    { credentials: "include" } // <-- CHỈ SỬA DÒNG NÀY
+                );
                 if (!response.ok) {
                     throw new Error("Lỗi khi tải dữ liệu hóa đơn.");
                     console.log("Lỗi khi tải dữ liệu hóa đơn:", response.statusText);

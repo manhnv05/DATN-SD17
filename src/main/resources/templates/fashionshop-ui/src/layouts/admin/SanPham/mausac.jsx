@@ -110,7 +110,9 @@ function ColorTable() {
             url += `&tenMauSac=${encodeURIComponent(queryParams.tenMauSac)}`;
         if (queryParams.trangThai !== "Tất cả")
             url += `&trangThai=${queryParams.trangThai === "Hiển thị" ? 1 : 0}`;
-        fetch(url)
+        fetch(url, {
+            credentials: "include", // <-- Thêm dòng này để gửi cookie JSESSIONID cho backend
+        })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi tải dữ liệu màu sắc");
                 return res.json();
@@ -133,6 +135,7 @@ function ColorTable() {
                 ...newColor,
                 trangThai: newColor.trangThai === "Hiển thị" ? 1 : 0,
             }),
+            credentials: "include",
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi thêm màu sắc");
@@ -172,6 +175,7 @@ function ColorTable() {
                 ...editColor,
                 trangThai: editColor.trangThai === "Hiển thị" ? 1 : 0,
             }),
+            credentials: "include",
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi cập nhật màu sắc");
@@ -198,6 +202,7 @@ function ColorTable() {
         setLoading(true);
         fetch(`http://localhost:8080/mauSac/${deleteId}`, {
             method: "DELETE",
+            credentials: "include",
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi xóa màu sắc");

@@ -29,4 +29,12 @@ public interface ChiTietDotGiamGiaRepository extends JpaRepository<ChiTietDotGia
 """)
     List<DotGiamGia> getDotGiamGiaByIdChiTietSanPham(@Param("idctsp") int idChiTietSanPham);
 
+
+    @Query("SELECT ctdgg FROM ChiTietDotGiamGia ctdgg " +
+            "JOIN FETCH ctdgg.dotGiamGia dgg " +
+            "JOIN FETCH ctdgg.chiTietSanPham " +
+            "WHERE ctdgg.chiTietSanPham.id IN :productIds " +
+            "AND dgg.trangThai = 1 "
+          )
+    List<ChiTietDotGiamGia> findAllActiveDiscountsForProducts(List<Integer> productIds);
 }

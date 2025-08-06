@@ -15,8 +15,10 @@ const instanceAPIMain = axios.create({
     headers: {
         "Content-Type": "application/json",
     },
+    withCredentials: true, // <-- Quan trọng: Luôn gửi cookie
 });
 
+// Nếu chưa set biến môi trường, log mỗi lần request
 if (!process.env.REACT_APP_MAIN_URL) {
     instanceAPIMain.interceptors.request.use((config) => {
         console.warn(
@@ -25,5 +27,16 @@ if (!process.env.REACT_APP_MAIN_URL) {
         return config;
     });
 }
+
+// (Tùy chọn) Thêm response interceptor để tự động xử lý 401/403 (nếu muốn)
+// instanceAPIMain.interceptors.response.use(
+//     response => response,
+//     error => {
+//         if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+//             // Thực hiện logout hoặc điều hướng về trang login
+//         }
+//         return Promise.reject(error);
+//     }
+// );
 
 export default instanceAPIMain;

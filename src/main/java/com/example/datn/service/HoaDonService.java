@@ -11,6 +11,7 @@ import com.example.datn.vo.hoaDonVO.HoaDonChoRequestVO;
 import com.example.datn.vo.hoaDonVO.HoaDonRequestUpdateVO;
 import com.example.datn.vo.hoaDonVO.HoaDonUpdateVO;
 import com.example.datn.vo.khachHangVO.CapNhatKhachRequestVO;
+import com.example.datn.vo.phieuGiamGiaVO.CapNhatPGG;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.query.Param;
@@ -53,6 +54,8 @@ public interface HoaDonService {
     TongTienHoaDonDto getThongTinGiamGiaByHoaDonId(Integer idHoaDon);
     int tinhGiaCuoiCung(ChiTietSanPham spct);
     String  capNhatKhachHangVaoHoaDon(CapNhatKhachRequestVO capNhatKhachRequest);
+
+    HoaDonDTOMess capnhatPGGVaoHoaDon(CapNhatPGG capNhatPGG);
 
 
 }

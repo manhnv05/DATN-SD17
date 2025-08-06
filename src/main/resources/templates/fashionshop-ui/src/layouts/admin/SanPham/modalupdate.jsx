@@ -115,13 +115,13 @@ function ProductDetailUpdateModal({ open, onClose, detail, onSuccess }) {
         if (!open) return;
         setIsLoadingOptions(true);
         Promise.all([
-            fetch(apiUrl("/thuongHieu/all")).then(response => response.json()),
-            fetch(apiUrl("/chatLieu/all")).then(response => response.json()),
-            fetch(apiUrl("/coAo/all")).then(response => response.json()),
-            fetch(apiUrl("/tayAo/all")).then(response => response.json()),
-            fetch(apiUrl("/mauSac/all")).then(response => response.json()),
-            fetch(apiUrl("/kichThuoc/all")).then(response => response.json()),
-            fetch(apiUrl("/hinhAnh/all")).then(response => response.json()),
+            fetch(apiUrl("/thuongHieu/all"), { credentials: "include" }).then(response => response.json()),
+            fetch(apiUrl("/chatLieu/all"), { credentials: "include" }).then(response => response.json()),
+            fetch(apiUrl("/coAo/all"), { credentials: "include" }).then(response => response.json()),
+            fetch(apiUrl("/tayAo/all"), { credentials: "include" }).then(response => response.json()),
+            fetch(apiUrl("/mauSac/all"), { credentials: "include" }).then(response => response.json()),
+            fetch(apiUrl("/kichThuoc/all"), { credentials: "include" }).then(response => response.json()),
+            fetch(apiUrl("/hinhAnh/all"), { credentials: "include" }).then(response => response.json()),
         ]).then(([brands, materials, collars, sleeves, colors, sizes, images]) => {
             setBrandOptions((brands || []).map(item => ({
                 value: String(item.id), label: item.tenThuongHieu
@@ -149,7 +149,7 @@ function ProductDetailUpdateModal({ open, onClose, detail, onSuccess }) {
     }, [open]);
     useEffect(() => {
         if (!open || !detail?.id) return;
-        fetch(apiUrl(`/hinhAnh/by-product-detail/${detail.id}`))
+        fetch(apiUrl(`/hinhAnh/by-product-detail/${detail.id}`), { credentials: "include" })
             .then(response => response.json())
             .then(images => {
                 const urls = [];
@@ -282,6 +282,7 @@ function ProductDetailUpdateModal({ open, onClose, detail, onSuccess }) {
             const response = await fetch(apiUrl(`/chiTietSanPham/${detail?.id}`), {
                 method: "PUT",
                 body: formData,
+                credentials: "include",
             });
             if (!response.ok) {
                 const error = await response.json();
@@ -301,6 +302,7 @@ function ProductDetailUpdateModal({ open, onClose, detail, onSuccess }) {
                 await fetch(apiUrl("/hinhAnh/multi"), {
                     method: "POST",
                     body: imgForm,
+                    credentials: "include",
                 });
             }
             for (const imgUrl of selectedSystemImages) {
@@ -309,6 +311,7 @@ function ProductDetailUpdateModal({ open, onClose, detail, onSuccess }) {
                 await fetch(apiUrl(`/hinhAnh/${img.id}`), {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
+                    credentials: "include",
                     body: JSON.stringify({
                         maAnh: img.moTa || `Ảnh ${img.id}`,
                         duongDanAnh: img.duongDanAnh,
@@ -319,7 +322,7 @@ function ProductDetailUpdateModal({ open, onClose, detail, onSuccess }) {
                     }),
                 });
             }
-            const resImg = await fetch(apiUrl(`/hinhAnh/by-product-detail/${detail.id}`));
+            const resImg = await fetch(apiUrl(`/hinhAnh/by-product-detail/${detail.id}`), { credentials: "include" });
             const images = await resImg.json();
             const urls = [];
             (images || []).forEach(img => {

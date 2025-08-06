@@ -70,4 +70,6 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
         ORDER BY ctsp.id desc
 """)
     List<ChiTietSanPham> getChiTietSanPhamTrangThai();
+
+
 }
