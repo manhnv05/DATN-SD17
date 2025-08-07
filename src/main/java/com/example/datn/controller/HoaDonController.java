@@ -202,6 +202,11 @@ public class HoaDonController {
     public ResponseEntity<ApiResponse<HoaDonDTO>> updateHoadon(@RequestBody HoaDonRequestUpdateVO hoaDonRequestUpdateVO) {
         return ResponseHelper.success("", hoaDonService.updateHoaDon(hoaDonRequestUpdateVO));
     }
+
+    @PostMapping("/luu-hoa-don-online-chua-dang-nhap")
+    public ResponseEntity<ApiResponse<HoaDonDTO>> saveHoaDonOnlineChuaDangNhap(@RequestBody HoaDonOnlineRequest hoaDonOnlineRequest) {
+        return ResponseHelper.success("", hoaDonService.saveHoaDonOnlineChuaDangNhap(hoaDonOnlineRequest));
+    }
     @PutMapping("/tang-so-luong-san-pham/{idSanPhamChiTiet}")
     public ResponseEntity<ApiResponse<String>> tangSoLuongSanPhamChiTiet(
             @PathVariable Integer idSanPhamChiTiet,

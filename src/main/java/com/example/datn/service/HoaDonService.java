@@ -6,10 +6,7 @@ import com.example.datn.dto.HoaDonPdfResult;
 import com.example.datn.entity.ChiTietSanPham;
 import com.example.datn.entity.HoaDon;
 import com.example.datn.enums.TrangThai;
-import com.example.datn.vo.hoaDonVO.CapNhatSanPhamChiTietDonHangVO;
-import com.example.datn.vo.hoaDonVO.HoaDonChoRequestVO;
-import com.example.datn.vo.hoaDonVO.HoaDonRequestUpdateVO;
-import com.example.datn.vo.hoaDonVO.HoaDonUpdateVO;
+import com.example.datn.vo.hoaDonVO.*;
 import com.example.datn.vo.khachHangVO.CapNhatKhachRequestVO;
 import com.example.datn.vo.phieuGiamGiaVO.CapNhatPGG;
 import org.springframework.data.domain.Page;
@@ -56,6 +53,7 @@ public interface HoaDonService {
     String  capNhatKhachHangVaoHoaDon(CapNhatKhachRequestVO capNhatKhachRequest);
 
     HoaDonDTOMess capnhatPGGVaoHoaDon(CapNhatPGG capNhatPGG);
+    HoaDonDTO saveHoaDonOnlineChuaDangNhap(HoaDonOnlineRequest hoaDonOnlineRequest);
 
 
 }

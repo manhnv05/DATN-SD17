@@ -19,7 +19,6 @@ public class HoaDonRequestUpdateVO {
     private String diaChi;
     private String ghiChu;
     private Integer phiVanChuyen;       // Nên có để tính tổng hóa đơn cuối cùng
-
     // Danh sách các sản phẩm cần cập nhật trong hóa đơn
     private List<SanPhamCapNhatVO> danhSachSanPham;
 

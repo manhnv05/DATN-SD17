@@ -93,14 +93,13 @@ const OrderDetailPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(
-          `http://localhost:8080/api/hoa-don/${orderId}`,
-          { credentials: "include" }
-      );
+      const response = await fetch(`http://localhost:8080/api/hoa-don/${orderId}`, {
+        credentials: "include",
+      });
       if (!response.ok) {
         const errorData = await response
-            .json()
-            .catch(() => ({ message: `HTTP error! status: ${response.status}` }));
+          .json()
+          .catch(() => ({ message: `HTTP error! status: ${response.status}` }));
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
@@ -126,9 +125,9 @@ const OrderDetailPage = () => {
         })),
         discountCode: "Không có",
         shopDiscount:
-            data.tongGiaGiam && data.tongTienBanDau
-                ? `${((data.tongGiaGiam * 100) / data.tongTienBanDau).toFixed(0)}%`
-                : "0%",
+          data.tongGiaGiam && data.tongTienBanDau
+            ? `${((data.tongGiaGiam * 100) / data.tongTienBanDau).toFixed(0)}%`
+            : "0%",
         shippingFee: data.phiVanChuyen ?? 0,
         totalItemsPrice: data.tongTienBanDau ?? 0,
         totalDiscount: data.tongGiaGiam ?? 0,
@@ -161,13 +160,13 @@ const OrderDetailPage = () => {
         nguoiThucHien: "Admin",
       };
       const response = await fetch(
-          `http://localhost:8080/api/hoa-don/chuyen-trang-thai-huy/${orderId}`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-            credentials: "include",
-          }
+        `http://localhost:8080/api/hoa-don/chuyen-trang-thai-huy/${orderId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          credentials: "include",
+        }
       );
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -188,8 +187,8 @@ const OrderDetailPage = () => {
     if (orderData?.trangThaiGoc === "DANG_VAN_CHUYEN") {
       try {
         const response = await fetch(
-            `http://localhost:8080/chiTietThanhToan/lich-su-thanh-toan/${orderId}`,
-            { credentials: "include" }
+          `http://localhost:8080/chiTietThanhToan/lich-su-thanh-toan/${orderId}`,
+          { credentials: "include" }
         );
         if (!response.ok) {
           throw new Error("Không thể lấy lịch sử thanh toán.");
@@ -197,10 +196,7 @@ const OrderDetailPage = () => {
         const historyData = await response.json();
         let totalPaid = 0;
         if (historyData.code === 1000 && Array.isArray(historyData.data)) {
-          totalPaid = historyData.data.reduce(
-              (sum, payment) => sum + payment.soTienThanhToan,
-              0
-          );
+          totalPaid = historyData.data.reduce((sum, payment) => sum + payment.soTienThanhToan, 0);
         }
         if (totalPaid < orderData.totalAmount) {
           toast.error("Đơn hàng chưa được thanh toán đủ. Không thể hoàn thành.");
@@ -220,22 +216,22 @@ const OrderDetailPage = () => {
         nguoiThucHien: nguoiThucHienAction,
       };
       const response = await fetch(
-          `http://localhost:8080/api/hoa-don/chuyen-trang-thai-tiep-theo/${orderId}`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-            credentials: "include",
-          }
+        `http://localhost:8080/api/hoa-don/chuyen-trang-thai-tiep-theo/${orderId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          credentials: "include",
+        }
       );
       if (!response.ok) {
         const errorData = await response
-            .json()
-            .catch(() => ({ message: `HTTP error! status: ${response.status}` }));
+          .json()
+          .catch(() => ({ message: `HTTP error! status: ${response.status}` }));
         throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
       toast.success("Đã chuyển trạng thái thành công!");
-      if (originalStatus === "DA_XAC_NHAN") {
+      if (originalStatus === "CHO_XAC_NHAN" || originalStatus === "DA_XAC_NHAN") {
         handleOpenModal();
       }
       await fetchOrderDetail();
@@ -249,22 +245,21 @@ const OrderDetailPage = () => {
 
   // Derived state
   const isConfirmButtonDisabled =
-      orderData && (orderData.status === "Hoàn thành" || orderData.status === "Đã hủy");
-  const isCancelButtonDisabled =
-      orderData && (orderData.status === "Hoàn thành" || orderData.status === "Đã hủy");
+    orderData && (orderData.status === "Hoàn thành" || orderData.status === "Đã hủy");
+  const isCancelButtonDisabled = orderData && orderData?.status !== "Chờ xác nhận";
   const canUpdateInfo =
-      orderData &&
-      (orderData.status === "Tạo đơn hàng" ||
-          orderData.status === "Chờ xác nhận" ||
-          orderData.status === "Đã xác nhận");
+    orderData &&
+    (orderData.status === "Tạo đơn hàng" ||
+      orderData.status === "Chờ xác nhận" ||
+      orderData.status === "Đã xác nhận");
 
   const initialUpdateData = orderData
-      ? {
+    ? {
         tenNguoiNhan: orderData.receiverName,
         soDienThoai: orderData.phoneNumber,
         diaChi: orderData.diaChi,
       }
-      : {};
+    : {};
 
   // Hàm xử lý in hóa đơn
   const viewPdf = async (orderId) => {
@@ -285,265 +280,265 @@ const OrderDetailPage = () => {
 
   if (loading) {
     return (
-        <DashboardLayout>
-          <DashboardNavbar />
-          <SoftBox
-              display="flex"
-              justifyContent="center"
-              alignItems="center"
-              height="calc(100vh - 150px)"
-          >
-            <CircularProgress color="info" />
-            <SoftTypography variant="h5" ml={2}>
-              Đang tải chi tiết đơn hàng...
-            </SoftTypography>
-          </SoftBox>
-          <Footer />
-        </DashboardLayout>
+      <DashboardLayout>
+        <DashboardNavbar />
+        <SoftBox
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          height="calc(100vh - 150px)"
+        >
+          <CircularProgress color="info" />
+          <SoftTypography variant="h5" ml={2}>
+            Đang tải chi tiết đơn hàng...
+          </SoftTypography>
+        </SoftBox>
+        <Footer />
+      </DashboardLayout>
     );
   }
 
   if (error) {
     return (
-        <DashboardLayout>
-          <DashboardNavbar />
-          <SoftBox p={3}>
-            <Alert severity="error">{error.message}. Không thể tải chi tiết đơn hàng.</Alert>
-          </SoftBox>
-          <Footer />
-        </DashboardLayout>
+      <DashboardLayout>
+        <DashboardNavbar />
+        <SoftBox p={3}>
+          <Alert severity="error">{error.message}. Không thể tải chi tiết đơn hàng.</Alert>
+        </SoftBox>
+        <Footer />
+      </DashboardLayout>
     );
   }
 
   if (!orderData) {
     return (
-        <DashboardLayout>
-          <DashboardNavbar />
-          <SoftBox p={3}>
-            <Alert severity="warning">Không tìm thấy đơn hàng.</Alert>
-          </SoftBox>
-          <Footer />
-        </DashboardLayout>
+      <DashboardLayout>
+        <DashboardNavbar />
+        <SoftBox p={3}>
+          <Alert severity="warning">Không tìm thấy đơn hàng.</Alert>
+        </SoftBox>
+        <Footer />
+      </DashboardLayout>
     );
   }
 
   return (
-      <DashboardLayout>
-        <DashboardNavbar />
-        <SoftBox py={3}>
-          {actionError && (
-              <SoftBox mb={2} px={3}>
-                <Alert severity="error">{actionError}</Alert>
-              </SoftBox>
-          )}
+    <DashboardLayout>
+      <DashboardNavbar />
+      <SoftBox py={3}>
+        {actionError && (
+          <SoftBox mb={2} px={3}>
+            <Alert severity="error">{actionError}</Alert>
+          </SoftBox>
+        )}
 
-          {/* Phần Lịch sử đơn hàng và các nút hành động */}
-          <SoftBox mb={3}>
-            <Card>
-              <SoftBox p={3}>
-                <SoftTypography variant="h5" fontWeight="medium" mb={3} sx={{ color: "#6ea8fe" }}>
-                  Lịch sử đơn hàng / {orderData.maHoaDon}
-                </SoftTypography>
+        {/* Phần Lịch sử đơn hàng và các nút hành động */}
+        <SoftBox mb={3}>
+          <Card>
+            <SoftBox p={3}>
+              <SoftTypography variant="h5" fontWeight="medium" mb={3} sx={{ color: "#6ea8fe" }}>
+                Lịch sử đơn hàng / {orderData.maHoaDon}
+              </SoftTypography>
 
-                <OrderHistory orderId={orderData.maHoaDon} />
-                <SoftBox display="flex" justifyContent="flex-end" mt={3} gap={1.5}>
-                  {!isConfirmButtonDisabled && (
-                      <SoftButton
-                          variant="outlined"
-                          size="large"
-                          sx={{
-                            borderRadius: 2,
-                            textTransform: "none",
-                            fontWeight: 400,
-                            color: "#49a3f1",
-                            borderColor: "#49a3f1",
-                            boxShadow: "none",
-                            "&:hover": {
-                              borderColor: "#1769aa",
-                              background: "#f0f6fd",
-                              color: "#1769aa",
-                            },
-                          }}
-                          onClick={handleConfirmStatus}
-                          disabled={actionLoading}
-                      >
-                        {actionLoading ? (
-                            <CircularProgress size={20} color="inherit" />
-                        ) : (
-                            "Xác nhận (Trạng thái tiếp theo)"
-                        )}
-                      </SoftButton>
-                  )}
-                  {!isCancelButtonDisabled && orderData?.type !== "Tại quầy" && (
-                      <SoftButton
-                          onClick={handleOpenCancelModal}
-                          disabled={isCancelButtonDisabled || actionLoading}
-                          variant="outlined"
-                          color="error"
-                          sx={{
-                            textTransform: "none",
-                            ...(isCancelButtonDisabled && {
-                              opacity: 0.5,
-                              cursor: "not-allowed",
-                            }),
-                          }}
-                      >
-                        {actionLoading && !isConfirmButtonDisabled ? (
-                            <CircularProgress size={20} color="inherit" />
-                        ) : (
-                            "Hủy đơn"
-                        )}
-                      </SoftButton>
-                  )}
+              <OrderHistory orderId={orderData.maHoaDon} />
+              <SoftBox display="flex" justifyContent="flex-end" mt={3} gap={1.5}>
+                {!isConfirmButtonDisabled && (
                   <SoftButton
-                      variant="outlined"
-                      size="medium"
-                      sx={{
-                        borderRadius: 2,
-                        textTransform: "none",
-                        fontWeight: 400,
-                        color: "#49a3f1",
-                        borderColor: "#49a3f1",
-                        boxShadow: "none",
-                        "&:hover": {
-                          borderColor: "#1769aa",
-                          background: "#f0f6fd",
-                          color: "#1769aa",
-                        },
-                      }}
-                      onClick={setShowHistoryModal}
+                    variant="outlined"
+                    size="large"
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: "none",
+                      fontWeight: 400,
+                      color: "#49a3f1",
+                      borderColor: "#49a3f1",
+                      boxShadow: "none",
+                      "&:hover": {
+                        borderColor: "#1769aa",
+                        background: "#f0f6fd",
+                        color: "#1769aa",
+                      },
+                    }}
+                    onClick={handleConfirmStatus}
+                    disabled={actionLoading}
                   >
-                    Chi tiết
+                    {actionLoading ? (
+                      <CircularProgress size={20} color="inherit" />
+                    ) : (
+                      "Xác nhận (Trạng thái tiếp theo)"
+                    )}
                   </SoftButton>
+                )}
+                {!isCancelButtonDisabled && orderData?.type !== "Tại quầy" && (
                   <SoftButton
-                      variant="outlined"
-                      size="medium"
-                      sx={{
-                        borderRadius: 2,
-                        textTransform: "none",
-                        fontWeight: 400,
-                        color: "#49a3f1",
-                        borderColor: "#49a3f1",
-                        boxShadow: "none",
-                        "&:hover": {
-                          borderColor: "#1769aa",
-                          background: "#f0f6fd",
-                          color: "#1769aa",
-                        },
-                      }}
-                      onClick={handleOpenModal}
-                      disabled={!canUpdateInfo}
+                    onClick={handleOpenCancelModal}
+                    disabled={isCancelButtonDisabled || actionLoading}
+                    variant="outlined"
+                    color="error"
+                    sx={{
+                      textTransform: "none",
+                      ...(isCancelButtonDisabled && {
+                        opacity: 0.5,
+                        cursor: "not-allowed",
+                      }),
+                    }}
                   >
-                    In hóa đơn
+                    {actionLoading && !isConfirmButtonDisabled ? (
+                      <CircularProgress size={20} color="inherit" />
+                    ) : (
+                      "Hủy đơn"
+                    )}
+                  </SoftButton>
+                )}
+                <SoftButton
+                  variant="outlined"
+                  size="medium"
+                  sx={{
+                    borderRadius: 2,
+                    textTransform: "none",
+                    fontWeight: 400,
+                    color: "#49a3f1",
+                    borderColor: "#49a3f1",
+                    boxShadow: "none",
+                    "&:hover": {
+                      borderColor: "#1769aa",
+                      background: "#f0f6fd",
+                      color: "#1769aa",
+                    },
+                  }}
+                  onClick={setShowHistoryModal}
+                >
+                  Chi tiết
+                </SoftButton>
+                <SoftButton
+                  variant="outlined"
+                  size="medium"
+                  sx={{
+                    borderRadius: 2,
+                    textTransform: "none",
+                    fontWeight: 400,
+                    color: "#49a3f1",
+                    borderColor: "#49a3f1",
+                    boxShadow: "none",
+                    "&:hover": {
+                      borderColor: "#1769aa",
+                      background: "#f0f6fd",
+                      color: "#1769aa",
+                    },
+                  }}
+                  onClick={handleOpenModal}
+                  disabled={!canUpdateInfo}
+                >
+                  In hóa đơn
+                </SoftButton>
+              </SoftBox>
+            </SoftBox>
+          </Card>
+        </SoftBox>
+
+        {/* Thông tin đơn hàng và nút cập nhật */}
+        <SoftBox mb={3}>
+          <Card>
+            <SoftBox p={3}>
+              <SoftTypography variant="h5" fontWeight="medium" mb={3} sx={{ color: "#6ea8fe" }}>
+                Thông tin đơn hàng
+              </SoftTypography>
+
+              <OrderInfo order={orderData} />
+              {!isCancelButtonDisabled && orderData?.type !== "Tại quầy" && (
+                <SoftBox display="flex" justifyContent="flex-end" mt={3}>
+                  <SoftButton
+                    variant="outlined"
+                    size="large"
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: "none",
+                      fontWeight: 400,
+                      color: "#49a3f1",
+                      borderColor: "#49a3f1",
+                      boxShadow: "none",
+                      "&:hover": {
+                        borderColor: "#1769aa",
+                        background: "#f0f6fd",
+                        color: "#1769aa",
+                      },
+                    }}
+                    onClick={handleOpenUpdateModal}
+                  >
+                    Cập nhật
                   </SoftButton>
                 </SoftBox>
-              </SoftBox>
-            </Card>
-          </SoftBox>
-
-          {/* Thông tin đơn hàng và nút cập nhật */}
-          <SoftBox mb={3}>
-            <Card>
-              <SoftBox p={3}>
-                <SoftTypography variant="h5" fontWeight="medium" mb={3} sx={{ color: "#6ea8fe" }}>
-                  Thông tin đơn hàng
-                </SoftTypography>
-
-                <OrderInfo order={orderData} />
-                {!isCancelButtonDisabled && orderData?.type !== "Tại quầy" && (
-                    <SoftBox display="flex" justifyContent="flex-end" mt={3}>
-                      <SoftButton
-                          variant="outlined"
-                          size="large"
-                          sx={{
-                            borderRadius: 2,
-                            textTransform: "none",
-                            fontWeight: 400,
-                            color: "#49a3f1",
-                            borderColor: "#49a3f1",
-                            boxShadow: "none",
-                            "&:hover": {
-                              borderColor: "#1769aa",
-                              background: "#f0f6fd",
-                              color: "#1769aa",
-                            },
-                          }}
-                          onClick={handleOpenUpdateModal}
-                      >
-                        Cập nhật
-                      </SoftButton>
-                    </SoftBox>
-                )}
-              </SoftBox>
-            </Card>
-          </SoftBox>
-
-          {/* Lịch sử thanh toán */}
-          <SoftBox mb={3}>
-            <Card>
-              <SoftBox p={3}>
-                <SoftTypography variant="h5" fontWeight="medium" mb={3} sx={{ color: "#6ea8fe" }}>
-                  Lịch sử thanh toán
-                </SoftTypography>
-                <PaymentHistory orderId={orderData.id} />
-              </SoftBox>
-            </Card>
-          </SoftBox>
-
-          {/* Danh sách sản phẩm */}
-          <SoftBox mb={3}>
-            <Card>
-              <SoftBox p={3}>
-                <SoftTypography variant="h5" fontWeight="medium" mb={3} sx={{ color: "#6ea8fe" }}>
-                  Danh sách sản phẩm
-                </SoftTypography>
-                <ProductList orderId={orderId} orderStatus={orderData.trangThaiGoc} />
-              </SoftBox>
-            </Card>
-          </SoftBox>
-
-          {/* Tổng tiền */}
-          <SoftBox mb={3}>
-            <Card>
-              <SoftBox p={3}>
-                <SoftTypography variant="h5" fontWeight="medium" mb={3}>
-                  Tổng tiền
-                </SoftTypography>
-                <OrderSummary orderId={orderData.id} />
-              </SoftBox>
-            </Card>
-          </SoftBox>
-
-          {/* Modals và Dialogs */}
-          {showHistoryModal && orderData && (
-              <OrderHistoryModal maHoaDon={orderData.maHoaDon} onClose={handleCloseHistoryModal} />
-          )}
-
-          <CancelOrderDialog
-              isOpen={isCancelModalOpen}
-              onClose={handleCloseCancelModal}
-              onConfirmCancel={handleConfirmCancellation}
-              isLoading={isCancelling}
-          />
-
-          {showUpdateModal && orderData && (
-              <UpdateOrderInfo
-                  show={showUpdateModal}
-                  onClose={handleCloseUpdateModal}
-                  orderId={orderData.id}
-                  initialData={initialUpdateData}
-                  onUpdateSuccess={fetchOrderDetail}
-              />
-          )}
-
-          <InHoaDon isOpen={isModalOpen} onClose={handleCloseModal} hoaDonId={currentInvoiceId} />
-
-          <div style={{ display: "none" }}>
-            {orderData && <InHoaDon ref={componentRef} orderData={orderData} />}
-          </div>
+              )}
+            </SoftBox>
+          </Card>
         </SoftBox>
-        <Footer />
-      </DashboardLayout>
+
+        {/* Lịch sử thanh toán */}
+        <SoftBox mb={3}>
+          <Card>
+            <SoftBox p={3}>
+              <SoftTypography variant="h5" fontWeight="medium" mb={3} sx={{ color: "#6ea8fe" }}>
+                Lịch sử thanh toán
+              </SoftTypography>
+              <PaymentHistory orderId={orderData.id} />
+            </SoftBox>
+          </Card>
+        </SoftBox>
+
+        {/* Danh sách sản phẩm */}
+        <SoftBox mb={3}>
+          <Card>
+            <SoftBox p={3}>
+              <SoftTypography variant="h5" fontWeight="medium" mb={3} sx={{ color: "#6ea8fe" }}>
+                Danh sách sản phẩm
+              </SoftTypography>
+              <ProductList orderId={orderId} orderStatus={orderData.trangThaiGoc} />
+            </SoftBox>
+          </Card>
+        </SoftBox>
+
+        {/* Tổng tiền */}
+        <SoftBox mb={3}>
+          <Card>
+            <SoftBox p={3}>
+              <SoftTypography variant="h5" fontWeight="medium" mb={3}>
+                Tổng tiền
+              </SoftTypography>
+              <OrderSummary orderId={orderData.id} />
+            </SoftBox>
+          </Card>
+        </SoftBox>
+
+        {/* Modals và Dialogs */}
+        {showHistoryModal && orderData && (
+          <OrderHistoryModal maHoaDon={orderData.maHoaDon} onClose={handleCloseHistoryModal} />
+        )}
+
+        <CancelOrderDialog
+          isOpen={isCancelModalOpen}
+          onClose={handleCloseCancelModal}
+          onConfirmCancel={handleConfirmCancellation}
+          isLoading={isCancelling}
+        />
+
+        {showUpdateModal && orderData && (
+          <UpdateOrderInfo
+            show={showUpdateModal}
+            onClose={handleCloseUpdateModal}
+            orderId={orderData.id}
+            initialData={initialUpdateData}
+            onUpdateSuccess={fetchOrderDetail}
+          />
+        )}
+
+        <InHoaDon isOpen={isModalOpen} onClose={handleCloseModal} hoaDonId={currentInvoiceId} />
+
+        <div style={{ display: "none" }}>
+          {orderData && <InHoaDon ref={componentRef} orderData={orderData} />}
+        </div>
+      </SoftBox>
+      <Footer />
+    </DashboardLayout>
   );
 };
 

@@ -22,18 +22,19 @@ public interface ChiTietThanhToanRepository extends JpaRepository<ChiTietThanhTo
     Integer sumSoTienThanhToanByIdHoaDon(@Param("idHoaDon") Integer idHoaDon);
 
     @Query(
-            value = "SELECT " +
-                    "    ctt.so_tien_thanh_toan AS soTienThanhToan, " +
-                    "    ctt.ma_giao_dich AS maGiaoDich, " +
-                    "    ctt.ngay_thanh_toan AS thoiGianThanhToan, " +
-                    "    ctt.ghi_chu AS ghiChu, " +
-                    "    nv.ho_va_ten AS nhanVienXacNhan, " +
-                    "    httt.phuong_thuc_thanh_toan AS tenHinhThucThanhToan " + // THÊM DÒNG NÀY
-                    "FROM chi_tiet_thanh_toan ctt " +
-                    "JOIN hoa_don hd ON hd.id = ctt.id_hoa_don " +
-                    "JOIN nhan_vien nv ON nv.id = hd.id_nhan_vien " +
-                    "JOIN hinh_thuc_thanh_toan httt ON httt.id = ctt.id_hinh_thuc_thanh_toan " + // THÊM DÒNG NÀY
-                    "WHERE ctt.id_hoa_don = :idHoaDon",
+            value = """
+SELECT
+    
+    ctt.so_tien_thanh_toan AS soTienThanhToan,
+    ctt.ma_giao_dich AS maGiaoDich,
+    ctt.ngay_thanh_toan AS thoiGianThanhToan,
+    ctt.ghi_chu AS ghiChu,
+    httt.phuong_thuc_thanh_toan AS tenHinhThucThanhToan
+FROM chi_tiet_thanh_toan ctt
+JOIN hoa_don hd ON hd.id = ctt.id_hoa_don
+JOIN hinh_thuc_thanh_toan httt ON httt.id = ctt.id_hinh_thuc_thanh_toan
+WHERE ctt.id_hoa_don = :idHoaDon
+""",
             nativeQuery = true
     )
     List<LichSuThanhToanProjection> findLichSuThanhToanByIdHoaDon(@Param("idHoaDon") Integer idHoaDon);
