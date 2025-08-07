@@ -27,10 +27,8 @@ public class HoaDonDTO {
     private String tenSanPham;
     private String maNhanVien;
     private String tenNhanVien;
-
     private String loaiHoaDon;
     private List<HoaDonChiTietDTO> danhSachChiTiet;
-
     private Double tongTienBanDau;   // Tổng tiền trước khi giảm giá
     private Double tongTien;         // Tổng sau giảm giá, chưa bao gồm phí vận chuyển
     private Double phiVanChuyen;     // Phí vận chuyển

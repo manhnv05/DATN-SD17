@@ -4,10 +4,7 @@ import com.example.datn.dto.*;
 import com.example.datn.mapper.HoaDonChiTietMapper;
 import com.example.datn.mapper.HoaDonUpdateMapper;
 import com.example.datn.mapper.PhieuGiamGiaMapper;
-import com.example.datn.vo.hoaDonVO.CapNhatSanPhamChiTietDonHangVO;
-import com.example.datn.vo.hoaDonVO.HoaDonChoRequestVO;
-import com.example.datn.vo.hoaDonVO.HoaDonRequestUpdateVO;
-import com.example.datn.vo.hoaDonVO.HoaDonUpdateVO;
+import com.example.datn.vo.hoaDonVO.*;
 import com.example.datn.vo.khachHangVO.CapNhatKhachRequestVO;
 import com.example.datn.vo.phieuGiamGiaVO.CapNhatPGG;
 import com.itextpdf.text.*;
@@ -462,7 +459,7 @@ public class HoaDonServiceImpl implements HoaDonService {
 
         String newMaPgg = capNhatPGG.getMaPgg();
 
-        // Nếu không truyền mã PGG thì xóa PGG khỏi hóa đơn
+
         if ((newMaPgg == null || newMaPgg.trim().isEmpty()) && hoaDon.getPhieuGiamGia() != null) {
             hoaDon.setPhieuGiamGia(null);
             hoaDonRepository.save(hoaDon);
@@ -505,6 +502,8 @@ public class HoaDonServiceImpl implements HoaDonService {
         hoaDonDTOMess.setPhieuGiamGiaDTO(null);
         return hoaDonDTOMess;
     }
+
+
 
     @Override
     public CapNhatTrangThaiDTO capNhatTrangThaiHoaDon(Integer idHoaDon, TrangThai trangThaiMoi, String ghiChu, String nguoiThucHien) {
@@ -814,6 +813,114 @@ public class HoaDonServiceImpl implements HoaDonService {
         return "Cập nhật số lượng sản phẩm thành công";
     }
 
+    @Transactional
+    @Override
+    public HoaDonDTO saveHoaDonOnlineChuaDangNhap(HoaDonOnlineRequest hoaDonOnlineRequest) {
+        HoaDon hoaDon= new HoaDon();
+        hoaDon.setMaHoaDon(generateShortRandomMaHoaDonUUID());
+        hoaDon.setNgayTao(LocalDateTime.now());
+        hoaDon.setLoaiHoaDon(hoaDonOnlineRequest.getLoaiHoaDon());
+        if (hoaDonOnlineRequest.getDanhSachSanPham() != null) {
+            // Xóa toàn bộ chi tiết hóa đơn cũ để đảm bảo không bị trùng lặp hay sai giá
+//            hoaDon.getHoaDonChiTietList().clear();
+
+            // Lặp qua danh sách sản phẩm từ request để tạo lại chi tiết hóa đơn
+            for (HoaDonOnlineRequest.SanPhamCapNhatVO sanPhamMoi : hoaDonOnlineRequest.getDanhSachSanPham()) {
+                ChiTietSanPham spct = chiTietSanPhamRepository.findById(sanPhamMoi.getId())
+                        .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+
+                HoaDonChiTiet chiTietMoi = new HoaDonChiTiet();
+                chiTietMoi.setHoaDon(hoaDon);
+                chiTietMoi.setSanPhamChiTiet(spct);
+                chiTietMoi.setSoLuong(sanPhamMoi.getSoLuong());
+
+                // Quan trọng: Set giá từ request, KHÔNG tính toán lại!
+                chiTietMoi.setGia(sanPhamMoi.getDonGia().intValue());
+
+                // Tính thành tiền dựa trên giá từ request
+                BigDecimal thanhTien = BigDecimal.valueOf(sanPhamMoi.getDonGia())
+                        .multiply(BigDecimal.valueOf(sanPhamMoi.getSoLuong()));
+                int tienInt = thanhTien.intValue();
+                chiTietMoi.setThanhTien(tienInt);
+
+                // Thêm chi tiết mới vào hóa đơn
+                hoaDon.getHoaDonChiTietList().add(chiTietMoi);
+            }
+
+        }
+        int tongTienBanDau = hoaDon.getHoaDonChiTietList().stream()
+                .mapToInt(HoaDonChiTiet::getThanhTien)
+                .sum();
+        hoaDon.setTongTienBanDau(tongTienBanDau);
+        hoaDon.setTongTien(tongTienBanDau);
+        hoaDonMapper.toHoaDonUpdate(hoaDon,hoaDonOnlineRequest);
+        if (StringUtils.isNotEmpty(hoaDonOnlineRequest.getPhieuGiamGia())) {
+            PhieuGiamGia pgg = phieuGiamGiaRepository.findById(Integer.valueOf(hoaDonOnlineRequest.getPhieuGiamGia())).orElse(null);
+            hoaDon.setPhieuGiamGia(pgg);
+            if (pgg != null) {
+                if (pgg.getTrangThai() != 1){
+                    throw new AppException(ErrorCode.PHIEU_GIAM_GIA_DA_HET_HAN);
+                }
+                BigDecimal tongTienGocBD = BigDecimal.valueOf(tongTienBanDau);
+                BigDecimal soTienDuocGiam = BigDecimal.ZERO;
+
+                if (pgg.getPhamTramGiamGia() != null && pgg.getPhamTramGiamGia().compareTo(BigDecimal.ZERO) > 0) {
+                    // Giảm theo phần trăm
+                    soTienDuocGiam = tongTienGocBD.multiply(pgg.getPhamTramGiamGia()).divide(BigDecimal.valueOf(100));
+                    if (pgg.getGiamToiDa() != null && soTienDuocGiam.compareTo(pgg.getGiamToiDa()) > 0) {
+                        soTienDuocGiam = pgg.getGiamToiDa();
+                    }
+                } else if (pgg.getSoTienGiam() != null) {
+                    // Giảm theo số tiền cố định
+                    soTienDuocGiam = pgg.getGiamToiDa();
+                }
+
+                BigDecimal tongTienCuoiCung = tongTienGocBD.subtract(soTienDuocGiam);
+                hoaDon.setTongTien(tongTienCuoiCung.intValue());
+            }
+        } else {
+            hoaDon.setPhieuGiamGia(null);
+        }
+
+        // 6. Tính tổng hóa đơn cuối cùng (bao gồm phí vận chuyển)
+        // Giả sử mapper đã set `phiVanChuyen` vào `hoaDon`
+        Integer phiVanChuyen = (hoaDon.getPhiVanChuyen() != null) ? hoaDon.getPhiVanChuyen() : 0;
+        hoaDon.setTongHoaDon(hoaDon.getTongTien() + phiVanChuyen);
+
+        // 7. Cập nhật trạng thái hóa đơn dựa trên thanh toán và loại đơn
+        Integer tongTienDaTraRaw = chiTietThanhToanRepository.sumSoTienThanhToanByIdHoaDon(hoaDon.getId());
+        int tongTienDaTra = (tongTienDaTraRaw != null) ? tongTienDaTraRaw : 0;
+        hoaDon.setTrangThai(TrangThai.CHO_XAC_NHAN);
+        HoaDon hoaDonDaLuu = hoaDonRepository.save(hoaDon);
+        // 9. Ghi nhận lịch sử hoạt động
+        String nguoiThucHienCapNhat = "Hệ thống"; // Hoặc lấy từ security context
+        String noiDungLichSu;
+        switch (hoaDonDaLuu.getTrangThai()) {
+            case CHO_XAC_NHAN:
+                noiDungLichSu = "Đơn hàng đã được tạo thành công và đang chờ xác nhận.";
+                break;
+            case HOAN_THANH:
+                noiDungLichSu = "Hóa đơn đã được thanh toán và hoàn thành.";
+                break;
+            case DA_XAC_NHAN:
+                noiDungLichSu = "Đơn hàng đã được xác nhận và đang chờ giao.";
+                break;
+            case HUY:
+                noiDungLichSu = "Hóa đơn đã bị hủy.";
+                break;
+            default:
+                noiDungLichSu = "Hóa đơn được cập nhật trạng thái thành: " + hoaDonDaLuu.getTrangThai().name();
+                break;
+        }
+        lichSuHoaDonService.ghiNhanLichSuHoaDon(
+                hoaDonDaLuu,
+                noiDungLichSu,
+                nguoiThucHienCapNhat,
+                hoaDonOnlineRequest.getGhiChu(),
+                hoaDonDaLuu.getTrangThai()
+        );
+        return HoaDonUpdateMapper.INSTANCE.toResponseDTO(hoaDonDaLuu);
+    }
     @Override
     @Transactional
     public HoaDonDTO updateHoaDon(HoaDonRequestUpdateVO request) {
@@ -848,6 +955,11 @@ public class HoaDonServiceImpl implements HoaDonService {
                 // Thêm chi tiết mới vào hóa đơn
                 hoaDon.getHoaDonChiTietList().add(chiTietMoi);
             }
+            int tongTienBanDau = hoaDon.getHoaDonChiTietList().stream()
+                    .mapToInt(HoaDonChiTiet::getThanhTien)
+                    .sum();
+            hoaDon.setTongTienBanDau(tongTienBanDau);
+            hoaDon.setTongTien(tongTienBanDau);
         }
 
         // 3. Cập nhật các thông tin chung của hóa đơn từ request

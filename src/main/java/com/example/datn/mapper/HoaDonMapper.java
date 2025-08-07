@@ -3,6 +3,7 @@ package com.example.datn.mapper;
 import com.example.datn.dto.HoaDonDTO;
 import com.example.datn.entity.HoaDon;
 import com.example.datn.vo.hoaDonVO.HoaDonCreateVO;
+import com.example.datn.vo.hoaDonVO.HoaDonOnlineRequest;
 import com.example.datn.vo.hoaDonVO.HoaDonRequestUpdateVO;
 import org.mapstruct.*;
 
@@ -49,6 +50,7 @@ public interface HoaDonMapper {
     @Mapping(target = "tenNhanVien", expression = "java(hoaDon.getNhanVien() != null ? hoaDon.getNhanVien().getHoVaTen() : null)")
     @Mapping(target = "maNhanVien", expression = "java(hoaDon.getNhanVien() != null ? hoaDon.getNhanVien().getMaNhanVien() : null)")
     HoaDonDTO toHoaDonResponse(HoaDon hoaDon);
-
+    @Mapping(target = "phieuGiamGia", ignore = true)
+    void toHoaDonUpdate(@MappingTarget HoaDon hoaDon, HoaDonOnlineRequest request);
 
 }
