@@ -12,8 +12,8 @@ import SoftTypography from "../../../../../components/SoftTypography";
 import DefaultNavbar from "../../../../../examples/Navbars/DefaultNavbar";
 import PageLayout from "../../../../../examples/LayoutContainers/PageLayout";
 
-// Soft UI Dashboard React page layout routes
-import pageRoutes from "page.routes";
+// Soft UI Dashboard React page layout routesAdmin
+import pageRoutes from "page.routesAdmin";
 
 // Images
 import pattern from "assets/images/shapes/pattern-lines.svg";

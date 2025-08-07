@@ -31,7 +31,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
         logger.info("Đang xác thực tài khoản với username/email: {}", usernameOrEmail);
 
-        // Tìm nhân viên theo email
+        // 1. Tìm nhân viên theo email
         Optional<NhanVien> nvOpt = nhanVienRepository.findByEmail(usernameOrEmail);
         if (nvOpt.isPresent()) {
             NhanVien nv = nvOpt.get();
@@ -47,7 +47,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                     .build();
         }
 
-        // Nếu không phải nhân viên, tìm khách hàng theo email
+        // 2. Nếu không phải nhân viên, tìm khách hàng theo email
         Optional<KhachHang> khOpt = khachHangRepository.findByEmail(usernameOrEmail);
         if (khOpt.isPresent()) {
             KhachHang kh = khOpt.get();
