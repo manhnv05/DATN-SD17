@@ -280,7 +280,7 @@ function ProductForm() {
     }, []);
 
     useEffect(() => {
-        fetch(apiUrl("/coAo/all"))
+        fetch(apiUrl("/coAo/all"), { credentials: "include" })
             .then((res) => res.json())
             .then((data) => {
                 const opts = Array.isArray(data)

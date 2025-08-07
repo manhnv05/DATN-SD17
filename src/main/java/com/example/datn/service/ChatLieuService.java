@@ -8,6 +8,9 @@ import com.example.datn.vo.chatLieuVO.ChatLieuUpdateVO;
 import com.example.datn.vo.chatLieuVO.ChatLieuVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +27,10 @@ public class ChatLieuService {
     @Autowired
     private ChatLieuRepository chatLieuRepository;
 
+    @Caching(evict = {
+            @CacheEvict(value = "chatLieu", allEntries = true),
+            @CacheEvict(value = "chatLieuPage", allEntries = true)
+    })
     public Integer save(ChatLieuVO vO) {
         ChatLieu bean = new ChatLieu();
         BeanUtils.copyProperties(vO, bean);
@@ -31,21 +38,32 @@ public class ChatLieuService {
         return bean.getId();
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "chatLieu", allEntries = true),
+            @CacheEvict(value = "chatLieuPage", allEntries = true)
+    })
     public void delete(Integer id) {
         chatLieuRepository.deleteById(id);
     }
 
+    @Caching(evict = {
+            @CacheEvict(value = "chatLieu", allEntries = true),
+            @CacheEvict(value = "chatLieuPage", allEntries = true)
+    })
     public void update(Integer id, ChatLieuUpdateVO vO) {
         ChatLieu bean = requireOne(id);
         BeanUtils.copyProperties(vO, bean);
         chatLieuRepository.save(bean);
     }
 
+    @Cacheable(value = "chatLieu", key = "#id")
     public ChatLieuDTO getById(Integer id) {
         ChatLieu original = requireOne(id);
         return toDTO(original);
     }
 
+    // Cache phân trang từng trang riêng, key dựa vào các tham số của query
+    @Cacheable(value = "chatLieuPage", key = "#vO.pageNumber + '-' + #vO.pageSize + '-' + #vO.tenChatLieu + '-' + #vO.maChatLieu + '-' + #vO.trangThai")
     public Page<ChatLieuDTO> query(ChatLieuQueryVO vO) {
         int page = vO.getPageNumber() != null ? vO.getPageNumber() : 0;
         int size = vO.getPageSize() != null ? vO.getPageSize() : 10;
@@ -72,6 +90,7 @@ public class ChatLieuService {
     }
 
     // Thêm hàm lấy tất cả chất liệu cho FE select động
+    @Cacheable(value = "chatLieu", key = "'all'")
     public List<ChatLieuDTO> findAll() {
         return chatLieuRepository.findAll().stream()
                 .map(this::toDTO)

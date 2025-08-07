@@ -1,47 +1,49 @@
-import SanPham from "./layouts/admin/SanPham/sanphan";
-import ThuongHieu from "./layouts/admin/SanPham/thuonghieu";
-import ChatLieu from "./layouts/admin/SanPham/chatlieu";
-import DanhMuc from "./layouts/admin/SanPham/danhmuc";
-import KichThuoc from "./layouts/admin/SanPham/kichthuoc";
-import MauSac from "./layouts/admin/SanPham/mausac";
-import TayAo from "./layouts/admin/SanPham/tayao";
-import CoAo from "./layouts/admin/SanPham/coao";
-import HinhAnh from "./layouts/admin/SanPham/hinhanh";
-import ProductForm from "./layouts/admin/SanPham/themsp";
-import ProductDetailForm from "./layouts/admin/SanPham/chitiet"; // <-- Thêm import này
-import GiamGia from "./layouts/admin/GiamGia";
-import OrderManagementPage from "./layouts/admin/HoaDon/pages/OrderManagementPage";
-import OrderDetailPage from "./layouts/admin/HoaDon/pages/OrderDetailPage";
-import PhieuGiamPage from "./layouts/admin/phieugiamgia/phieugiam";
-import AddPhieuGiam from "./layouts/admin/phieugiamgia/addPhieuGiam";
-import UpdatePhieuGiam from "./layouts/admin/phieugiamgia/updatePhieuGiamGia";
-import KhachHang from "./layouts/admin/khachhang";
-import AddKhachHang from "./layouts/admin/khachhang/add";
-import DetailKhachHang from "./layouts/admin/khachhang/detail";
-import UpdateKhachHang from "./layouts/admin/khachhang/update";
-import NhanVien from "./layouts/admin/nhanvien";
-import AddNhanVien from "./layouts/admin/nhanvien/add";
-import DetailNhanVien from "./layouts/admin/nhanvien/detail";
-import UpdateNhanVien from "./layouts/admin/nhanvien/update";
-import SalesDashboardPage from "./layouts/admin/BanHangTaiQuay/pages/SalesDashboardPage";
-import DashboardStats from "./layouts/admin/thongke/thongke";
-import AddDiscountEventPage from "./layouts/admin/GiamGia/AddDiscountEventPage";
-import ViewDiscountEventPage from "./layouts/admin/GiamGia/ViewDiscountEventPage";
-
-import SignIn from "./layouts/admin/authentication/sign-in";
-import SignUp from "./layouts/admin/authentication/sign-up";
-
-import Shop from "examples/Icons/Shop";
-import Office from "examples/Icons/Office";
-import Settings from "examples/Icons/Settings";
-import Document from "examples/Icons/Document";
-import SpaceShip from "examples/Icons/SpaceShip";
-import CustomerSupport from "examples/Icons/CustomerSupport";
-import CreditCard from "examples/Icons/CreditCard";
-import Cube from "examples/Icons/Cube";
+import SanPham from "../admin/SanPham/sanphan";
+import ThuongHieu from "../admin/SanPham/thuonghieu";
+import ChatLieu from "../admin/SanPham/chatlieu";
+import DanhMuc from "../admin/SanPham/danhmuc";
+import KichThuoc from "../admin/SanPham/kichthuoc";
+import MauSac from "../admin/SanPham/mausac";
+import TayAo from "../admin/SanPham/tayao";
+import CoAo from "../admin/SanPham/coao";
+import HinhAnh from "../admin/SanPham/hinhanh";
+import ProductForm from "../admin/SanPham/themsp";
+import ProductDetailForm from "../admin/SanPham/chitiet"; // <-- Thêm import này
+import GiamGia from "../admin/GiamGia";
+import OrderManagementPage from "../admin/HoaDon/pages/OrderManagementPage";
+import OrderDetailPage from "../admin/HoaDon/pages/OrderDetailPage";
+import PhieuGiamPage from "../admin/phieugiamgia/phieugiam";
+import AddPhieuGiam from "../admin/phieugiamgia/addPhieuGiam";
+import UpdatePhieuGiam from "../admin/phieugiamgia/updatePhieuGiamGia";
+import KhachHang from "../admin/khachhang";
+import AddKhachHang from "../admin/khachhang/add";
+import DetailKhachHang from "../admin/khachhang/detail";
+import UpdateKhachHang from "../admin/khachhang/update";
+import NhanVien from "../admin/nhanvien";
+import AddNhanVien from "../admin/nhanvien/add";
+import DetailNhanVien from "../admin/nhanvien/detail";
+import UpdateNhanVien from "../admin/nhanvien/update";
+import SalesDashboardPage from "../admin/BanHangTaiQuay/pages/SalesDashboardPage";
+import DashboardStats from "../admin/thongke/thongke";
+import AddDiscountEventPage from "../admin/GiamGia/AddDiscountEventPage";
+import ViewDiscountEventPage from "../admin/GiamGia/ViewDiscountEventPage";
+import OAuth2RedirectHandler from "../admin/authentication/OAuth2RedirectHandler";
 
 
-const routes = [
+import SignIn from "../admin/authentication/sign-in";
+import SignUp from "../admin/authentication/sign-up";
+
+import Shop from "../../examples/Icons/Shop";
+import Office from "../../examples/Icons/Office";
+import Settings from "../../examples/Icons/Settings";
+import Document from "../../examples/Icons/Document";
+import SpaceShip from "../../examples/Icons/SpaceShip";
+import CustomerSupport from "../../examples/Icons/CustomerSupport";
+import CreditCard from "../../examples/Icons/CreditCard";
+import Cube from "../../examples/Icons/Cube";
+
+
+const routesAdmin = [
   {
     type: "collapse",
     name: "Thống Kê",
@@ -191,34 +193,34 @@ const routes = [
     component: <KhachHang />,
     noCollapse: true,
   },
-  { type: "title", title: "Account Pages", key: "account-pages" },
-  {
-    type: "collapse",
-    name: "Profile",
-    key: "profile",
-    route: "/profile",
-    icon: <CustomerSupport size="12px" />,
-    //component: <Profile />,
-    noCollapse: true,
-  },
-  {
-    type: "collapse",
-    name: "Sign In",
-    key: "sign-in",
-    route: "/authentication/sign-in",
-    icon: <Document size="12px" />,
-    component: <SignIn />,
-    noCollapse: true,
-  },
-  {
-    type: "collapse",
-    name: "Sign Up",
-    key: "sign-up",
-    route: "/authentication/sign-up",
-    icon: <SpaceShip size="12px" />,
-    component: <SignUp />,
-    noCollapse: true,
-  },
+  // { type: "title", title: "Account Pages", key: "account-pages" },
+  // {
+  //   type: "collapse",
+  //   name: "Profile",
+  //   key: "profile",
+  //   route: "/profile",
+  //   icon: <CustomerSupport size="12px" />,
+  //   //component: <Profile />,
+  //   noCollapse: true,
+  // },
+  // {
+  //   type: "collapse",
+  //   name: "Sign In",
+  //   key: "sign-in",
+  //   route: "/authentication/sign-in",
+  //   icon: <Document size="12px" />,
+  //   component: <SignIn />,
+  //   noCollapse: true,
+  // },
+  // {
+  //   type: "collapse",
+  //   name: "Sign Up",
+  //   key: "sign-up",
+  //   route: "/authentication/sign-up",
+  //   icon: <SpaceShip size="12px" />,
+  //   component: <SignUp />,
+  //   noCollapse: true,
+  // },
   {
     type: "item",
     name: "Thêm Sản Phẩm",
@@ -327,6 +329,15 @@ const routes = [
     noCollapse: true,
     hidden: true, // ẩn khỏi menu nếu muốn
   },
+  {
+    key: "oauth2-redirect",
+    name: "OAuth2 Redirect Handler",
+    route: "/oauth2/redirect",
+    component: <OAuth2RedirectHandler />,
+    noCollapse: true,
+    hidden: true,
+  },
+
 ];
 
-export default routes;
+export default routesAdmin;
