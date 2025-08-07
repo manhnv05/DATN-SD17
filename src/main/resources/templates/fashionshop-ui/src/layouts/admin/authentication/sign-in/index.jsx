@@ -19,11 +19,26 @@ import { signIn } from "../data/sign-in";
 function SignIn() {
     const [rememberMe, setRememberMe] = useState(true);
     const [showPassword, setShowPassword] = useState(false);
-    // Sử dụng username để đúng với backend Spring Security (dù là nhập email cũng để name="username")
     const [formData, setFormData] = useState({ username: "", password: "" });
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+
+    // Hàm xử lý đăng nhập Google
+    const handleLoginGoogle = () => {
+        // Thay đổi URL bên dưới thành endpoint OAuth2 trên backend của bạn nếu khác
+        window.location.href = "http://localhost:8080/oauth2/authorization/google";
+    };
+
+    // Hàm xử lý đăng nhập Facebook
+    const handleLoginFacebook = () => {
+        window.location.href = "http://localhost:8080/oauth2/authorization/facebook";
+    };
+
+    // Hàm xử lý đăng nhập X (Twitter)
+    const handleLoginX = () => {
+        window.location.href = "http://localhost:8080/oauth2/authorization/twitter";
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -189,12 +204,25 @@ function SignIn() {
 
                 <Box display="flex" justifyContent="center" gap={2} mb={1}>
                     {[
-                        { icon: <Google sx={{ color: "#EA4335", fontSize: 26 }} />, bg: "#fff" },
-                        { icon: <Facebook sx={{ color: "#fff", fontSize: 26 }} />, bg: "#1877f3" },
-                        { icon: <X sx={{ color: "#fff", fontSize: 26 }} />, bg: "#000" },
-                    ].map(({ icon, bg }, index) => (
+                        {
+                            icon: <Google sx={{ color: "#EA4335", fontSize: 26 }} />,
+                            bg: "#fff",
+                            onClick: handleLoginGoogle,
+                        },
+                        {
+                            icon: <Facebook sx={{ color: "#fff", fontSize: 26 }} />,
+                            bg: "#1877f3",
+                            onClick: handleLoginFacebook,
+                        },
+                        {
+                            icon: <X sx={{ color: "#fff", fontSize: 26 }} />,
+                            bg: "#000",
+                            onClick: handleLoginX,
+                        },
+                    ].map(({ icon, bg, onClick }, index) => (
                         <IconButton
                             key={index}
+                            onClick={onClick}
                             sx={{
                                 background: bg,
                                 boxShadow: "0px 8px 16px -8px #cde8f6",

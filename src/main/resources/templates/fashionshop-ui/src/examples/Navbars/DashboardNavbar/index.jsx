@@ -44,8 +44,8 @@ import {
 import team2 from "assets/images/team-2.jpg";
 import logoSpotify from "assets/images/small-logos/logo-spotify.svg";
 
-// Import your routes
-import routes from "routes";
+// Import your routesAdmin
+import routesAdmin from "../../../layouts/routes/routes-admin";
 
 // === Helper to get route name from path ===
 function getRouteNameFromPath(path, routesList) {
@@ -57,7 +57,7 @@ function getRouteNameFromPath(path, routesList) {
 
   function findName(routesArr) {
     for (const route of routesArr) {
-      // Check nested routes (collapse)
+      // Check nested routesAdmin (collapse)
       if (route.collapse) {
         const found = findName(route.collapse);
         if (found) return found;
@@ -101,8 +101,8 @@ function DashboardNavbar({ absolute, light, isMini }) {
 
   // Lấy đường dẫn đầy đủ dạng "/a/b/c"
   const fullPath = "/" + route.join("/");
-  // Lấy tên route từ cấu hình routes
-  const routeTitle = getRouteNameFromPath(fullPath, routes);
+  // Lấy tên route từ cấu hình routesAdmin
+  const routeTitle = getRouteNameFromPath(fullPath, routesAdmin);
 
   useEffect(() => {
     // Setting the navbar type
