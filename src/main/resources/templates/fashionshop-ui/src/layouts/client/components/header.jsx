@@ -12,14 +12,16 @@ import {
     Stack,
     useMediaQuery,
     Menu as MuiMenu,
-    MenuItem,
     Divider,
     Avatar,
-    ListItemIcon
+    Icon
 } from "@mui/material";
-import { ShoppingCart, Person, Search, Menu, Logout, AccountCircle, Settings, Login } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
+import { ShoppingCart, Person, Search, Menu as MenuIcon, Favorite as FavoriteIcon } from "@mui/icons-material";
+import { useNavigate, Link as RouterLink } from "react-router-dom";
 import logoImg from "assets/images/logo4.png";
+
+// Fake number of favorite products for demo
+const demoFavoriteCount = 4;
 
 function Logo() {
     return (
@@ -30,8 +32,10 @@ function Logo() {
                 style={{
                     height: 80,
                     marginRight: 6,
-                    borderRadius: 7,
-                    boxShadow: "0 2px 8px 0 rgba(0,0,0,0.09)"
+                    borderRadius: 10,
+                    boxShadow: "0 2px 8px 0 #bde0fe44",
+                    objectFit: "contain",
+                    background: "#fff"
                 }}
             />
         </Box>
@@ -40,11 +44,11 @@ function Logo() {
 
 const navItems = [
     { label: "OUTLET", red: true },
-    { label: "HOME" },
-    { label: "SHOP" },
-    { label: "ABOUT" },
-    { label: "BLOG" },
-    { label: "CONTACT" }
+    { label: "HOME", route: "/home" },
+    { label: "SHOP", route: "/shop" },
+    { label: "ABOUT", route: "/about" },
+    { label: "BLOG", route: "/blog" },
+    { label: "CONTACT", route: "/contact" }
 ];
 
 const subNavItems = [
@@ -62,14 +66,16 @@ export default function Header() {
     const navigate = useNavigate();
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
-    const role = localStorage.getItem("role");
+
+    // Lấy email, username, role từ localStorage
+    const email = localStorage.getItem("email") || "";
     const username = localStorage.getItem("username");
+    const role = localStorage.getItem("role");
     const isLoggedIn = Boolean(role && username);
     const isAdmin = role === "NHANVIEN" || role === "QUANLY" || role === "QUANTRIVIEN";
     const user = isLoggedIn
         ? {
-            name: username,
-            email: "",
+            email: email || username,
             role: role === "NHANVIEN" ? "Nhân viên" : role === "QUANLY" ? "Quản lý" : role === "QUANTRIVIEN" ? "Quản trị viên" : "Khách hàng",
             avatar: ""
         }
@@ -86,6 +92,8 @@ export default function Header() {
     function handleLogout() {
         localStorage.removeItem("role");
         localStorage.removeItem("username");
+        localStorage.removeItem("name");
+        localStorage.removeItem("email");
         handleCloseMenu();
         setTimeout(function () {
             navigate("/home");
@@ -111,9 +119,117 @@ export default function Header() {
         handleCloseMenu();
     }
 
-    function handleSettings() {
-        alert("Cài đặt!");
-        handleCloseMenu();
+    // Xem danh sách sản phẩm yêu thích
+    function handleGoFavorites() {
+        navigate("/favorites");
+    }
+
+    function renderAccountMenu() {
+        if (!user) return null;
+        return (
+            <MuiMenu
+                anchorEl={anchorEl}
+                open={open}
+                onClose={handleCloseMenu}
+                PaperProps={{
+                    elevation: 8,
+                    sx: {
+                        minWidth: 270,
+                        borderRadius: 3,
+                        p: 0.5,
+                        userSelect: "none",
+                        boxShadow: "0 4px 24px 0 #bde0fe44"
+                    }
+                }}
+                anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                transformOrigin={{ vertical: "top", horizontal: "right" }}
+                MenuListProps={{
+                    sx: { userSelect: "none", p: 0 }
+                }}
+            >
+                <Box sx={{
+                    display: "flex", alignItems: "center", px: 2, pt: 2, userSelect: "none"
+                }}>
+                    <Avatar
+                        src={user.avatar}
+                        sx={{
+                            bgcolor: "#1976d2", width: 46, height: 46, mr: 1.3, fontWeight: 700, fontSize: 22
+                        }}
+                    >
+                        {user.email && user.email.length > 0 ? user.email[0].toUpperCase() : "A"}
+                    </Avatar>
+                    <Box>
+                        <Box sx={{ fontWeight: 700, fontSize: 15.5, color: "#1a237e" }}>{user.email}</Box>
+                        <Box sx={{ fontSize: 12.5, color: "#1976d2", fontWeight: 600, mt: 0.2 }}>{user.role}</Box>
+                    </Box>
+                </Box>
+                <Divider sx={{ my: 1.5, bgcolor: "#e3f0fa" }} />
+                <Box sx={{ px: 2, pb: 1 }}>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            py: 1, px: 1,
+                            borderRadius: 2,
+                            cursor: "pointer",
+                            userSelect: "none",
+                            fontSize: 15.2,
+                            fontWeight: 500,
+                            color: "#205072",
+                            "&:hover": { background: "#e3f0fa", color: "#1976d2" },
+                            transition: "all 0.11s"
+                        }}
+                        onMouseDown={e => e.preventDefault()}
+                        onClick={handleAccount}
+                    >
+                        <Icon sx={{ mr: 1, color: "#1976d2" }}>person</Icon>
+                        Tài khoản
+                    </Box>
+                    {isAdmin && (
+                        <Box
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                py: 1, px: 1,
+                                borderRadius: 2,
+                                cursor: "pointer",
+                                userSelect: "none",
+                                fontSize: 15.2,
+                                fontWeight: 500,
+                                color: "#205072",
+                                "&:hover": { background: "#e3f0fa", color: "#1769aa" },
+                                transition: "all 0.11s"
+                            }}
+                            onMouseDown={e => e.preventDefault()}
+                            onClick={handleGoAdmin}
+                        >
+                            <Icon sx={{ mr: 1, color: "#1769aa" }}>settings</Icon>
+                            Trang quản lý
+                        </Box>
+                    )}
+                </Box>
+                <Divider sx={{ my: 1, bgcolor: "#e3f0fa" }} />
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        px: 2, pb: 2,
+                        cursor: "pointer",
+                        color: "#e53935",
+                        fontWeight: 700,
+                        borderRadius: 2,
+                        fontSize: 15.2,
+                        "&:hover": { background: "#ffeaea" },
+                        transition: "all 0.11s"
+                    }}
+                    onMouseDown={e => e.preventDefault()}
+                    onClick={handleLogout}
+                >
+                    <Icon sx={{ mr: 1, color: "#e53935" }}>logout</Icon>
+                    Đăng xuất
+                </Box>
+            </MuiMenu>
+        );
     }
 
     return (
@@ -121,14 +237,14 @@ export default function Header() {
             <Box
                 sx={{
                     width: "100%",
-                    bgcolor: "linear-gradient(90deg, #ffe600 0%, #ff8b60 100%)",
-                    color: "#222",
+                    bgcolor: "linear-gradient(90deg, #e3f0fa 0%, #bde0fe 100%)",
+                    color: "#1976d2",
                     textAlign: "center",
-                    fontSize: 13,
+                    fontSize: 13.4,
                     py: 0.8,
                     fontWeight: 600,
                     letterSpacing: 0.6,
-                    boxShadow: "0 2px 8px 0 rgba(0,0,0,0.07)"
+                    boxShadow: "0 2px 8px 0 #bde0fe33"
                 }}
             >
                 Miễn phí vận chuyển với đơn hàng trên 500k, hàng pre-order còn được giảm thêm 5%.
@@ -138,14 +254,14 @@ export default function Header() {
                 elevation={0}
                 sx={{
                     bgcolor: "#fff",
-                    color: "#222",
+                    color: "#205072",
                     boxShadow: "none",
-                    borderBottom: "1px solid #eee"
+                    borderBottom: "1px solid #e3f0fa"
                 }}
             >
                 <Toolbar
                     sx={{
-                        minHeight: 72,
+                        minHeight: 62,
                         px: { xs: 1.5, md: 5 },
                         gap: 0,
                         display: "flex",
@@ -154,99 +270,138 @@ export default function Header() {
                         position: "relative"
                     }}
                 >
-                    <Box display="flex" alignItems="center" minWidth={isMobile ? 0 : 180} justifyContent="center">
+                    <Box display="flex" alignItems="center" minWidth={isMobile ? 0 : 160} justifyContent="center">
                         {isMobile && (
                             <IconButton sx={{ mr: 0.5 }}>
-                                <Menu sx={{ fontSize: 28 }} />
+                                <MenuIcon sx={{ fontSize: 28, color: "#1976d2" }} />
                             </IconButton>
                         )}
                         <Logo />
                     </Box>
                     {!isMobile && (
-                        <Stack direction="row" spacing={2} sx={{ flex: 1, justifyContent: "center", ml: 2, mr: 2 }}>
-                            {navItems.map(function (item) {
-                                return (
-                                    <Button
-                                        key={item.label}
-                                        sx={{
-                                            fontWeight: item.red ? 800 : 500,
-                                            color: item.red ? "#e53935" : "#111",
-                                            fontSize: 15,
-                                            px: 1.6,
-                                            letterSpacing: 0.8,
-                                            textTransform: "uppercase",
-                                            borderRadius: 2,
-                                            background: item.red ? "rgba(229,57,53,0.07)" : "transparent",
-                                            boxShadow: item.red ? "0 2px 8px 0 rgba(229,57,53,0.07)" : "none",
-                                            "&:hover": {
-                                                bgcolor: item.red ? "#ffe6e6" : "#f8f8f8",
-                                                color: item.red ? "#d32f2f" : "#000",
-                                                boxShadow: "0 2px 12px 0 rgba(0,0,0,0.11)",
-                                                transform: "translateY(-2px)"
-                                            },
-                                            transition: "all 0.13s"
-                                        }}
-                                    >
-                                        {item.label}
-                                        {item.red && (
-                                            <Typography
-                                                component="span"
-                                                sx={{
-                                                    color: "#fff",
-                                                    bgcolor: "#e53935",
-                                                    borderRadius: 1,
-                                                    px: 1,
-                                                    ml: 0.9,
-                                                    fontSize: 10.2,
-                                                    fontWeight: "bold",
-                                                    letterSpacing: 0.7,
-                                                    display: "inline-block",
-                                                    boxShadow: "0 1px 8px 0 rgba(229,57,53,0.21)"
-                                                }}
-                                            >
-                                                SALE
-                                            </Typography>
-                                        )}
-                                    </Button>
-                                );
-                            })}
+                        <Stack direction="row" spacing={1.9} sx={{ flex: 1, justifyContent: "center", ml: 2, mr: 2 }}>
+                            {navItems.map((item) => (
+                                <Button
+                                    key={item.label}
+                                    component={item.route ? RouterLink : "button"}
+                                    to={item.route}
+                                    sx={{
+                                        fontWeight: item.red ? 800 : 600,
+                                        color: item.red ? "#e53935" : "#205072",
+                                        fontSize: 15.2,
+                                        px: 1.6,
+                                        letterSpacing: 0.8,
+                                        textTransform: "uppercase",
+                                        borderRadius: 2.5,
+                                        background: item.red ? "rgba(229,57,53,0.07)" : "transparent",
+                                        boxShadow: item.red ? "0 2px 8px 0 #e5393522" : "none",
+                                        "&:hover": {
+                                            bgcolor: item.red ? "#ffe6e6" : "#e9f5fc",
+                                            color: item.red ? "#d32f2f" : "#1769aa",
+                                            boxShadow: "0 2px 12px 0 #bde0fe44",
+                                            transform: "translateY(-2px)"
+                                        },
+                                        transition: "all 0.13s"
+                                    }}
+                                >
+                                    {item.label}
+                                    {item.red && (
+                                        <Typography
+                                            component="span"
+                                            sx={{
+                                                color: "#fff",
+                                                bgcolor: "#e53935",
+                                                borderRadius: 1,
+                                                px: 1,
+                                                ml: 0.9,
+                                                fontSize: 10.2,
+                                                fontWeight: "bold",
+                                                letterSpacing: 0.7,
+                                                display: "inline-block",
+                                                boxShadow: "0 1px 8px 0 #e5393522"
+                                            }}
+                                        >
+                                            SALE
+                                        </Typography>
+                                    )}
+                                </Button>
+                            ))}
                         </Stack>
                     )}
-                    <Stack direction="row" spacing={1.2} alignItems="center" minWidth={isMobile ? 0 : 200}>
+                    <Stack direction="row" spacing={1.1} alignItems="center" minWidth={isMobile ? 0 : 180}>
                         <Paper
                             component="form"
                             sx={{
                                 display: "flex",
                                 alignItems: "center",
-                                borderRadius: 6,
+                                borderRadius: 5,
                                 boxShadow: "none",
-                                bgcolor: "#f6f6f6",
-                                px: 1.2,
-                                py: 0.3,
-                                minWidth: isMobile ? 90 : 170,
-                                mr: 0.4,
-                                border: "1px solid #efeaea"
+                                bgcolor: "#f6faff",
+                                px: 1.1,
+                                py: 0.25,
+                                minWidth: isMobile ? 90 : 150,
+                                mr: 0.3,
+                                border: "1px solid #e3f0fa"
                             }}
                         >
                             <InputBase
                                 placeholder="Tìm kiếm sản phẩm…"
-                                sx={{ ml: 0.7, flex: 1, fontSize: 14.2, color: "#222" }}
+                                sx={{ ml: 0.7, flex: 1, fontSize: 14.1, color: "#1976d2" }}
                                 inputProps={{ "aria-label": "search" }}
                             />
                             <IconButton sx={{ p: 0.4 }}>
-                                <Search sx={{ color: "#999", fontSize: 21 }} />
+                                <Search sx={{ color: "#1976d2", fontSize: 21 }} />
                             </IconButton>
                         </Paper>
+                        {/* Nút trái tim - đẹp đều với các icon khác */}
+                        <IconButton
+                            sx={{
+                                bgcolor: "#fff",
+                                border: "1.5px solid #e3f0fa",
+                                color: "#e53935",
+                                borderRadius: 2.5,
+                                width: 42,
+                                height: 42,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                transition: "all 0.13s",
+                                "&:hover": { bgcolor: "#ffe6e6", borderColor: "#e53935" }
+                            }}
+                            onClick={handleGoFavorites}
+                        >
+                            <Badge badgeContent={demoFavoriteCount} color="error" sx={{
+                                "& .MuiBadge-badge": {
+                                    background: "#e53935",
+                                    color: "#fff",
+                                    fontWeight: 700,
+                                    fontSize: 13,
+                                    minWidth: 20,
+                                    height: 20,
+                                    borderRadius: 2.5,
+                                    boxShadow: "0 1px 8px 0 #e5393522"
+                                }
+                            }}>
+                                <FavoriteIcon sx={{ fontSize: 23 }} />
+                            </Badge>
+                        </IconButton>
                         {!isLoggedIn ? (
                             <React.Fragment>
                                 <IconButton
                                     sx={{
-                                        bgcolor: "#ffe600", color: "#222", "&:hover": { bgcolor: "#ffef7a" },
-                                        borderRadius: 2, mx: 0.2
+                                        bgcolor: "#fff",
+                                        border: "1.5px solid #e3f0fa",
+                                        color: "#1976d2",
+                                        borderRadius: 2.5,
+                                        width: 42,
+                                        height: 42,
+                                        fontWeight: 700,
+                                        fontSize: 17,
+                                        "&:hover": { bgcolor: "#e3f0fa", borderColor: "#1976d2" }
                                     }}
                                     onClick={handleOpenMenu}
                                 >
-                                    <Person sx={{ fontSize: 25 }} />
+                                    <Person sx={{ fontSize: 23 }} />
                                 </IconButton>
                                 <MuiMenu
                                     anchorEl={anchorEl}
@@ -259,106 +414,77 @@ export default function Header() {
                                     anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
                                     transformOrigin={{ vertical: "top", horizontal: "right" }}
                                 >
-                                    <MenuItem onClick={handleLogin}>
-                                        <ListItemIcon>
-                                            <Login fontSize="small" />
-                                        </ListItemIcon>
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            px: 2, py: 1,
+                                            cursor: "pointer",
+                                            fontSize: 15.2,
+                                            fontWeight: 500,
+                                            color: "#205072",
+                                            userSelect: "none",
+                                            "&:hover": { bgcolor: "#e3f0fa" }
+                                        }}
+                                        onMouseDown={e => e.preventDefault()}
+                                        onClick={handleLogin}
+                                    >
+                                        <Icon sx={{ mr: 1, color: "#1769aa" }}>login</Icon>
                                         Đăng nhập
-                                    </MenuItem>
+                                    </Box>
                                 </MuiMenu>
                             </React.Fragment>
                         ) : (
                             <React.Fragment>
                                 <IconButton
                                     sx={{
-                                        bgcolor: "#ffe600", color: "#222", "&:hover": { bgcolor: "#ffef7a" },
-                                        borderRadius: 2, mx: 0.2
+                                        bgcolor: "#fff",
+                                        border: "1.5px solid #e3f0fa",
+                                        color: "#1976d2",
+                                        borderRadius: 2.5,
+                                        width: 42,
+                                        height: 42,
+                                        fontWeight: 700,
+                                        fontSize: 17,
+                                        "&:hover": { bgcolor: "#e3f0fa", borderColor: "#1976d2" }
                                     }}
                                     onClick={handleOpenMenu}
                                 >
                                     {user.avatar
                                         ? <Avatar src={user.avatar} sx={{ width: 30, height: 30, fontSize: 15 }} />
-                                        : <Avatar sx={{ width: 30, height: 30, fontSize: 15, bgcolor: "#b347e6" }}>
-                                            {user.name && user.name.length > 0 ? user.name[0] : "A"}
+                                        : <Avatar sx={{ width: 30, height: 30, fontSize: 15, bgcolor: "#1976d2" }}>
+                                            {user.email && user.email.length > 0 ? user.email[0].toUpperCase() : "A"}
                                         </Avatar>
                                     }
                                 </IconButton>
-                                <MuiMenu
-                                    anchorEl={anchorEl}
-                                    open={open}
-                                    onClose={handleCloseMenu}
-                                    PaperProps={{
-                                        elevation: 5,
-                                        sx: { minWidth: 290, borderRadius: 3, p: 0.5 }
-                                    }}
-                                    anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                                    transformOrigin={{ vertical: "top", horizontal: "right" }}
-                                >
-                                    <Box sx={{ px: 2, pt: 2, pb: 1, display: "flex", alignItems: "center", gap: 1.5 }}>
-                                        <Avatar
-                                            src={user.avatar}
-                                            sx={{ width: 48, height: 48, fontWeight: 700, fontSize: 20, bgcolor: "#b347e6" }}
-                                        >{user.name && user.name.length > 0 ? user.name[0] : "A"}</Avatar>
-                                        <Box>
-                                            <Typography fontWeight={700} fontSize={16}>{user.name}</Typography>
-                                            <Typography fontSize={13} color="#888">{user.email}</Typography>
-                                            <Typography fontSize={12} color="#d32f2f" fontWeight={600}>
-                                                {user.role}
-                                            </Typography>
-                                        </Box>
-                                    </Box>
-                                    <Divider sx={{ my: 1, bgcolor: "#eee" }} />
-                                    {isAdmin ? [
-                                        <MenuItem onClick={handleGoAdmin} key="go-admin">
-                                            <ListItemIcon>
-                                                <Settings fontSize="small" />
-                                            </ListItemIcon>
-                                            Trang quản lý
-                                        </MenuItem>,
-                                        <MenuItem onClick={handleAccount} key="account">
-                                            <ListItemIcon>
-                                                <AccountCircle fontSize="small" />
-                                            </ListItemIcon>
-                                            Tài khoản
-                                        </MenuItem>,
-                                        <Divider sx={{ my: 1, bgcolor: "#eee" }} key="divider" />,
-                                        <MenuItem onClick={handleLogout} sx={{ color: "#e53935" }} key="logout">
-                                            <ListItemIcon>
-                                                <Logout fontSize="small" sx={{ color: "#e53935" }} />
-                                            </ListItemIcon>
-                                            Đăng xuất
-                                        </MenuItem>
-                                    ] : [
-                                        <MenuItem onClick={handleAccount} key="account">
-                                            <ListItemIcon>
-                                                <AccountCircle fontSize="small" />
-                                            </ListItemIcon>
-                                            Tài khoản
-                                        </MenuItem>,
-                                        <Divider sx={{ my: 1, bgcolor: "#eee" }} key="divider" />,
-                                        <MenuItem onClick={handleLogout} sx={{ color: "#e53935" }} key="logout">
-                                            <ListItemIcon>
-                                                <Logout fontSize="small" sx={{ color: "#e53935" }} />
-                                            </ListItemIcon>
-                                            Đăng xuất
-                                        </MenuItem>
-                                    ]}
-                                </MuiMenu>
+                                {renderAccountMenu()}
                             </React.Fragment>
                         )}
                         <IconButton sx={{
-                            bgcolor: "#ffe600", color: "#222", "&:hover": { bgcolor: "#ffef7a" },
-                            borderRadius: 2, mx: 0.2
+                            bgcolor: "#fff",
+                            border: "1.5px solid #e3f0fa",
+                            color: "#1976d2",
+                            borderRadius: 2.5,
+                            width: 42,
+                            height: 42,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            "&:hover": { bgcolor: "#e3f0fa", borderColor: "#1976d2" }
                         }}>
-                            <Badge badgeContent={6} color="error" overlap="circular" sx={{
+                            <Badge badgeContent={6} color="error" sx={{
                                 "& .MuiBadge-badge": {
                                     background: "#e53935",
                                     color: "#fff",
                                     fontWeight: 700,
-                                    border: "2px solid #fff"
+                                    fontSize: 13,
+                                    minWidth: 20,
+                                    height: 20,
+                                    borderRadius: 2.5,
+                                    boxShadow: "0 1px 8px 0 #e5393522"
                                 }
                             }}>
-                                <ShoppingCart sx={{ fontSize: 25 }} />
+                                <ShoppingCart sx={{ fontSize: 23 }} />
                             </Badge>
                         </IconButton>
                     </Stack>
@@ -368,17 +494,17 @@ export default function Header() {
                 <Box
                     sx={{
                         width: "100%",
-                        bgcolor: "#fff",
-                        borderBottom: "1px solid #eee",
-                        boxShadow: "0 1px 8px 0 rgba(255,230,0,0.03)",
+                        bgcolor: "#e9f5fc",
+                        borderBottom: "1px solid #bde0fe",
+                        boxShadow: "0 1px 8px 0 #bde0fe",
                         display: "flex",
                         justifyContent: "center"
                     }}
                 >
                     <Stack
                         direction="row"
-                        spacing={3}
-                        sx={{ py: 1 }}
+                        spacing={2.7}
+                        sx={{ py: 0.85 }}
                         justifyContent="center"
                         alignItems="center"
                     >
@@ -388,17 +514,17 @@ export default function Header() {
                                     key={item}
                                     variant="caption"
                                     sx={{
-                                        color: idx === 0 ? "#e53935" : "#888",
-                                        fontWeight: idx === 0 ? 700 : 400,
+                                        color: idx === 0 ? "#1976d2" : "#205072",
+                                        fontWeight: idx === 0 ? 700 : 500,
                                         textTransform: "capitalize",
-                                        fontSize: 15,
+                                        fontSize: 15.2,
                                         letterSpacing: 0.5,
                                         cursor: "pointer",
-                                        px: 1,
+                                        px: 1.1,
                                         borderRadius: 1.5,
                                         "&:hover": {
-                                            color: "#111",
-                                            background: "#ffe60033",
+                                            color: "#1769aa",
+                                            background: "#bde0fe44",
                                             textDecoration: "underline"
                                         },
                                         transition: "all 0.14s"
