@@ -26,7 +26,6 @@ function SignIn() {
 
     // Hàm xử lý đăng nhập Google
     const handleLoginGoogle = () => {
-        // Thay đổi URL bên dưới thành endpoint OAuth2 trên backend của bạn nếu khác
         window.location.href = "http://localhost:8080/oauth2/authorization/google";
     };
 
@@ -43,7 +42,7 @@ function SignIn() {
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
-        setError(""); // Reset error khi user nhập lại
+        setError("");
     };
 
     const handleSubmit = async (e) => {
@@ -51,7 +50,6 @@ function SignIn() {
         setError("");
         setLoading(true);
 
-        // Validate cơ bản
         if (!formData.username.trim() || !formData.password) {
             setError("Vui lòng nhập đầy đủ email và mật khẩu.");
             setLoading(false);
@@ -62,9 +60,21 @@ function SignIn() {
             // Gửi API, username thực tế là email
             const data = await signIn({ username: formData.username, password: formData.password });
 
-            // Không còn accessToken nữa, chỉ lưu role và username nếu cần
+            // Bổ sung: Lưu cả tên đầy đủ và email nếu backend trả về (giả sử là data.fullName và data.email)
             localStorage.setItem("role", data.role);
             localStorage.setItem("username", data.username);
+
+            if (data.fullName) {
+                localStorage.setItem("name", data.fullName);
+            } else {
+                localStorage.removeItem("name");
+            }
+
+            if (data.email) {
+                localStorage.setItem("email", data.email);
+            } else {
+                localStorage.removeItem("email");
+            }
 
             // Redirect hoặc navigate
             navigate("/");
@@ -93,7 +103,7 @@ function SignIn() {
                     <Typography variant="subtitle2" sx={{ mb: 0.5 }}>Email</Typography>
                     <TextField
                         fullWidth
-                        name="username" // <-- phải là "username" để spring security nhận
+                        name="username"
                         type="email"
                         placeholder="Nhập email..."
                         value={formData.username}
