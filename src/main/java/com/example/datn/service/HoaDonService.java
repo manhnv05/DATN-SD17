@@ -55,5 +55,7 @@ public interface HoaDonService {
     HoaDonDTOMess capnhatPGGVaoHoaDon(CapNhatPGG capNhatPGG);
     HoaDonDTO saveHoaDonOnlineChuaDangNhap(HoaDonOnlineRequest hoaDonOnlineRequest);
 
+    void sendMailHoaDonToKhachHang(Integer idHoaDon, String email);
+
 
 }
