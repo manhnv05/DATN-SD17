@@ -65,7 +65,7 @@ public class SecurityConfig {
                         ).permitAll()
                         // CHẶN QUYỀN TRUY CẬP API QUẢN TRỊ: chỉ cho phép các role quản trị
                         .requestMatchers("/thong_ke/**", "/dashboard/**").hasAnyRole("NHANVIEN", "QUANLY", "QUANTRIVIEN")
-                        .anyRequest().authenticated()
+                        .anyRequest().permitAll()
                 )
                 .formLogin(formLogin -> formLogin
                         .loginPage("/api/auth/login")

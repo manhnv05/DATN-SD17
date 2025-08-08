@@ -431,6 +431,7 @@ export default function HomePage() {
                                         <Button
                                             variant="contained"
                                             color="primary"
+                                            href="/cart"
                                             startIcon={<ShoppingCartIcon />}
                                             sx={{
                                                 fontWeight: 700,
