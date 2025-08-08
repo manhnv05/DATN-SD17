@@ -345,29 +345,41 @@ function CustomerTable() {
             label: "Thao tác",
             align: "center",
             width: "150px",
-            render: (_, row) => (
-                <SoftBox display="flex" gap={0.5} justifyContent="center">
-                    <IconButton
-                        size="small"
-                        sx={{ color: "#1976d2", background: "rgba(25, 118, 210, 0.08)", "&:hover": { background: "rgba(25, 118, 210, 0.15)", transform: "scale(1.1)" }, transition: "all 0.2s ease" }}
-                        title="Chi tiết"
-                        onClick={() => navigate(`/khachhang/detail/${row.id}`)}
-                    >
-                        <FaEye />
-                    </IconButton>
-                    <IconButton
-                        size="small"
-                        sx={{ color: "#fbc02d", background: "rgba(251, 192, 45, 0.08)", "&:hover": { background: "rgba(251, 192, 45, 0.15)", transform: "scale(1.1)" }, transition: "all 0.2s ease" }}
-                        title="Quản lý địa chỉ khách hàng"
-                        onClick={() => {
-                            setSelectedCustomerId(row.id);
-                            setAddressDialogOpen(true);
-                        }}
-                    >
-                        <LocationOnIcon />
-                    </IconButton>
-                </SoftBox>
-            ),
+            render: function (_, row) {
+                return (
+                    <SoftBox display="flex" gap={0.5} justifyContent="center">
+                        <IconButton
+                            size="small"
+                            sx={{
+                                color: "#1976d2",
+                                background: "rgba(25, 118, 210, 0.08)",
+                                "&:hover": {background: "rgba(25, 118, 210, 0.15)", transform: "scale(1.1)"},
+                                transition: "all 0.2s ease"
+                            }}
+                            title="Chi tiết"
+                            onClick={() => navigate(`/khachhang/detail/${row.id}`)}
+                        >
+                            <FaEye/>
+                        </IconButton>
+                        <IconButton
+                            size="small"
+                            sx={{
+                                color: "#fbc02d",
+                                background: "rgba(251, 192, 45, 0.08)",
+                                "&:hover": {background: "rgba(251, 192, 45, 0.15)", transform: "scale(1.1)"},
+                                transition: "all 0.2s ease"
+                            }}
+                            title="Quản lý địa chỉ khách hàng"
+                            onClick={() => {
+                                setSelectedCustomerId(row.id);
+                                setAddressDialogOpen(true);
+                            }}
+                        >
+                            <LocationOnIcon/>
+                        </IconButton>
+                    </SoftBox>
+                );
+            },
         },
     ];
 

@@ -48,8 +48,42 @@ import ViewDiscountEventPage from "./layouts/admin/GiamGia/ViewDiscountEventPage
 import OAuth2RedirectHandler from "./layouts/admin/authentication/OAuth2RedirectHandler";
 import SignIn from "./layouts/admin/authentication/sign-in";
 import SignUp from "./layouts/admin/authentication/sign-up";
+
+// Hàm lọc routes menu theo role
+function filterRoutesByRole(routes, role) {
+    const allowedKeysForStaff = ["dashboard", "billing", "sales"];
+    if (role === "QUANLY" || role === "QUANTRIVIEN") return routes;
+    if (role === "NHANVIEN") {
+        return routes.filter(route => allowedKeysForStaff.includes(route.key));
+    }
+    return [];
+}
+
+// Hàm lấy tất cả path admin (cho logic isAdminPage)
+// SỬA ĐỂ MATCH ĐƯỢC CẢ ROUTE DẠNG ĐỘNG NHƯ /nhanvien/detail/:id
+function extractAllAdminRoutes(routes) {
+    let allRoutes = [];
+    routes.forEach(route => {
+        if (route.route) {
+            // Nếu có : thì chỉ lấy phần trước dấu :
+            const baseRoute = "/" + route.route.replace(/^\//, "").split("/:")[0];
+            allRoutes.push(baseRoute);
+        }
+        if (route.collapse) allRoutes = allRoutes.concat(extractAllAdminRoutes(route.collapse));
+    });
+    return allRoutes;
+}
+
+// Phân quyền route admin
 function RequireAdmin(props) {
     const role = localStorage.getItem("role");
+    const location = useLocation();
+    const pathname = location.pathname;
+    // Các route cho NHANVIEN
+    const allowedForStaff = ["/dashboard", "/OrderManagementPage", "/sales", "/QuanLyHoaDon"];
+    if (role === "NHANVIEN" && !allowedForStaff.some(r => pathname.startsWith(r))) {
+        return <Navigate to="/dashboard" replace />;
+    }
     if (!["NHANVIEN", "QUANLY", "QUANTRIVIEN"].includes(role)) {
         return <Navigate to="/home" replace />;
     }
@@ -84,15 +118,6 @@ WrapperLTR.propTypes = {
     children: PropTypes.node
 };
 
-function extractAllAdminRoutes(routes) {
-    let allRoutes = [];
-    routes.forEach(route => {
-        if (route.route) allRoutes.push("/" + route.route.replace(/^\//, ""));
-        if (route.collapse) allRoutes = allRoutes.concat(extractAllAdminRoutes(route.collapse));
-    });
-    return allRoutes;
-}
-
 export default function App() {
     const [controller, dispatch] = useSoftUIController();
     const miniSidenav = controller.miniSidenav;
@@ -103,6 +128,9 @@ export default function App() {
     const [rtlCache, setRtlCache] = useState(null);
     const location = useLocation();
     const pathname = location.pathname;
+    const role = localStorage.getItem("role");
+    // Lọc menu theo role
+    const filteredRoutesAdmin = useMemo(() => filterRoutesByRole(routesAdmin, role), [role]);
     useMemo(() => {
         const cacheRtl = createCache({
             key: "rtl",
@@ -304,7 +332,7 @@ export default function App() {
                                 <Sidenav
                                     color={sidenavColor}
                                     brand={brand}
-                                    routes={routesAdmin}
+                                    routes={filteredRoutesAdmin}
                                     onMouseEnter={handleOnMouseEnter}
                                     onMouseLeave={handleOnMouseLeave}
                                 />
@@ -368,7 +396,7 @@ export default function App() {
                             <Sidenav
                                 color={sidenavColor}
                                 brand={brand}
-                                routes={routesAdmin}
+                                routes={filteredRoutesAdmin}
                                 onMouseEnter={handleOnMouseEnter}
                                 onMouseLeave={handleOnMouseLeave}
                             />

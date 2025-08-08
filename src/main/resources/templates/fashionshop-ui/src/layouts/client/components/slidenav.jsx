@@ -62,16 +62,35 @@ export default function Slidenav() {
         <Box
             sx={{
                 width: "100%",
-                height: { xs: 250, sm: 340, md: 400 },
+                height: { xs: 260, sm: 340, md: 420 },
                 position: "relative",
                 overflow: "hidden",
-                borderRadius: 4,
-                boxShadow: "0 8px 32px 0 rgba(0,0,0,0.11)",
+                borderRadius: 18,
+                boxShadow: "0 8px 32px 0 rgba(32,80,114,0.11)",
                 mb: 3,
-                userSelect: "none"
+                userSelect: "none",
+                background: "#e9f5fc",
             }}
         >
-            {/* Slides */}
+            {/* Ảnh nền cover (không bo góc, luôn sát mép) */}
+            <Box
+                component="img"
+                src={slides[active].img}
+                alt={slides[active].title}
+                sx={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    position: "absolute",
+                    left: 0,
+                    top: 0,
+                    zIndex: 1,
+                    filter: "brightness(0.97) blur(0.5px)",
+                    pointerEvents: "none"
+                }}
+            />
+
+            {/* Slides Overlay */}
             {slides.map((slide, idx) => (
                 <Fade in={active === idx} key={idx} timeout={900} unmountOnExit>
                     <Box
@@ -81,10 +100,10 @@ export default function Slidenav() {
                             position: "absolute",
                             top: 0,
                             left: 0,
-                            zIndex: 1,
+                            zIndex: 2,
                         }}
                     >
-                        {/* Background Image + Overlay */}
+                        {/* Overlay gradient */}
                         <Box
                             sx={{
                                 width: "100%",
@@ -92,6 +111,7 @@ export default function Slidenav() {
                                 position: "absolute",
                                 top: 0,
                                 left: 0,
+                                zIndex: 2,
                                 "&:after": {
                                     content: '""',
                                     display: "block",
@@ -101,38 +121,24 @@ export default function Slidenav() {
                                     left: 0,
                                     top: 0,
                                     zIndex: 2,
-                                    background: "linear-gradient(90deg, rgba(0,0,0,.42) 0%, rgba(0,0,0,0.18) 70%, rgba(255,255,255,0.01) 100%)"
+                                    background: "linear-gradient(90deg, rgba(32,80,114,.52) 0%, rgba(32,80,114,0.14) 70%, rgba(255,255,255,0.00) 100%)"
                                 }
                             }}
-                        >
-                            <Box
-                                component="img"
-                                src={slide.img}
-                                alt={slide.title}
-                                sx={{
-                                    width: "100%",
-                                    height: "100%",
-                                    objectFit: "cover",
-                                    display: "block",
-                                    filter: "brightness(0.97) blur(0.5px)",
-                                    zIndex: 1,
-                                }}
-                            />
-                        </Box>
+                        />
                         {/* Overlay text */}
                         <Box
                             sx={{
                                 position: "absolute",
-                                top: { xs: 24, md: 48 },
-                                left: { xs: 22, md: 62 },
+                                top: { xs: 32, md: 56 },
+                                left: { xs: 32, md: 70 },
                                 color: "#fff",
-                                zIndex: 3,
-                                maxWidth: { xs: "78%", sm: "55%", md: "38%" },
+                                zIndex: 4,
+                                maxWidth: { xs: "87%", sm: "54%", md: "38%" },
                                 textShadow: "2px 6px 32px rgba(0,0,0,0.32)",
-                                background: { xs: "rgba(0,0,0,0.18)", sm: "none" },
-                                borderRadius: 2,
-                                px: { xs: 1, sm: 0 },
-                                py: { xs: 0.5, sm: 0 }
+                                background: { xs: "rgba(32,80,114,0.13)", sm: "none" },
+                                borderRadius: 3,
+                                px: { xs: 2, sm: 0 },
+                                py: { xs: 1, sm: 0 }
                             }}
                         >
                             <Typography
@@ -140,10 +146,10 @@ export default function Slidenav() {
                                 sx={{
                                     fontFamily: "'Pacifico', cursive",
                                     fontWeight: 800,
-                                    fontSize: { xs: 28, sm: 46, md: 54 },
+                                    fontSize: { xs: 28, sm: 44, md: 54 },
                                     lineHeight: 1.08,
                                     color: slide.mainColor,
-                                    mb: 0.8,
+                                    mb: 1,
                                     letterSpacing: 1.5,
                                     filter: "drop-shadow(0 3px 8px #fff1)"
                                 }}
@@ -160,10 +166,10 @@ export default function Slidenav() {
                                     fontSize: 17,
                                     letterSpacing: 0.7,
                                     textTransform: "uppercase",
-                                    bgcolor: "rgba(0,0,0,0.13)",
+                                    bgcolor: "rgba(32,80,114,0.16)",
                                     px: 1.3,
                                     borderRadius: 2,
-                                    boxShadow: "0 1px 6px 0 rgba(0,0,0,0.10)"
+                                    boxShadow: "0 1px 6px 0 rgba(0,0,0,0.09)"
                                 }}>
                                     {slide.tagline}
                                 </Typography>
@@ -183,7 +189,7 @@ export default function Slidenav() {
                             </Typography>
                             <Stack direction="row" spacing={3} sx={{ fontSize: 13 }}>
                                 <Typography color="#fff" sx={{
-                                    background: "rgba(0,0,0,0.17)",
+                                    background: "rgba(32,80,114,0.16)",
                                     px: 1.2,
                                     py: 0.4,
                                     borderRadius: 1,
@@ -193,23 +199,27 @@ export default function Slidenav() {
                                 }}>{slide.date}</Typography>
                             </Stack>
                         </Box>
-                        {/* Bottom caption */}
+                        {/* Bottom caption (centered, bo tròn nhiều, không sát mép) */}
                         <Typography
                             align="center"
                             sx={{
                                 position: "absolute",
-                                width: "100%",
-                                left: 0,
-                                bottom: 10,
-                                color: "#222",
-                                fontSize: 15,
+                                left: "50%",
+                                bottom: 20,
+                                transform: "translateX(-50%)",
+                                color: "#205072",
+                                fontSize: 15.2,
                                 fontWeight: 600,
                                 letterSpacing: 0.4,
-                                background: "linear-gradient(90deg,rgba(255,255,255,0.82) 60%,rgba(255,255,255,0.68) 100%)",
+                                px: 3,
                                 py: 0.7,
-                                borderRadius: 2,
-                                zIndex: 3,
-                                boxShadow: "0 3px 14px 0 rgba(0,0,0,0.04)"
+                                borderRadius: 999,
+                                zIndex: 6,
+                                minWidth: 220,
+                                maxWidth: { xs: "80vw", md: 430 },
+                                boxShadow: "0 2px 12px 0 #bde0fe55",
+                                border: "1.5px solid #bde0fe",
+                                background: "rgba(255,255,255,0.98)"
                             }}
                         >
                             {slide.caption}
@@ -224,42 +234,42 @@ export default function Slidenav() {
                 sx={{
                     position: "absolute",
                     top: "50%",
-                    left: { xs: 8, sm: 24 },
+                    left: 22,
                     transform: "translateY(-50%)",
-                    bgcolor: "rgba(255,255,255,0.84)",
-                    "&:hover": { bgcolor: "rgba(255,255,255,1)" },
+                    bgcolor: "#fff",
+                    "&:hover": { bgcolor: "#e3f0fa" },
                     zIndex: 12,
-                    boxShadow: "0 2px 10px 0 rgba(0,0,0,0.14)",
-                    border: "1.5px solid #ffe600",
-                    width: 46, height: 46
+                    boxShadow: "0 2px 10px 0 #bde0fe55",
+                    border: "2px solid #bde0fe",
+                    width: 50, height: 50
                 }}
                 size="large"
             >
-                <ArrowBackIos sx={{ color: "#222", fontSize: 28 }} />
+                <ArrowBackIos sx={{ color: "#1976d2", fontSize: 28 }} />
             </IconButton>
             <IconButton
                 onClick={handleNext}
                 sx={{
                     position: "absolute",
                     top: "50%",
-                    right: { xs: 8, sm: 24 },
+                    right: 22,
                     transform: "translateY(-50%)",
-                    bgcolor: "rgba(255,255,255,0.84)",
-                    "&:hover": { bgcolor: "rgba(255,255,255,1)" },
+                    bgcolor: "#fff",
+                    "&:hover": { bgcolor: "#e3f0fa" },
                     zIndex: 12,
-                    boxShadow: "0 2px 10px 0 rgba(0,0,0,0.14)",
-                    border: "1.5px solid #ffe600",
-                    width: 46, height: 46
+                    boxShadow: "0 2px 10px 0 #bde0fe55",
+                    border: "2px solid #bde0fe",
+                    width: 50, height: 50
                 }}
                 size="large"
             >
-                <ArrowForwardIos sx={{ color: "#222", fontSize: 28 }} />
+                <ArrowForwardIos sx={{ color: "#1976d2", fontSize: 28 }} />
             </IconButton>
             {/* Dots */}
-            <Stack direction="row" spacing={1.1} sx={{
+            <Stack direction="row" spacing={1.15} sx={{
                 position: "absolute",
                 left: "50%",
-                bottom: 26,
+                bottom: 38,
                 transform: "translateX(-50%)",
                 zIndex: 20
             }}>
@@ -270,13 +280,13 @@ export default function Slidenav() {
                         sx={{
                             width: active === idx ? 28 : 14,
                             height: 10,
-                            bgcolor: active === idx ? "#ffe600" : "#fff",
-                            opacity: 0.94,
+                            bgcolor: active === idx ? "#1976d2" : "#fff",
+                            opacity: 0.97,
                             borderRadius: 5,
                             cursor: "pointer",
-                            boxShadow: active === idx ? "0 2px 10px 0 #ffe60099" : "0 1px 6px 0 rgba(0,0,0,0.13)",
-                            border: active === idx ? "2px solid #ffe600" : "1.5px solid #eee",
-                            transition: "all 0.25s"
+                            boxShadow: active === idx ? "0 2px 10px 0 #bde0fe99" : "0 1px 6px 0 #bde0fe33",
+                            border: active === idx ? "2px solid #1976d2" : "1.5px solid #bde0fe",
+                            transition: "all 0.22s"
                         }}
                     />
                 ))}
