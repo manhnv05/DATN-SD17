@@ -1,5 +1,7 @@
 package com.example.datn.service.impl;
 import java.math.BigDecimal;
+
+import com.example.datn.config.EmailService;
 import com.example.datn.dto.*;
 import com.example.datn.mapper.HoaDonChiTietMapper;
 import com.example.datn.mapper.HoaDonUpdateMapper;
@@ -9,6 +11,7 @@ import com.example.datn.vo.khachHangVO.CapNhatKhachRequestVO;
 import com.example.datn.vo.phieuGiamGiaVO.CapNhatPGG;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.BaseFont;
+import jakarta.mail.MessagingException;
 import jakarta.transaction.Transactional;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -77,6 +80,7 @@ public class HoaDonServiceImpl implements HoaDonService {
     HinhThucThanhToanRepository hinhThucThanhToanRepository;
     DotGiamGiaRepository dotGiamGiaRepository;
     PhieuGiamGiaRepository phieuGiamGiaRepository;
+    EmailService emailService;
 
     @Override
     @Transactional
@@ -921,6 +925,18 @@ public class HoaDonServiceImpl implements HoaDonService {
         );
         return HoaDonUpdateMapper.INSTANCE.toResponseDTO(hoaDonDaLuu);
     }
+
+    @Override
+    public void sendMailHoaDonToKhachHang(Integer idHoaDon, String email) {
+        HoaDon hoaDon = hoaDonRepository.findById(idHoaDon).orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+        try {
+            sendInvoiceEmail(hoaDon, email);
+        }
+        catch (Exception e) {
+            throw new AppException(ErrorCode.ERROR_SEND_MAIL);
+        }
+    }
+
     @Override
     @Transactional
     public HoaDonDTO updateHoaDon(HoaDonRequestUpdateVO request) {
@@ -1125,6 +1141,107 @@ public class HoaDonServiceImpl implements HoaDonService {
                 .duongDanAnh(view.getDuongDanAnh())
                 .build();
     }
+
+    public void sendInvoiceEmail(HoaDon hoaDon,String email) throws MessagingException {
+        String subject = "Hóa đơn thanh toán từ cửa hàng ...";
+
+        String to = email; // người nhận
+
+        // Tính tổng tiền:
+        Integer tongTien = hoaDon.getTongHoaDon();
+
+        String giamGia = "0₫";
+        if (hoaDon.getPhieuGiamGia() != null) {
+            if (hoaDon.getPhieuGiamGia().getSoTienGiam() != null) {
+                giamGia = String.format("%,.0f₫", hoaDon.getPhieuGiamGia().getSoTienGiam().doubleValue());
+            } else if (hoaDon.getPhieuGiamGia().getPhamTramGiamGia() != null) {
+                giamGia = hoaDon.getPhieuGiamGia().getPhamTramGiamGia() + "%";
+            }
+        }
+
+        // Tạo bảng sản phẩm HTML
+        StringBuilder tableRows = new StringBuilder();
+        int index = 1;
+        for (HoaDonChiTiet ctsp : hoaDon.getHoaDonChiTietList()) {
+            Integer thanhTien = ctsp.getThanhTien();
+            tableRows.append(String.format("""
+            <tr>
+              <td>%d</td>
+              <td>%s</td>
+              <td>%d</td>
+              <td>%,.0f₫</td>
+              <td>%,.0f₫</td>
+            </tr>
+        """, index++, ctsp.getHoaDon().getMaHoaDon(), ctsp.getSoLuong(), (double) ctsp.getGia(), thanhTien.doubleValue()));
+        }
+
+        // HTML content
+        String html = String.format("""
+        <html>
+        <head>
+          <style>
+            body { font-family: Arial; }
+            table { width: 100%%; border-collapse: collapse; }
+            th, td { border: 1px solid #ccc; padding: 8px; }
+            .total { text-align: right; font-weight: bold; }
+          </style>
+        </head>
+        <body>
+          <h2>Hóa đơn thanh toán</h2>
+          <p><strong>Khách hàng:</strong> %s</p>
+          <p><strong>SĐT:</strong> %s</p>
+          <p><strong>Địa chỉ:</strong> %s</p>
+          <p><strong>Loại hóa đơn:</strong> %s</p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Mã Hóa Đơn</th>
+                <th>Số lượng</th>
+                <th>Đơn giá</th>
+                <th>Thành tiền</th>
+              </tr>
+            </thead>
+            <tbody>
+              %s
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="4" class="total">Phí vận chuyển:</td>
+                <td>%d ₫</td>
+              </tr>
+              <tr>
+                <td colspan="4" class="total">Giảm giá:</td>
+                <td>%s</td>
+              </tr>
+              <tr>
+                <td colspan="4" class="total">Tổng thanh toán:</td>
+                <td>%,.0f₫</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <p><strong>Ghi chú:</strong> %s</p>
+          <p>Cảm ơn bạn đã mua hàng!</p>
+        </body>
+        </html>
+    """,
+                hoaDon.getTenKhachHang(),
+                hoaDon.getSdt(),
+                hoaDon.getDiaChi(),
+                hoaDon.getLoaiHoaDon(),
+                tableRows.toString(),
+                hoaDon.getPhiVanChuyen(),
+                giamGia,
+                tongTien.doubleValue(),
+                hoaDon.getGhiChu()
+        );
+
+        // Gửi mail
+        emailService.sendEmail(to, subject, html); // Hàm này bạn cần tự định nghĩa
+    }
+
 
 }
 
