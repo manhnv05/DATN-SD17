@@ -247,4 +247,9 @@ public class HoaDonController {
         HoaDonDTOMess result = hoaDonService.capnhatPGGVaoHoaDon(capNhatPGG);
         return ResponseHelper.success(result.getMess(), result.getPhieuGiamGiaDTO());
     }
+
+    @GetMapping("/luu-hoa-don-online-chua-dang-nhap")
+    public void guimail(@RequestParam Integer idHoaDon, @RequestParam String email){
+        hoaDonService.sendMailHoaDonToKhachHang(idHoaDon, email);
+    }
 }
