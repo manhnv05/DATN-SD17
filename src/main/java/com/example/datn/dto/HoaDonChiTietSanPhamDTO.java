@@ -26,5 +26,5 @@ public class HoaDonChiTietSanPhamDTO {
     String tenSanPham;
     String tenMauSac;
     String tenKichThuoc;
-    ChiTietSanPham ctsp;
+    List<String> hinhAnhctsp;
 }
