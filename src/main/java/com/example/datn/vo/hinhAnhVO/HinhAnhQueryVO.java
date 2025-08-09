@@ -8,7 +8,6 @@ public class HinhAnhQueryVO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private Integer id;
-    private Integer idSanPhamChiTiet;
     private String maAnh;
     private String duongDanAnh;
     private Integer anhMacDinh;

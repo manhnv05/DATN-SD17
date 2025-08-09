@@ -46,7 +46,7 @@ public class ChiTietSanPhamController {
     @PutMapping("/{id}")
     public void update(
             @Valid @NotNull @PathVariable("id") Integer id,
-            @ModelAttribute ChiTietSanPhamUpdateVO vO
+            @RequestBody ChiTietSanPhamUpdateVO vO
     ) {
         chiTietSanPhamService.update(id, vO);
     }

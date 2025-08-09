@@ -68,7 +68,6 @@ function ImageTable() {
     anhMacDinh: false,
     moTa: "",
     trangThai: "Hiển thị",
-    // idSanPhamChiTiet: null, // Thêm nếu cần
   });
 
   // Lấy danh sách hình ảnh
@@ -139,7 +138,6 @@ function ImageTable() {
       anhMacDinh: img.anhMacDinh === 1 || img.anhMacDinh === true,
       moTa: img.moTa || "",
       trangThai: getTrangThaiText(img.trangThai),
-      // idSanPhamChiTiet: img.idSanPhamChiTiet || null,
     });
     setPreviewImg(normalizeUrl(img.duongDanAnh));
     setShowModal(true);
@@ -189,8 +187,6 @@ function ImageTable() {
     data.append("anh_mac_dinh", formData.anhMacDinh ? 1 : 0);
     data.append("mo_ta", formData.moTa || "");
     data.append("trang_thai", formData.trangThai === "Hiển thị" ? 1 : 0);
-    // Nếu có id_san_pham_chi_tiet thì truyền thêm
-    // if (formData.idSanPhamChiTiet) data.append("id_san_pham_chi_tiet", formData.idSanPhamChiTiet);
 
     try {
       if (editingImage) {
@@ -201,14 +197,13 @@ function ImageTable() {
             {
               method: "PUT",
               // Nếu backend PUT nhận JSON thì dùng code bên dưới thay cho FormData:
-              // headers: { "Content-Type": "application/json" },
+              headers: { "Content-Type": "application/json" },
               // body: JSON.stringify({
               //   maAnh: formData.maAnh,
               //   anhMacDinh: formData.anhMacDinh ? 1 : 0,
               //   moTa: formData.moTa,
               //   trangThai: formData.trangThai === "Hiển thị" ? 1 : 0,
               //   duongDanAnh: editingImage.duongDanAnh, // hoặc truyền lại đường dẫn cũ
-              //   idSanPhamChiTiet: formData.idSanPhamChiTiet
               // })
               body: data,
                 credentials: "include",

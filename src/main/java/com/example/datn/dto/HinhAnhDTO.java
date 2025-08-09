@@ -6,7 +6,6 @@ import java.io.Serializable;
 @Data
 public class HinhAnhDTO implements Serializable {
     private Integer id;
-    private Integer idSanPhamChiTiet;
     private String maAnh;
     private String duongDanAnh;
     private Integer anhMacDinh;
