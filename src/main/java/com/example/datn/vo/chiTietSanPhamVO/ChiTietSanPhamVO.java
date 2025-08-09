@@ -7,6 +7,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 
 @Data
 public class ChiTietSanPhamVO implements Serializable {
@@ -52,4 +53,6 @@ public class ChiTietSanPhamVO implements Serializable {
 
     @NotNull(message = "Trạng thái không được để trống")
     private Integer trangThai;
+
+    private List<Integer> hinhAnhIds;
 }

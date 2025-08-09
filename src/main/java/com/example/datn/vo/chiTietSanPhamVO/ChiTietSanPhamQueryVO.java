@@ -3,6 +3,7 @@ package com.example.datn.vo.chiTietSanPhamVO;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 
 @Data
 public class ChiTietSanPhamQueryVO implements Serializable {
@@ -38,4 +39,7 @@ public class ChiTietSanPhamQueryVO implements Serializable {
 
     private Integer page;
     private Integer size;
+
+    private List<Integer> hinhAnhIds;
+
 }

@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.io.Serializable;
+import java.util.List;
 
 @Entity
 @Getter
@@ -20,11 +21,6 @@ public class HinhAnh implements Serializable {
     @Column(name = "id", nullable = false)
     private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_san_pham_chi_tiet")
-    @ToString.Exclude
-    private ChiTietSanPham chiTietSanPham;
-
     @Column(name = "ma_anh")
     private String maAnh;
 
@@ -40,4 +36,6 @@ public class HinhAnh implements Serializable {
     @Column(name = "trang_thai")
     private Integer trangThai;
 
+    @OneToMany(mappedBy = "hinhAnh", fetch = FetchType.LAZY)
+    private List<SpctHinhAnh> spctHinhAnhs;
 }
