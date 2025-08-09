@@ -128,6 +128,12 @@ public class ChiTietSanPhamService {
                 pggLonNhat = bestDiscount.getPhanTramGiamGia();
                 idDGG = bestDiscount.getId(); // Lấy ID ở đây!
             }
+            List<String> listUrl = new ArrayList<>();
+            List<SpctHinhAnh> listspctHinhAnh = spctHinhAnhRepository.findByChiTietSanPham_Id(c.getId());
+            for (SpctHinhAnh ctspHA : listspctHinhAnh) {
+                listUrl.add(ctspHA.getHinhAnh().getDuongDanAnh());
+            }
+
 
             // BƯỚC 4: Set giá trị cho DTO
             ctsp.setIdDotGiamGia(idDGG); // <-- SET ID ĐỢT GIẢM GIÁ
@@ -144,6 +150,7 @@ public class ChiTietSanPhamService {
             ctsp.setTayAo(c.getTayAo().getTenTayAo());
             ctsp.setGia(c.getGia());
             ctsp.setPhanTramGiam(pggLonNhat);
+            ctsp.setListUrlImage(listUrl);
 
             // Tính giá sau khi giảm
             BigDecimal originalPrice = BigDecimal.valueOf(c.getGia());

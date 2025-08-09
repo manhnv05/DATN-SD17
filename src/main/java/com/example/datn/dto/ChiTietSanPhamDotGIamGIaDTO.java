@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Getter
 @Setter
 @NoArgsConstructor
@@ -27,4 +29,5 @@ public class ChiTietSanPhamDotGIamGIaDTO {
     private Integer gia;
     private Integer phanTramGiam;
     private Integer  idDotGiamGia;
+    private List<String> listUrlImage;
 }
