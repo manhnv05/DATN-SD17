@@ -1,5 +1,7 @@
 package com.example.datn.dto;
 
+import java.util.List;
+
 public interface HoaDonChiTietView {
     // Các trường từ HoaDonChiTiet
     Integer getId();
@@ -14,5 +16,5 @@ public interface HoaDonChiTietView {
     String getTenSanPham();
     String getTenMauSac();
     String getTenKichThuoc();
-    String getDuongDanAnh();
+
 }

@@ -43,7 +43,7 @@ public interface HoaDonService {
     List<HoaDonChiTietDTO> updateDanhSachSanPhamChiTiet(Integer idHoaDon, List<CapNhatSanPhamChiTietDonHangVO> danhSachCapNhatSanPham);
 
 
-    List<HoaDonChiTietDTO> findChiTietHoaDon(@Param("idHoaDon") Integer idHoaDon);
+    List<HoaDonChiTietSanPhamDTO> findChiTietHoaDon(@Param("idHoaDon") Integer idHoaDon);
     String tangSoLuongSanPhamChiTiet(Integer idSanPhamChiTiet, Integer soLuong);
     String giamSoLuongSanPhamChiTiet(Integer idSanPhamChiTiet, Integer soLuong);
     HoaDonDTO updateHoaDon(HoaDonRequestUpdateVO hoaDonRequestUpdateVO);

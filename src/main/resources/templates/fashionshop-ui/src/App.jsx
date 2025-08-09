@@ -443,6 +443,7 @@ export default function App() {
                 </RequireAdmin>
             ) : (
                 <Routes>
+                    
                     <Route path="/home" element={<Home />} />
                     {getRoutes(routesClient)}
                     <Route path="*" element={<Navigate to="/home" />} />

@@ -460,7 +460,10 @@ export default function Header() {
                                 {renderAccountMenu()}
                             </React.Fragment>
                         )}
-                        <IconButton sx={{
+                        <IconButton 
+                          component="a"
+    href="/card"
+                        sx={{
                             bgcolor: "#fff",
                             border: "1.5px solid #e3f0fa",
                             color: "#1976d2",
