@@ -648,6 +648,7 @@ function ProductForm() {
                     maSanPhamChiTiet: maChiTiet,
                     moTa: "",
                     trangThai: 1,
+                    hinhAnhIds: selectedImages.all ?? [],
                 });
                 chiTietSanPhamIndexMap.push({
                     colorId: variant.colorId,

@@ -22,9 +22,9 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
 
     @Query("SELECT c.maSanPhamChiTiet FROM ChiTietSanPham c")
     List<String> findAllMaChiTietSanPham();
-    @Query(value = """
 
-  SELECT
+    @Query(value = """
+      SELECT
          ctsp.id,
          ha.duong_dan_anh,
          sp.ten_san_pham,
@@ -48,28 +48,25 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
      LEFT JOIN co_ao co ON co.id = ctsp.id_co_ao
      LEFT JOIN tay_ao ta ON ta.id = ctsp.id_tay_ao
      LEFT JOIN thuong_hieu th ON ctsp.id_thuong_hieu = th.id
-     LEFT JOIN hinh_anh ha ON ha.id_san_pham_chi_tiet = ctsp.id
+     LEFT JOIN spct_hinhanh ha ON ha.id_san_pham_chi_tiet = ctsp.id
      WHERE
          ctsp.so_luong > 0
          and ctsp.trang_thai =1
-  
-         order by ctsp.id desc
-
-""",nativeQuery = true)
+     order by ctsp.id desc
+    """, nativeQuery = true)
     List<ChiTietSanPhamBanHangTaiQuayVO> findChiTietSanPhamBanHangTaiQuay();
 
     @Query("""
-    SELECT ctsp FROM ChiTietSanPham ctsp
-        WHERE (ctsp.soLuong < 10)
+        SELECT ctsp FROM ChiTietSanPham ctsp
+        WHERE ctsp.soLuong < 10
     """)
     Page<ChiTietSanPham> getChiTietSanPhamSapHetHan(Pageable pageable);
 
     @Query("""
-    SELECT ctsp FROM ChiTietSanPham ctsp
-        WHERE (ctsp.soLuong > 0 AND ctsp.trangThai = 1)
+        SELECT ctsp FROM ChiTietSanPham ctsp
+        WHERE ctsp.soLuong > 0 AND ctsp.trangThai = 1
         ORDER BY ctsp.id desc
-""")
+    """)
     List<ChiTietSanPham> getChiTietSanPhamTrangThai();
-
 
 }

@@ -29,10 +29,9 @@ public class HinhAnhController {
             @RequestParam(value = "duong_dan_anh", required = false) MultipartFile duongDanAnh,
             @RequestParam("anh_mac_dinh") Integer anhMacDinh,
             @RequestParam("mo_ta") String moTa,
-            @RequestParam("trang_thai") Integer trangThai,
-            @RequestParam(value = "id_san_pham_chi_tiet", required = false) Integer idSanPhamChiTiet
+            @RequestParam("trang_thai") Integer trangThai
     ) {
-        Integer id = hinhAnhService.save(maAnh, anhMacDinh, moTa, trangThai, duongDanAnh, idSanPhamChiTiet);
+        Integer id = hinhAnhService.save(maAnh, anhMacDinh, moTa, trangThai, duongDanAnh);
         return ResponseEntity.ok(id);
     }
 
@@ -53,8 +52,7 @@ public class HinhAnhController {
                 hinhAnhDTO.getAnhMacDinh(),
                 hinhAnhDTO.getMoTa(),
                 hinhAnhDTO.getTrangThai(),
-                hinhAnhDTO.getDuongDanAnh(),
-                hinhAnhDTO.getIdSanPhamChiTiet()
+                hinhAnhDTO.getDuongDanAnh()
         );
         return ResponseEntity.noContent().build();
     }
@@ -67,7 +65,6 @@ public class HinhAnhController {
     @GetMapping
     public Page<HinhAnhDTO> query(
             @RequestParam(required = false) Integer id,
-            @RequestParam(required = false) Integer idSanPhamChiTiet,
             @RequestParam(required = false) String maAnh,
             @RequestParam(required = false) String duongDanAnh,
             @RequestParam(required = false) Integer anhMacDinh,
@@ -78,7 +75,6 @@ public class HinhAnhController {
     ) {
         HinhAnhQueryVO vO = new HinhAnhQueryVO();
         vO.setId(id);
-        vO.setIdSanPhamChiTiet(idSanPhamChiTiet);
         vO.setMaAnh(maAnh);
         vO.setDuongDanAnh(duongDanAnh);
         vO.setAnhMacDinh(anhMacDinh);
@@ -111,12 +107,11 @@ public class HinhAnhController {
             @RequestParam(value = "duong_dan_anh") MultipartFile[] duongDanAnh,
             @RequestParam("anh_mac_dinh") Integer anhMacDinh,
             @RequestParam("mo_ta") String moTa,
-            @RequestParam("trang_thai") Integer trangThai,
-            @RequestParam(value = "id_san_pham_chi_tiet", required = false) Integer idSanPhamChiTiet
+            @RequestParam("trang_thai") Integer trangThai
     ) {
         List<Integer> ids = new ArrayList<>();
         for (MultipartFile file : duongDanAnh) {
-            Integer id = hinhAnhService.save(maAnh, anhMacDinh, moTa, trangThai, file, idSanPhamChiTiet);
+            Integer id = hinhAnhService.save(maAnh, anhMacDinh, moTa, trangThai, file);
             ids.add(id);
         }
         return ResponseEntity.ok(ids);
