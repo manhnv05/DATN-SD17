@@ -6,6 +6,7 @@ import com.example.datn.entity.HinhAnh;
 import com.example.datn.entity.ChiTietSanPham;
 import com.example.datn.repository.HinhAnhRepository;
 import com.example.datn.repository.ChiTietSanPhamRepository;
+import com.example.datn.repository.SpctHinhAnhRepository;
 import com.example.datn.vo.hinhAnhVO.HinhAnhQueryVO;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +29,9 @@ public class HinhAnhService {
 
     @Autowired
     private CloudinaryService cloudinaryService;
+
+    @Autowired
+    private SpctHinhAnhRepository spctHinhAnhRepository;
 
     public Integer save(
             String maAnh,
@@ -57,6 +61,10 @@ public class HinhAnhService {
 
     public void delete(Integer id) {
         hinhAnhRepository.deleteById(id);
+    }
+
+    public void deleteImage(Integer id){
+        spctHinhAnhRepository.deleteById(id);
     }
 
     public void update(
@@ -143,5 +151,10 @@ public class HinhAnhService {
     public HinhAnhDTO findByIdHinhAnh(Integer idHinhAnh) {
         HinhAnh hinhAnh = hinhAnhRepository.findById(idHinhAnh).orElseThrow(() -> new NoSuchElementException("Resource not found: " + idHinhAnh));
         return toDTO(hinhAnh);
+    }
+
+    public List<HinhAnhDTO> findHinhAnhChuaGanSanPham() {
+        List<HinhAnh> list = hinhAnhRepository.findHinhAnhChuaGanSanPham();
+        return list.stream().map(this::toDTO).collect(Collectors.toList());
     }
 }

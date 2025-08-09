@@ -177,19 +177,23 @@ public class ChiTietSanPhamService {
 
         chiTietSanPhamRepository.save(bean);
 
-        // --- Cập nhật lại mapping hình ảnh ---
+        // --- Cập nhật mapping hình ảnh ---
         if (vO.getHinhAnhIds() != null) {
-            // Xóa mapping cũ
-            spctHinhAnhRepository.deleteAllByChiTietSanPham(bean);
-            // Mapping mới
-            for (Integer idHinhAnh : vO.getHinhAnhIds()) {
-                HinhAnh hinhAnh = hinhAnhRepository.findById(idHinhAnh)
-                        .orElseThrow(() -> new RuntimeException("Không tìm thấy hình ảnh với id=" + idHinhAnh));
-                SpctHinhAnh mapping = new SpctHinhAnh();
-                mapping.setChiTietSanPham(bean);
-                mapping.setHinhAnh(hinhAnh);
-                spctHinhAnhRepository.save(mapping);
+            // Xóa toàn bộ mapping cũ theo id (an toàn, không phụ thuộc entity state)
+            spctHinhAnhRepository.deleteByChiTietSanPham_Id(bean.getId());
+
+            // Mapping mới nếu có id ảnh
+            if (!vO.getHinhAnhIds().isEmpty()) {
+                for (Integer idHinhAnh : vO.getHinhAnhIds()) {
+                    HinhAnh hinhAnh = hinhAnhRepository.findById(idHinhAnh)
+                            .orElseThrow(() -> new RuntimeException("Không tìm thấy hình ảnh với id=" + idHinhAnh));
+                    SpctHinhAnh mapping = new SpctHinhAnh();
+                    mapping.setChiTietSanPham(bean);
+                    mapping.setHinhAnh(hinhAnh);
+                    spctHinhAnhRepository.save(mapping);
+                }
             }
+            // Nếu danh sách là rỗng ([]), tức là xóa hết liên kết ảnh → không mapping mới
         }
     }
 
