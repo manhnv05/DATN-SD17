@@ -766,17 +766,32 @@ public class HoaDonServiceImpl implements HoaDonService {
 
 
     @Override
-    public List<HoaDonChiTietDTO> findChiTietHoaDon(Integer idHoaDon) {
+    public List<HoaDonChiTietSanPhamDTO> findChiTietHoaDon(Integer idHoaDon) {
         if (idHoaDon==null || idHoaDon<=0){
             throw new AppException(ErrorCode.ORDER_NOT_FOUND);
         }
         if (!hoaDonRepository.existsById(idHoaDon)){
             throw new AppException(ErrorCode.ORDER_NOT_FOUND);
         }
-        List<HoaDonChiTietView> listHoaDonChiTiet = hoaDonChiTietRepository.findChiTietHoaDon(idHoaDon);
-        return listHoaDonChiTiet.stream()
-                .map(this::mapViewToResponse)
-                .collect(Collectors.toList());
+
+        List<HoaDonChiTiet>listHoaDonChiTiet = hoaDonChiTietRepository.findChiTietHoaDon(idHoaDon);
+        List<HoaDonChiTietSanPhamDTO> hoaDonChiTietSanPhamDTOS= new ArrayList<>();
+        for (HoaDonChiTiet hoaDonChiTiet : listHoaDonChiTiet) {
+            HoaDonChiTietSanPhamDTO chiTietDTO = new HoaDonChiTietSanPhamDTO();
+            chiTietDTO.setId(hoaDonChiTiet.getId());
+            chiTietDTO.setMaSanPhamChiTiet(hoaDonChiTiet.getSanPhamChiTiet().getMaSanPhamChiTiet());
+            chiTietDTO.setTenSanPham(hoaDonChiTiet.getSanPhamChiTiet().getSanPham().getTenSanPham());
+            chiTietDTO.setTenKichThuoc(hoaDonChiTiet.getSanPhamChiTiet().getKichThuoc().getTenKichCo());
+            chiTietDTO.setTenMauSac(hoaDonChiTiet.getSanPhamChiTiet().getMauSac().getTenMauSac());
+            chiTietDTO.setSoLuong(hoaDonChiTiet.getSoLuong());
+            chiTietDTO.setGia(hoaDonChiTiet.getGia());
+            chiTietDTO.setThanhTien(hoaDonChiTiet.getThanhTien());
+            chiTietDTO.setGhiChu(hoaDonChiTiet.getGhiChu());
+            chiTietDTO.setTrangThai(hoaDonChiTiet.getTrangThai());
+            chiTietDTO.setCtsp(hoaDonChiTiet.getSanPhamChiTiet());
+            hoaDonChiTietSanPhamDTOS.add(chiTietDTO);
+        }
+        return hoaDonChiTietSanPhamDTOS;
     }
 
     @Override
@@ -1138,7 +1153,7 @@ public class HoaDonServiceImpl implements HoaDonService {
                 .tenSanPham(view.getTenSanPham())
                 .tenMauSac(view.getTenMauSac())
                 .tenKichThuoc(view.getTenKichThuoc())
-                .duongDanAnh(view.getDuongDanAnh())
+
                 .build();
     }
 

@@ -28,6 +28,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
 import ConfirmationModal from './ConfirmationModal';
+import ProductSlideshow from "./ProductSlideshow"; // Import component ProductSlideshow
 
 // Import SoftUI components
 import SoftBox from "../../../../components/SoftBox";
@@ -394,19 +395,9 @@ const [products, setProducts] = useState([]);
                                         <TableRow key={product.idChiTietSanPham} hover>
                                             <TableCell align="center" sx={{ width: 80, p: 1 }}>
                                               {/* Box container để định vị nhãn giảm giá */}
-                                              <Box sx={{ position: 'relative', width: 50, height: 50 }}>
+                                              <Box sx={{ position: 'relative', width: 100, height: 100 }}>
                                                 {/* Ảnh sản phẩm */}
-                                                <Box
-                                                  component="img"
-                                                  alt={product.tenSanPham}
-                                                  src={product.duongDanAnh ? `${BASE_IMAGE_URL}${product.duongDanAnh}` : "https://dummyimage.com/50x50/cccccc/000000&text=N/A"}
-                                                  sx={{
-                                                    width: '100%',
-                                                    height: '100%',
-                                                    objectFit: 'cover',
-                                                    borderRadius: '4px'
-                                                  }}
-                                                />
+                                               <ProductSlideshow product={product} />
                                                 {/* Nhãn giảm giá (chỉ hiển thị khi phanTramGiam > 0) */}
                                                 {product.phanTramGiam > 0 && (
                                                   <SoftTypography

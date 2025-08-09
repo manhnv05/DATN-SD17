@@ -188,6 +188,7 @@ public class CartService {
             CartItemDisplayDTO dto = new CartItemDisplayDTO();
             dto.setSoLuong(item.getSoLuong());
             dto.setDonGia(item.getDonGia());
+
             // Nếu tìm thấy chi tiết sản phẩm, set size và màu
             if (ct != null) {
                 dto.setTenKichCo(ct.getKichThuoc().getTenKichCo());
@@ -196,7 +197,13 @@ public class CartService {
                 dto.setTenTayAo(ct.getTayAo().getTenTayAo());
                 dto.setTenChatLieu(ct.getChatLieu().getTenChatLieu());
                 dto.setIdChiTietSanPham(item.getChiTietSanPhamId());
-//                dto.setHinhAnh(ct.get()); // Có thể thay bằng lấy ảnh từ bảng hình ảnh riêng
+                List<String> listAnh = ct.getSpctHinhAnhs()
+                        .stream()
+                        .map(spctHA -> spctHA.getHinhAnh().getDuongDanAnh())
+                        .toList();
+
+                dto.setHinhAnh(listAnh);
+
             }
             // Nếu tìm thấy sản phẩm cha, set thông tin cơ bản
             if (sp != null) {
@@ -205,6 +212,7 @@ public class CartService {
             return dto;
         }).collect(Collectors.toList());
     }
+
 }
 
 

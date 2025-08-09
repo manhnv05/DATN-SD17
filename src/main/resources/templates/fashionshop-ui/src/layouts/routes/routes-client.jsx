@@ -5,7 +5,8 @@ import Contact from "layouts/client/contact";
 import About from "layouts/client/about";
 import SignIn from "layouts/admin/authentication/sign-in"; // chỉnh lại path cho đúng nếu cần
 import SignUp from "layouts/admin/authentication/sign-up";
-import CartPage from "layouts/client/card/CartPage" // chỉnh lại path cho đúng nếu cần
+import CartPage from "layouts/client/card/CartPage" 
+import CheckoutPage from "layouts/client/card/CheckoutPage" // chỉnh lại path cho đúng nếu cần
 
 const routesClient = [
     {
@@ -21,6 +22,14 @@ const routesClient = [
         key: "card",
         route: "/card",
         component: <CartPage/>,
+        noCollapse: true,
+        hidden: false,
+    },
+     {
+        name: "Thanh toán",
+        key: "pay",
+        route: "/pay",
+        component: <CheckoutPage/>,
         noCollapse: true,
         hidden: false,
     },

@@ -187,16 +187,9 @@ public class HoaDonController {
         return new ResponseEntity<>(apiResponse, HttpStatus.OK);
     }
     @GetMapping("/{idHoaDon}/san-pham")
-    public ResponseEntity<ApiResponse<List<HoaDonChiTietDTO>>> getHoaDonChiTietResponse(@PathVariable Integer idHoaDon) {
-        List<HoaDonChiTietDTO> hoaDonChiTietResponseList = hoaDonService.findChiTietHoaDon(idHoaDon);
-
-        ApiResponse<List<HoaDonChiTietDTO>> apiResponse= ApiResponse.<List<HoaDonChiTietDTO>>builder()
-                .code(1000)
-                .message("Lấy danh sách sản phẩm của hóa đơn thành công")
-                .data(hoaDonChiTietResponseList)
-                .build();
-        return ResponseEntity.ok(apiResponse);
-
+    public ResponseEntity<ApiResponse<List<HoaDonChiTietSanPhamDTO>>> getHoaDonChiTietResponse(@PathVariable Integer idHoaDon) {
+        List<HoaDonChiTietSanPhamDTO> hoaDonChiTietResponseList = hoaDonService.findChiTietHoaDon(idHoaDon);
+        return ResponseHelper.success("", hoaDonChiTietResponseList);
     }
     @PutMapping("/update_hoadon")
     public ResponseEntity<ApiResponse<HoaDonDTO>> updateHoadon(@RequestBody HoaDonRequestUpdateVO hoaDonRequestUpdateVO) {

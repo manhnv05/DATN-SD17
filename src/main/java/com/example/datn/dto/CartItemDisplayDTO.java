@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Setter
 @Getter
@@ -21,7 +22,7 @@ public class CartItemDisplayDTO {
     private String tenTayAo;
     private Integer soLuong;
     private BigDecimal donGia;
-    private String hinhAnh;
+    private List<String> hinhAnh;
 
 
 }
