@@ -2,6 +2,7 @@ package com.example.datn.service;
 
 import com.example.datn.dto.ChiTietSanPhamDTO;
 import com.example.datn.dto.ChiTietSanPhamDotGIamGIaDTO;
+import com.example.datn.dto.HinhAnhDTO;
 import com.example.datn.entity.*;
 import com.example.datn.repository.*;
 import com.example.datn.vo.chiTietSanPhamVO.ChiTietSanPhamBanHangTaiQuayVO;
@@ -48,6 +49,11 @@ public class ChiTietSanPhamService {
     @Autowired
     private ChiTietDotGiamGiaRepository chiTietDotGiamGiaRepository;
 
+    @Autowired
+    private SpctHinhAnhRepository spctHinhAnhRepository;
+    @Autowired
+    private HinhAnhRepository hinhAnhRepository;
+
     public Integer save(@Valid ChiTietSanPhamVO vO) {
         ChiTietSanPham bean = new ChiTietSanPham();
         BeanUtils.copyProperties(vO, bean);
@@ -72,6 +78,26 @@ public class ChiTietSanPhamService {
             bean.setTayAo(tayAoRepository.findById(vO.getIdTayAo()).orElse(null));
 
         bean = chiTietSanPhamRepository.save(bean);
+
+        System.out.println("Đã lưu ChiTietSanPham với id: " + bean.getId());
+
+        // --- Mapping nhiều hình ảnh ---
+        if (vO.getHinhAnhIds() != null && !vO.getHinhAnhIds().isEmpty()) {
+            System.out.println("Danh sách id hình ảnh: " + vO.getHinhAnhIds());
+            for (Integer idHinhAnh : vO.getHinhAnhIds()) {
+                System.out.println("Mapping hình ảnh với id: " + idHinhAnh);
+                HinhAnh hinhAnh = hinhAnhRepository.findById(idHinhAnh)
+                        .orElseThrow(() -> new RuntimeException("Không tìm thấy hình ảnh với id=" + idHinhAnh));
+                SpctHinhAnh mapping = new SpctHinhAnh();
+                mapping.setChiTietSanPham(bean);
+                mapping.setHinhAnh(hinhAnh);
+                spctHinhAnhRepository.save(mapping);
+                System.out.println("Đã lưu mapping cho hình ảnh id: " + idHinhAnh);
+            }
+        } else {
+            System.out.println("Không có hình ảnh nào để mapping!");
+        }
+
         return bean.getId();
     }
 
@@ -87,7 +113,6 @@ public class ChiTietSanPhamService {
             ChiTietSanPhamDotGIamGIaDTO ctsp = new ChiTietSanPhamDotGIamGIaDTO();
 
             // BƯỚC 1: Lấy về danh sách đối tượng DotGiamGia, không phải List<Integer>
-            // (Giả sử bạn đã đổi tên phương thức repository cho rõ nghĩa)
             List<DotGiamGia> activeDiscounts = chiTietDotGiamGiaRepository.getDotGiamGiaByIdChiTietSanPham(c.getId());
 
             // BƯỚC 2: Dùng Stream để tìm đợt giảm giá tốt nhất (có phanTramGiam cao nhất)
@@ -125,7 +150,6 @@ public class ChiTietSanPhamService {
             BigDecimal discountAmount = originalPrice.multiply(BigDecimal.valueOf(pggLonNhat)).divide(BigDecimal.valueOf(100));
             ctsp.setGiaTienSauKhiGiam(originalPrice.subtract(discountAmount).intValue());
 
-
             chiTietSanPhamDotGIamGIaDTOS.add(ctsp);
         }
 
@@ -138,14 +162,10 @@ public class ChiTietSanPhamService {
 
         if (vO.getIdSanPham() != null)
             bean.setSanPham(sanPhamRepository.findById(vO.getIdSanPham()).orElse(null));
-        if (vO.getIdChatLieu() != null) {
-            ChatLieu chatLieu = chatLieuRepository.findById(vO.getIdChatLieu()).orElse(null);
-            bean.setChatLieu(chatLieu);
-        }
-        if (vO.getIdThuongHieu() != null) {
-            ThuongHieu thuongHieu = thuongHieuRepository.findById(vO.getIdThuongHieu()).orElse(null);
-            bean.setThuongHieu(thuongHieu);
-        }
+        if (vO.getIdChatLieu() != null)
+            bean.setChatLieu(chatLieuRepository.findById(vO.getIdChatLieu()).orElse(null));
+        if (vO.getIdThuongHieu() != null)
+            bean.setThuongHieu(thuongHieuRepository.findById(vO.getIdThuongHieu()).orElse(null));
         if (vO.getIdMauSac() != null)
             bean.setMauSac(mauSacRepository.findById(vO.getIdMauSac()).orElse(null));
         if (vO.getIdKichThuoc() != null)
@@ -156,6 +176,21 @@ public class ChiTietSanPhamService {
             bean.setTayAo(tayAoRepository.findById(vO.getIdTayAo()).orElse(null));
 
         chiTietSanPhamRepository.save(bean);
+
+        // --- Cập nhật lại mapping hình ảnh ---
+        if (vO.getHinhAnhIds() != null) {
+            // Xóa mapping cũ
+            spctHinhAnhRepository.deleteAllByChiTietSanPham(bean);
+            // Mapping mới
+            for (Integer idHinhAnh : vO.getHinhAnhIds()) {
+                HinhAnh hinhAnh = hinhAnhRepository.findById(idHinhAnh)
+                        .orElseThrow(() -> new RuntimeException("Không tìm thấy hình ảnh với id=" + idHinhAnh));
+                SpctHinhAnh mapping = new SpctHinhAnh();
+                mapping.setChiTietSanPham(bean);
+                mapping.setHinhAnh(hinhAnh);
+                spctHinhAnhRepository.save(mapping);
+            }
+        }
     }
 
     public ChiTietSanPhamDTO getById(Integer id) {
@@ -222,6 +257,25 @@ public class ChiTietSanPhamService {
             bean.setIdTayAo(original.getTayAo().getId());
             bean.setTenTayAo(original.getTayAo().getTenTayAo());
         }
+
+        // Lấy danh sách hình ảnh mapping qua bảng spct_hinhanh
+        if (original.getSpctHinhAnhs() != null && !original.getSpctHinhAnhs().isEmpty()) {
+            List<HinhAnhDTO> hinhAnhDTOs = original.getSpctHinhAnhs().stream()
+                    .map(spctHinhAnh -> {
+                        HinhAnh ha = spctHinhAnh.getHinhAnh();
+                        HinhAnhDTO dto = new HinhAnhDTO();
+                        dto.setId(ha.getId());
+                        dto.setMaAnh(ha.getMaAnh());
+                        dto.setDuongDanAnh(ha.getDuongDanAnh());
+                        dto.setAnhMacDinh(ha.getAnhMacDinh());
+                        dto.setMoTa(ha.getMoTa());
+                        dto.setTrangThai(ha.getTrangThai());
+                        return dto;
+                    })
+                    .collect(Collectors.toList());
+            bean.setHinhAnhs(hinhAnhDTOs);
+        }
+
         return bean;
     }
 
@@ -229,7 +283,8 @@ public class ChiTietSanPhamService {
         return chiTietSanPhamRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Resource not found: " + id));
     }
-    public List<ChiTietSanPhamBanHangTaiQuayVO>  getChiTietSanPhamBanHangTaiQuay() {
+
+    public List<ChiTietSanPhamBanHangTaiQuayVO> getChiTietSanPhamBanHangTaiQuay() {
         List<ChiTietSanPhamBanHangTaiQuayVO> list = chiTietSanPhamRepository.findChiTietSanPhamBanHangTaiQuay();
         if (list.isEmpty()) {
             throw new NoSuchElementException("Không tìm thấy chi tiết sản phẩm bán hàng tại quầy");
@@ -283,6 +338,7 @@ public class ChiTietSanPhamService {
         ctsp.setGiaTienSauKhiGiam(originalPrice.subtract(discountAmount).intValue());
         return ctsp;
     }
+
     public Page<ChiTietSanPhamDotGIamGIaDTO> getDanhSachSanPhamBanChay(Pageable pageable) {
 
         // 1. Lấy ra một trang chứa các ID sản phẩm bán chạy nhất

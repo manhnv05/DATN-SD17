@@ -10,7 +10,8 @@ import java.util.List;
 @Repository
 public interface HinhAnhRepository extends JpaRepository<HinhAnh, Integer>, JpaSpecificationExecutor<HinhAnh> {
 
-    List<HinhAnh> findByChiTietSanPham_Id(Integer idSanPhamChiTiet);
+    // Lấy tất cả hình ảnh theo id chi tiết sản phẩm thông qua bảng trung gian
+    // Nếu bạn cần thì dùng findBySpctHinhAnhs_ChiTietSanPham_Id
+    List<HinhAnh> findBySpctHinhAnhs_ChiTietSanPham_Id(Integer idSanPhamChiTiet);
 
-    //HinhAnh findById(Integer id);
 }

@@ -27,9 +27,6 @@ public class HinhAnhService {
     private HinhAnhRepository hinhAnhRepository;
 
     @Autowired
-    private ChiTietSanPhamRepository chiTietSanPhamRepository;
-
-    @Autowired
     private CloudinaryService cloudinaryService;
 
     public Integer save(
@@ -37,8 +34,7 @@ public class HinhAnhService {
             Integer anhMacDinh,
             String moTa,
             Integer trangThai,
-            MultipartFile duongDanAnh,
-            Integer idSanPhamChiTiet
+            MultipartFile duongDanAnh
     ) {
         HinhAnh bean = new HinhAnh();
         bean.setMaAnh(maAnh);
@@ -55,12 +51,6 @@ public class HinhAnhService {
             }
         }
 
-        if (idSanPhamChiTiet != null) {
-            ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(idSanPhamChiTiet)
-                    .orElse(null);
-            bean.setChiTietSanPham(chiTietSanPham);
-        }
-
         bean = hinhAnhRepository.save(bean);
         return bean.getId();
     }
@@ -75,8 +65,7 @@ public class HinhAnhService {
             Integer anhMacDinh,
             String moTa,
             Integer trangThai,
-            String duongDanAnh,
-            Integer idSanPhamChiTiet
+            String duongDanAnh
     ) {
         HinhAnh bean = requireOne(id);
         bean.setMaAnh(maAnh);
@@ -87,13 +76,6 @@ public class HinhAnhService {
         if (duongDanAnh != null && !duongDanAnh.isEmpty()) {
             bean.setDuongDanAnh(duongDanAnh);
         }
-
-        if (idSanPhamChiTiet != null) {
-            ChiTietSanPham chiTietSanPham = chiTietSanPhamRepository.findById(idSanPhamChiTiet)
-                    .orElse(null);
-            bean.setChiTietSanPham(chiTietSanPham);
-        }
-
         hinhAnhRepository.save(bean);
     }
 
@@ -111,9 +93,6 @@ public class HinhAnhService {
             var predicates = cb.conjunction();
             if (vO.getId() != null) {
                 predicates = cb.and(predicates, cb.equal(root.get("id"), vO.getId()));
-            }
-            if (vO.getIdSanPhamChiTiet() != null) {
-                predicates = cb.and(predicates, cb.equal(root.get("chiTietSanPham").get("id"), vO.getIdSanPhamChiTiet()));
             }
             if (vO.getMaAnh() != null && !vO.getMaAnh().isEmpty()) {
                 predicates = cb.and(predicates, cb.like(cb.lower(root.get("maAnh")), "%" + vO.getMaAnh().toLowerCase() + "%"));
@@ -140,11 +119,6 @@ public class HinhAnhService {
     private HinhAnhDTO toDTO(HinhAnh original) {
         HinhAnhDTO bean = new HinhAnhDTO();
         BeanUtils.copyProperties(original, bean);
-        if (original.getChiTietSanPham() != null) {
-            bean.setIdSanPhamChiTiet(original.getChiTietSanPham().getId());
-        } else {
-            bean.setIdSanPhamChiTiet(null);
-        }
         return bean;
     }
 
@@ -162,7 +136,7 @@ public class HinhAnhService {
     }
 
     public List<HinhAnhDTO> findByIdSanPhamChiTiet(Integer idSanPhamChiTiet) {
-        List<HinhAnh> images = hinhAnhRepository.findByChiTietSanPham_Id(idSanPhamChiTiet);
+        List<HinhAnh> images = hinhAnhRepository.findBySpctHinhAnhs_ChiTietSanPham_Id(idSanPhamChiTiet);
         return images.stream().map(this::toDTO).collect(Collectors.toList());
     }
 

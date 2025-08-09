@@ -3,6 +3,8 @@ package com.example.datn.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.List;
+
 @Entity
 @Getter
 @Setter
@@ -63,4 +65,7 @@ public class ChiTietSanPham implements java.io.Serializable {
 
     @Column(name = "trang_thai")
     private Integer trangThai;
+
+    @OneToMany(mappedBy = "chiTietSanPham", fetch = FetchType.LAZY)
+    private List<SpctHinhAnh> spctHinhAnhs;
 }
