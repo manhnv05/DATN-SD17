@@ -1142,10 +1142,10 @@ public class HoaDonServiceImpl implements HoaDonService {
                 .build();
     }
 
-    public void sendInvoiceEmail(HoaDon hoaDon,String email) throws MessagingException {
+    public void sendInvoiceEmail(HoaDon hoaDon, String email) throws MessagingException {
         String subject = "Hóa đơn thanh toán từ cửa hàng ...";
 
-        String to = email; // người nhận
+        String to = email;
 
         // Tính tổng tiền:
         Integer tongTien = hoaDon.getTongHoaDon();
@@ -1172,61 +1172,144 @@ public class HoaDonServiceImpl implements HoaDonService {
               <td>%,.0f₫</td>
               <td>%,.0f₫</td>
             </tr>
-        """, index++, ctsp.getHoaDon().getMaHoaDon(), ctsp.getSoLuong(), (double) ctsp.getGia(), thanhTien.doubleValue()));
+        """, index++, ctsp.getHoaDon().getMaHoaDon(), ctsp.getSoLuong(),
+                    (double) ctsp.getGia(), thanhTien.doubleValue()));
         }
 
         // HTML content
         String html = String.format("""
-        <html>
-        <head>
-          <style>
-            body { font-family: Arial; }
-            table { width: 100%%; border-collapse: collapse; }
-            th, td { border: 1px solid #ccc; padding: 8px; }
-            .total { text-align: right; font-weight: bold; }
-          </style>
-        </head>
-        <body>
-          <h2>Hóa đơn thanh toán</h2>
-          <p><strong>Khách hàng:</strong> %s</p>
-          <p><strong>SĐT:</strong> %s</p>
-          <p><strong>Địa chỉ:</strong> %s</p>
-          <p><strong>Loại hóa đơn:</strong> %s</p>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background-color: #f7f9fc;
+      color: #333;
+      line-height: 1.6;
+    }
+    .invoice-container {
+      max-width: 800px;
+      margin: auto;
+      background: #fff;
+      padding: 20px 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+    h2 {
+      text-align: center;
+      color: #2a9d8f;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th {
+      background-color: #2a9d8f;
+      color: white;
+      padding: 10px;
+      text-align: center;
+    }
+    td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    tr:nth-child(even) {
+      background-color: #f4f6f8;
+    }
+    tr:hover {
+      background-color: #eef2f5;
+    }
+    .total-row td {
+      font-weight: bold;
+      background-color: #f1faee;
+    }
+    .footer {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 14px;
+      color: #666;
+    }
+    .customer-info p {
+      margin: 5px 0;
+    }
+    .order-message {
+      margin-bottom: 20px;
+      padding: 15px;
+      background-color: #f1f5f9;
+      border-left: 5px solid #2a9d8f;
+    }
+    .order-message a {
+      color: #1d4ed8;
+      text-decoration: none;
+    }
+    .order-message a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="invoice-container">
 
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Mã Hóa Đơn</th>
-                <th>Số lượng</th>
-                <th>Đơn giá</th>
-                <th>Thành tiền</th>
-              </tr>
-            </thead>
-            <tbody>
-              %s
-            </tbody>
-            <tfoot>
-              <tr>
-                <td colspan="4" class="total">Phí vận chuyển:</td>
-                <td>%d ₫</td>
-              </tr>
-              <tr>
-                <td colspan="4" class="total">Giảm giá:</td>
-                <td>%s</td>
-              </tr>
-              <tr>
-                <td colspan="4" class="total">Tổng thanh toán:</td>
-                <td>%,.0f₫</td>
-              </tr>
-            </tfoot>
-          </table>
+    <!-- Phần lời chào -->
+    <div class="order-message">
+      <p><strong>Chào %s,</strong></p>
+      <p>Đơn hàng của bạn đã được nhận và sẽ được xử lý ngay khi bạn xác nhận thanh toán.<br>
+         Để xem chi tiết đơn hàng của mình tại <strong>Cửa hàng ABC</strong>, bạn có thể 
+         <a href="https://example.com" target="_blank">nhấn vào đây</a>.
+      </p>
+    </div>
 
-          <p><strong>Ghi chú:</strong> %s</p>
-          <p>Cảm ơn bạn đã mua hàng!</p>
-        </body>
-        </html>
-    """,
+    <!-- Hóa đơn -->
+    <h2>Hóa đơn thanh toán</h2>
+    <div class="customer-info">
+      <p><strong>Khách hàng:</strong> %s</p>
+      <p><strong>SĐT:</strong> %s</p>
+      <p><strong>Địa chỉ:</strong> %s</p>
+      <p><strong>Loại hóa đơn:</strong> %s</p>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Mã Hóa Đơn</th>
+          <th>Số lượng</th>
+          <th>Đơn giá</th>
+          <th>Thành tiền</th>
+        </tr>
+      </thead>
+      <tbody>
+        %s
+      </tbody>
+      <tfoot>
+        <tr class="total-row">
+          <td colspan="4" style="text-align:right;">Phí vận chuyển:</td>
+          <td>%d ₫</td>
+        </tr>
+        <tr class="total-row">
+          <td colspan="4" style="text-align:right;">Giảm giá:</td>
+          <td>%s</td>
+        </tr>
+        <tr class="total-row">
+          <td colspan="4" style="text-align:right;">Tổng thanh toán:</td>
+          <td>%,.0f₫</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <p><strong>Ghi chú:</strong> %s</p>
+    <div class="footer">
+      <p>Cảm ơn bạn đã mua hàng tại cửa hàng chúng tôi!</p>
+    </div>
+  </div>
+</body>
+</html>
+""",
+                hoaDon.getTenKhachHang(), // Lời chào
                 hoaDon.getTenKhachHang(),
                 hoaDon.getSdt(),
                 hoaDon.getDiaChi(),
@@ -1239,8 +1322,9 @@ public class HoaDonServiceImpl implements HoaDonService {
         );
 
         // Gửi mail
-        emailService.sendEmail(to, subject, html); // Hàm này bạn cần tự định nghĩa
+        emailService.sendEmail(to, subject, html);
     }
+
 
 
 }
