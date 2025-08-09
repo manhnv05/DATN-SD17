@@ -116,4 +116,15 @@ public class HinhAnhController {
         }
         return ResponseEntity.ok(ids);
     }
+
+    @GetMapping("/hinh-anh/chua-gan-sp")
+    public List<HinhAnhDTO> getHinhAnhChuaGanSanPham() {
+        return hinhAnhService.findHinhAnhChuaGanSanPham();
+    }
+
+    @DeleteMapping("/spct-hinhanh/{id}")
+    public ResponseEntity<Void> deleteSpctHinhAnh(@PathVariable Integer id) {
+        hinhAnhService.deleteImage(id); // Gọi service để xóa
+        return ResponseEntity.noContent().build();
+    }
 }

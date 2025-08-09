@@ -111,6 +111,7 @@ function ProductDetailUpdateModal({ open, onClose, detail, onSuccess }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formError, setFormError] = useState("");
     const qrRef = useRef();
+
     useEffect(() => {
         if (!open) return;
         setIsLoadingOptions(true);
@@ -147,6 +148,7 @@ function ProductDetailUpdateModal({ open, onClose, detail, onSuccess }) {
             setIsLoadingOptions(false);
         });
     }, [open]);
+
     useEffect(() => {
         if (!open || !detail?.id) return;
         fetch(apiUrl(`/hinhAnh/by-product-detail/${detail.id}`), { credentials: "include" })
@@ -167,6 +169,7 @@ function ProductDetailUpdateModal({ open, onClose, detail, onSuccess }) {
                 setSelectedSystemImages([]);
             });
     }, [open, detail?.id]);
+
     useEffect(() => {
         if (!isLoadingOptions && detail) {
             setForm({
@@ -184,6 +187,7 @@ function ProductDetailUpdateModal({ open, onClose, detail, onSuccess }) {
             });
         }
     }, [detail, isLoadingOptions]);
+
     function handleChange(key, value) {
         setForm(previous => ({ ...previous, [key]: value }));
     }
@@ -265,24 +269,61 @@ function ProductDetailUpdateModal({ open, onClose, detail, onSuccess }) {
             setIsSubmitting(false);
             return;
         }
-        const formData = new window.FormData();
-        formData.append("idSanPham", detail.idSanPham);
-        formData.append("maSanPhamChiTiet", detail.maSanPhamChiTiet);
-        formData.append("idThuongHieu", form.idThuongHieu);
-        formData.append("idChatLieu", form.idChatLieu);
-        formData.append("idCoAo", form.idCoAo);
-        formData.append("idTayAo", form.idTayAo);
-        formData.append("idMauSac", form.idMauSac);
-        formData.append("idKichThuoc", form.idKichThuoc);
-        formData.append("gia", Number(parseCurrencyVND(form.gia)));
-        formData.append("soLuong", form.soLuong);
-        formData.append("trongLuong", form.trongLuong);
-        formData.append("trangThai", form.trangThai);
+
+        // Lấy id ảnh hệ thống đã chọn
+        const systemImageIds = systemImages
+            .filter(img => selectedSystemImages.includes(img.duongDanAnh))
+            .map(img => img.id);
+
+        // Nếu có upload ảnh mới, upload trước, lấy id của ảnh vừa upload để đưa vào mảng
+        let uploadedImageIds = [];
+        if (imageFiles.length > 0) {
+            const imgForm = new window.FormData();
+            imgForm.append("ma_anh", `SPCT_${detail.id}`);
+            imgForm.append("anh_mac_dinh", 0);
+            imgForm.append("mo_ta", "");
+            imgForm.append("trang_thai", 1);
+            imgForm.append("id_san_pham_chi_tiet", detail.id);
+            imageFiles.forEach(f => imgForm.append("duong_dan_anh", f));
+            const res = await fetch(apiUrl("/hinhAnh/multi"), {
+                method: "POST",
+                body: imgForm,
+                credentials: "include",
+            });
+            if (res.ok) {
+                const result = await res.json();
+                uploadedImageIds = Array.isArray(result) ? result.map(img => img.id) : [];
+            }
+        }
+
+        // Tổng hợp tất cả id ảnh sẽ gán cho SPCT
+        const hinhAnhIds = [...systemImageIds, ...uploadedImageIds];
+
+        // Gửi dữ liệu lên API update
+        const jsonData = {
+            idSanPham: detail.idSanPham,
+            maSanPhamChiTiet: detail.maSanPhamChiTiet,
+            idThuongHieu: form.idThuongHieu,
+            idChatLieu: form.idChatLieu,
+            idCoAo: form.idCoAo,
+            idTayAo: form.idTayAo,
+            idMauSac: form.idMauSac,
+            idKichThuoc: form.idKichThuoc,
+            gia: Number(parseCurrencyVND(form.gia)),
+            soLuong: form.soLuong,
+            trongLuong: form.trongLuong,
+            trangThai: form.trangThai,
+            hinhAnhIds // <-- gửi mảng id ảnh luôn ở đây!
+        };
+
         try {
             const response = await fetch(apiUrl(`/chiTietSanPham/${detail?.id}`), {
                 method: "PUT",
-                body: formData,
+                headers: {
+                    "Content-Type": "application/json"
+                },
                 credentials: "include",
+                body: JSON.stringify(jsonData)
             });
             if (!response.ok) {
                 const error = await response.json();
@@ -291,48 +332,6 @@ function ProductDetailUpdateModal({ open, onClose, detail, onSuccess }) {
                 toast.error(error.message || "Cập nhật thất bại");
                 return;
             }
-            if (imageFiles.length > 0) {
-                const imgForm = new window.FormData();
-                imgForm.append("ma_anh", `SPCT_${detail.id}`);
-                imgForm.append("anh_mac_dinh", 0);
-                imgForm.append("mo_ta", "");
-                imgForm.append("trang_thai", 1);
-                imgForm.append("id_san_pham_chi_tiet", detail.id);
-                imageFiles.forEach(f => imgForm.append("duong_dan_anh", f));
-                await fetch(apiUrl("/hinhAnh/multi"), {
-                    method: "POST",
-                    body: imgForm,
-                    credentials: "include",
-                });
-            }
-            for (const imgUrl of selectedSystemImages) {
-                const img = systemImages.find(i => i.duongDanAnh === imgUrl);
-                if (!img) continue;
-                await fetch(apiUrl(`/hinhAnh/${img.id}`), {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    credentials: "include",
-                    body: JSON.stringify({
-                        maAnh: img.moTa || `Ảnh ${img.id}`,
-                        duongDanAnh: img.duongDanAnh,
-                        anhMacDinh: 0,
-                        moTa: img.moTa || "",
-                        trangThai: 1,
-                        idSanPhamChiTiet: detail.id,
-                    }),
-                });
-            }
-            const resImg = await fetch(apiUrl(`/hinhAnh/by-product-detail/${detail.id}`), { credentials: "include" });
-            const images = await resImg.json();
-            const urls = [];
-            (images || []).forEach(img => {
-                if (img.duongDanAnh && !urls.includes(img.duongDanAnh)) {
-                    urls.push(img.duongDanAnh);
-                }
-            });
-            setImagePreview(urls);
-            setImageFiles([]);
-            setSelectedSystemImages([]);
             toast.success("Cập nhật thành công!");
             setIsSubmitting(false);
             onClose();
