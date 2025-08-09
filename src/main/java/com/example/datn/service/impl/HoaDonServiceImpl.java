@@ -774,9 +774,13 @@ public class HoaDonServiceImpl implements HoaDonService {
             throw new AppException(ErrorCode.ORDER_NOT_FOUND);
         }
 
-        List<HoaDonChiTiet>listHoaDonChiTiet = hoaDonChiTietRepository.findChiTietHoaDon(idHoaDon);
+        List<HoaDonChiTiet> listHoaDonChiTiet = hoaDonChiTietRepository.findChiTietHoaDon(idHoaDon);
         List<HoaDonChiTietSanPhamDTO> hoaDonChiTietSanPhamDTOS= new ArrayList<>();
         for (HoaDonChiTiet hoaDonChiTiet : listHoaDonChiTiet) {
+            List<String> listHinhAnh = new ArrayList<>();
+            for (SpctHinhAnh spctHinhAnh: hoaDonChiTiet.getSanPhamChiTiet().getSpctHinhAnhs()){
+                listHinhAnh.add(spctHinhAnh.getHinhAnh().getDuongDanAnh());
+            }
             HoaDonChiTietSanPhamDTO chiTietDTO = new HoaDonChiTietSanPhamDTO();
             chiTietDTO.setId(hoaDonChiTiet.getId());
             chiTietDTO.setMaSanPhamChiTiet(hoaDonChiTiet.getSanPhamChiTiet().getMaSanPhamChiTiet());
@@ -788,7 +792,8 @@ public class HoaDonServiceImpl implements HoaDonService {
             chiTietDTO.setThanhTien(hoaDonChiTiet.getThanhTien());
             chiTietDTO.setGhiChu(hoaDonChiTiet.getGhiChu());
             chiTietDTO.setTrangThai(hoaDonChiTiet.getTrangThai());
-            chiTietDTO.setCtsp(hoaDonChiTiet.getSanPhamChiTiet());
+
+            chiTietDTO.setHinhAnhctsp(listHinhAnh);
             hoaDonChiTietSanPhamDTOS.add(chiTietDTO);
         }
         return hoaDonChiTietSanPhamDTOS;
