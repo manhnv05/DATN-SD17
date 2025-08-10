@@ -29,7 +29,7 @@ import QRCodeScanner from "../QRCodeScanner/QRCodeScanner.jsx"; // Đảm bảo 
 import SoftBox from "components/SoftBox";
 import Card from "@mui/material/Card";
 import SoftTypography from "components/SoftTypography";
-
+import ProductSlideshow from "./ProductSlideshow.jsx"; 
 // Import modal (điều chỉnh đường dẫn nếu cần)
 import ProductSelectionModal from "./ProductSelectionModal";
 import PropTypes from "prop-types";
@@ -759,12 +759,8 @@ function SalesCounter({ onTotalChange, onInvoiceIdChange, onProductsChange, comp
                                   {/* Cột 2: Thông tin sản phẩm ĐÃ CẬP NHẬT HOÀN CHỈNH */}
                                   <Box sx={{ flex: 1, display: "flex", alignItems: "center", gap: 2 }}>
                                     {/* ===== CONTAINER MỚI CHO ẢNH VÀ NHÃN ===== */}
-                                    <Box sx={{ position: "relative" }}>
-                                      <Avatar
-                                          variant="rounded"
-                                          src={product.duongDanAnh}
-                                          sx={{ width: 60, height: 60 }}
-                                      />
+                                    <Box sx={{ position: "relative" , width: 100, height: 100 }}>
+                                       <ProductSlideshow product={product} />
                                       {/* Nhãn giảm giá */}
                                       {product.phanTramGiam > 0 && (
                                           <Typography

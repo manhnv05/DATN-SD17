@@ -18,6 +18,7 @@ public class HoaDonOnlineRequest {
     private String phieuGiamGia;
     private List<SanPhamCapNhatVO> danhSachSanPham;
     private String loaiHoaDon;
+    private String email;
 
     @Data
     public static class SanPhamCapNhatVO {

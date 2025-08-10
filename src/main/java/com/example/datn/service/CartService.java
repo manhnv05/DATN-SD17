@@ -197,10 +197,9 @@ public class CartService {
                 dto.setTenTayAo(ct.getTayAo().getTenTayAo());
                 dto.setTenChatLieu(ct.getChatLieu().getTenChatLieu());
                 dto.setIdChiTietSanPham(item.getChiTietSanPhamId());
-                List<String> listAnh = ct.getSpctHinhAnhs()
-                        .stream()
-                        .map(spctHA -> spctHA.getHinhAnh().getDuongDanAnh())
-                        .toList();
+                List<String> listAnh = ct.getSpctHinhAnhs().stream()
+                        .map(h -> h.getHinhAnh().getDuongDanAnh())
+                        .collect(Collectors.toList());
 
                 dto.setHinhAnh(listAnh);
 

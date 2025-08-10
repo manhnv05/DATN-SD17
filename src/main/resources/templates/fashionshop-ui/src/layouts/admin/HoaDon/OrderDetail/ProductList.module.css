@@ -37,6 +37,7 @@
     padding: 15px;
     margin-bottom: 10px;
     width: 100%; /* Đảm bảo sản phẩm chiếm hết không gian */
+     gap: 24px;
 }
 
 .product-image img {

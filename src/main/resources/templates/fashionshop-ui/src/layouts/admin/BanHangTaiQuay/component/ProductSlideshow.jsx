@@ -9,51 +9,56 @@ const ProductSlideshow = ({ product }) => {
       : ["https://dummyimage.com/600x600/cccccc/000000&text=N/A"];
 
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
 
-  // Tự động chuyển ảnh mỗi 3 giây (tăng thời gian để người dùng kịp xem)
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % images.length);
-    }, 3000); // 3000ms = 3 giây
-
-    return () => clearInterval(timer);
-  }, [images.length]);
+    let interval;
+    if (isHovered) {
+      interval = setInterval(() => {
+        setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
+      }, 1000); // 2s đổi ảnh
+    }
+    return () => clearInterval(interval);
+  }, [isHovered, images.length]);
 
   return (
-    // Container chính xác định tỷ lệ khung hình
     <Box
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       sx={{
         width: "100%",
-        aspectRatio: "1 / 1", // Giữ tỷ lệ 1:1 (hình vuông)
+        height: "100%",
         overflow: "hidden",
-        position: "relative", // Cần thiết để ảnh con định vị đúng
-        borderRadius: "8px", // Bo góc cho container
+        position: "relative",
       }}
     >
       <Box
-        component="img"
-        src={images[currentIndex]}
-        alt={product.tenSanPham}
         sx={{
-          // Ảnh sẽ lấp đầy container
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
-          objectFit: "cover", // Đảm bảo ảnh lấp đầy mà không bị méo
-          transition: "opacity 0.5s ease-in-out", // Giữ hiệu ứng chuyển ảnh
+          display: "flex",
+          width: `${images.length * 100}%`,
+          transform: `translateX(-${currentIndex * (100 / images.length)}%)`,
+          transition: "transform 0.6s ease-in-out",
         }}
-      />
+      >
+        {images.map((src, index) => (
+          <img
+            key={index}
+            src={src}
+            alt={`Slide ${index}`}
+            style={{
+              width: `${100 / images.length}%`,
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+        ))}
+      </Box>
     </Box>
   );
 };
 
 ProductSlideshow.propTypes = {
-  product: PropTypes.shape({
-    listUrlImage: PropTypes.arrayOf(PropTypes.string),
-    tenSanPham: PropTypes.string,
-  }).isRequired,
+  product: PropTypes.object.isRequired,
 };
 
 export default ProductSlideshow;

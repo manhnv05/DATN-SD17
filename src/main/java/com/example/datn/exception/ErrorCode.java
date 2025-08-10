@@ -36,7 +36,7 @@ public enum ErrorCode {
 
     NO_PAYMENT_HISTORY (1014, "Chưa có lịch sử thanh toán", HttpStatus.BAD_REQUEST),
     INVALID_QUANTITY (1015, "Số lượng tồn kho hết", HttpStatus.BAD_REQUEST),
-
+    PHIEU_GIAM_GIA_HET_SO_LUONG (1016, "Số lượng phiếu giảm giá đã hết", HttpStatus.BAD_REQUEST),
     // Voucher/Discount (from sd_17)
     PHIEU_GIAM_GIA_NULL(2001, "Phiếu Giảm Giá Không Tồn tại", HttpStatus.NOT_FOUND),
     PHIEU_GIAM_GIA_KHACH_HANG_NOT_FOUND(2002, "Phiếu giảm giá khách hàng không tồn tại", HttpStatus.BAD_REQUEST),
