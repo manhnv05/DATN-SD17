@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ChiTietPhieuGiamGiaRepository extends JpaRepository<ChiTietPhieuGiamGia, Integer>, JpaSpecificationExecutor<ChiTietPhieuGiamGia> {
@@ -26,6 +27,13 @@ public interface ChiTietPhieuGiamGiaRepository extends JpaRepository<ChiTietPhie
             @Param("phieuGiamGia") String phieuGiamGia,
             Pageable pageable
     );
+    @Query("""
+    SELECT pddkh.phieuGiamGia FROM ChiTietPhieuGiamGia pddkh
+    WHERE
+        (:khachHang IS NULL OR :khachHang = pddkh.khachHang.id)
+        AND (pddkh.phieuGiamGia.trangThai = 1)
+    """)
+    List<PhieuGiamGia> queryPhieuGiamGiaKhachHangOnline(@Param("khachHang") Integer khachHang);
 
     @Query("""
     SELECT pddkh FROM ChiTietPhieuGiamGia pddkh
