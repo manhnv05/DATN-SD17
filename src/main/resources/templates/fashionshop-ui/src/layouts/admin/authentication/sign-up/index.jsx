@@ -10,7 +10,7 @@ import BasicLayout from "../components/BasicLayout";
 import Socials from "../components/Socials";
 import Separator from "../components/Separator";
 import curved6 from "../../../../assets/images/curved-images/backgroundsignup.jpg";
-import axios from "axios";
+import instanceAPIMain from "../../../../configapi"; // dùng instance axios chung, nên đặt tại src/.../data/instanceAPIMain.js
 
 function SignUp() {
   const [agreement, setAgreement] = useState(true);
@@ -48,7 +48,8 @@ function SignUp() {
     }
 
     try {
-      const res = await axios.post("http://localhost:8080/api/auth/register", {
+      // Sử dụng instanceAPIMain để gọi API (giúp đồng bộ baseURL, CORS, credentials)
+      const res = await instanceAPIMain.post("/api/auth/register", {
         email,
         matKhau,
         tenKhachHang,
@@ -57,9 +58,16 @@ function SignUp() {
       setSuccess("Đăng ký thành công! Chuyển hướng tới trang đăng nhập...");
       setTimeout(() => navigate("/authentication/sign-in"), 1500);
     } catch (err) {
-      setError(
-          err.response?.data || "Đăng ký thất bại. Vui lòng thử lại!"
-      );
+      // Nếu backend trả về message dạng object hoặc chuỗi
+      let message = "Đăng ký thất bại. Vui lòng thử lại!";
+      if (err.response?.data) {
+        if (typeof err.response.data === "string") {
+          message = err.response.data;
+        } else if (typeof err.response.data === "object" && err.response.data.message) {
+          message = err.response.data.message;
+        }
+      }
+      setError(message);
     }
   };
 

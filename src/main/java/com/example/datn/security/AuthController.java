@@ -1,11 +1,16 @@
 package com.example.datn.security;
 
+import com.example.datn.dto.QuenMatKhauDTO;
 import com.example.datn.dto.RegisterKhachHangDTO;
+import com.example.datn.dto.ResetMatKhauDTO;
 import com.example.datn.entity.KhachHang;
+import com.example.datn.entity.NhanVien;
 import com.example.datn.repository.KhachHangRepository;
+import com.example.datn.repository.NhanVienRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -16,8 +21,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletResponse;
-import java.util.HashMap;
-import java.util.Map;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -34,8 +40,22 @@ public class AuthController {
     @Autowired
     private KhachHangRepository khachHangRepository;
 
+    @Autowired
+    private NhanVienRepository nhanVienRepository;
+
+    @Autowired
+    private EmailService emailService;
+
+    // Lưu mã xác nhận quên mật khẩu (tạm thời, production nên lưu DB/Redis)
+    private final Map<String, String> passwordResetCodes = new ConcurrentHashMap<>();
+    private final Random random = new Random();
+
+    // TODO: Inject your JwtUtil or TokenService here if you use JWT for token generation
+    // @Autowired
+    // private JwtUtil jwtUtil;
+
     /**
-     * Xử lý API đăng nhập.
+     * Xử lý API đăng nhập (trả accessToken cho FE, refreshToken lưu ở httpOnly cookie)
      */
     @PostMapping("/login")
     public Map<String, Object> login(
@@ -72,9 +92,24 @@ public class AuthController {
 
         logger.info("Đăng nhập thành công cho user: {}, role: {}", username, role);
 
+        // Sinh access token và refresh token (ví dụ dùng JWT)
+        String accessToken = "fake-access-token-for-" + username; // TODO: sinh JWT thực tế ở đây
+        String refreshToken = "fake-refresh-token-for-" + username; // TODO: sinh JWT thực tế ở đây
+
+        // Set refresh token vào httpOnly cookie
+        ResponseCookie refreshCookie = ResponseCookie.from("refreshToken", refreshToken)
+                .httpOnly(true)
+                .secure(false) // đổi thành true khi chạy với HTTPS
+                .sameSite("Strict")
+                .path("/")
+                .maxAge(Duration.ofDays(7))
+                .build();
+        response.addHeader("Set-Cookie", refreshCookie.toString());
+
         Map<String, Object> res = new HashMap<>();
         res.put("role", role);
         res.put("username", username);
+        res.put("accessToken", accessToken); // FE sẽ dùng token này cho gọi API các chức năng
         res.put("message", "Login successful");
         return res;
     }
@@ -112,5 +147,102 @@ public class AuthController {
 
         logger.info("Đăng ký thành công cho khách hàng: {}", request.getEmail());
         return ResponseEntity.ok("Đăng ký tài khoản thành công!");
+    }
+
+    /**
+     * API logout: xóa refreshToken cookie
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletResponse response) {
+        ResponseCookie deleteCookie = ResponseCookie.from("refreshToken", "")
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Strict")
+                .path("/")
+                .maxAge(0)
+                .build();
+        response.addHeader("Set-Cookie", deleteCookie.toString());
+        // Trả về JSON
+        return ResponseEntity.ok(Collections.singletonMap("message", "Đã đăng xuất!"));
+    }
+
+    /**
+     * API gửi mã xác nhận quên mật khẩu
+     */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody QuenMatKhauDTO request) {
+        String email = request.getEmail();
+        if (email == null || email.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Vui lòng nhập email!");
+        }
+        // Kiểm tra email tồn tại (Khách hàng hoặc Nhân viên)
+        boolean khExist = khachHangRepository.findByEmail(email).isPresent();
+        boolean nvExist = nhanVienRepository.findByEmail(email).isPresent();
+        if (!khExist && !nvExist) {
+            return ResponseEntity.badRequest().body("Email không tồn tại!");
+        }
+        // Sinh mã xác nhận tạm thời (6 số)
+        String code = String.format("%06d", random.nextInt(1000000));
+        passwordResetCodes.put(email, code);
+
+        logger.info("Gửi mã reset password '{}' cho email {}", code, email);
+
+        // Gửi mã qua email HTML đẹp
+        emailService.sendOtpHtml(email, code);
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("message", "Mã xác nhận đã được gửi tới email của bạn.");
+        // res.put("code", code); // Chỉ để dev test, production không nên trả về code này!
+        return ResponseEntity.ok(res);
+    }
+
+    /**
+     * API xác nhận mã và đổi mật khẩu mới
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody ResetMatKhauDTO request) {
+        String email = request.getEmail();
+        String code = request.getCode();
+        String newPassword = request.getMatKhauMoi();
+        String confirmPassword = request.getXacNhanMatKhauMoi();
+
+        if (email == null || code == null || newPassword == null || confirmPassword == null
+                || email.trim().isEmpty() || code.trim().isEmpty() || newPassword.trim().isEmpty() || confirmPassword.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Vui lòng nhập đầy đủ thông tin!");
+        }
+
+        if (!newPassword.equals(confirmPassword)) {
+            return ResponseEntity.badRequest().body("Mật khẩu mới và xác nhận mật khẩu không khớp!");
+        }
+
+        // Kiểm tra mã xác nhận
+        String storedCode = passwordResetCodes.get(email);
+        if (storedCode == null || !storedCode.equals(code)) {
+            return ResponseEntity.badRequest().body("Mã xác nhận không đúng hoặc đã hết hạn!");
+        }
+
+        // Đổi mật khẩu cho Khách hàng nếu tồn tại
+        Optional<KhachHang> khOpt = khachHangRepository.findByEmail(email);
+        if (khOpt.isPresent()) {
+            KhachHang kh = khOpt.get();
+            kh.setMatKhau(passwordEncoder.encode(newPassword));
+            khachHangRepository.save(kh);
+            passwordResetCodes.remove(email);
+            logger.info("Đổi mật khẩu thành công cho khách hàng email {}", email);
+            return ResponseEntity.ok(Collections.singletonMap("message", "Đặt lại mật khẩu thành công!"));
+        }
+
+        // Nếu không phải khách hàng, kiểm tra nhân viên
+        Optional<NhanVien> nvOpt = nhanVienRepository.findByEmail(email);
+        if (nvOpt.isPresent()) {
+            NhanVien nv = nvOpt.get();
+            nv.setMatKhau(passwordEncoder.encode(newPassword));
+            nhanVienRepository.save(nv);
+            passwordResetCodes.remove(email);
+            logger.info("Đổi mật khẩu thành công cho nhân viên email {}", email);
+            return ResponseEntity.ok(Collections.singletonMap("message", "Đặt lại mật khẩu thành công!"));
+        }
+
+        return ResponseEntity.badRequest().body("Email không hợp lệ!");
     }
 }

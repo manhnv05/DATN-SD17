@@ -1,7 +1,7 @@
 /**
- * Đăng nhập bằng username & password, trả về object gồm: { role, username, message }
+ * Đăng nhập bằng username & password, trả về object dữ liệu backend trả về (có thể gồm: role, username, message, accessToken...)
  * @param {{ username: string, password: string }} param0
- * @returns {Promise<{ role: string, username: string, message: string }>}
+ * @returns {Promise<object>} // trả về toàn bộ object backend trả về
  */
 export async function signIn({ username, password }) {
     const response = await fetch("http://localhost:8080/api/auth/login", {
@@ -30,6 +30,6 @@ export async function signIn({ username, password }) {
         throw new Error(data?.message || "Đăng nhập thất bại!");
     }
 
-    // { role, username, message }
+    // Trả về toàn bộ object backend trả về (role, username, message, accessToken, ...)
     return data;
 }
