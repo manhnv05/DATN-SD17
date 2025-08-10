@@ -40,6 +40,13 @@ public class ChiTietPhieuGiamGiaController {
     ) {
         return ResponseHelper.success("", phieuGiamGiaKhachHangService.getpggkh(page, size,request));
     }
+    @GetMapping("/pddkh-online")
+    public ResponseEntity<ApiResponse<List<PhieuGiamGiaDTO>>> pddkhOnline(
+            @RequestParam Integer idKhachHang
+    )
+    {
+        return ResponseHelper.success("", phieuGiamGiaKhachHangService.queryPGGKHOnline(idKhachHang));
+    }
 
     @PostMapping("")
     public ResponseEntity<ApiResponse<List<ChiTietPhieuGiamGiaDTO>>> create(@RequestBody List<ChiTietPhieuGiamGiaVO> listRequest) {

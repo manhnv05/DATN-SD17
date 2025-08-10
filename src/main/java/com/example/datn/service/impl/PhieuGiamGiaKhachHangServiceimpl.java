@@ -173,4 +173,20 @@ public class PhieuGiamGiaKhachHangServiceimpl implements ChiTietPhieuGiamGiaServ
         return ChiTietPhieuGiamGiaMapper.INSTANCE.toResponse(chiTiet);
     }
 
+    @Override
+    public List<PhieuGiamGiaDTO> queryPGGKHOnline(Integer idKhachHang) {
+        if (idKhachHang == 0) {
+            List<PhieuGiamGia> pgg = phieuGiamGiaRepository.getPhieuGiamGiaByTrangThai();
+            return pgg.stream().map(PhieuGiamGiaMapper.INSTANCE::toResponse).collect(Collectors.toList());
+        }
+        else {
+            List<PhieuGiamGia> combinedList = new ArrayList<>();
+            List<PhieuGiamGia> pgg = phieuGiamGiaRepository.getPhieuGiamGiaByTrangThai();
+            List<PhieuGiamGia> pggKH = phieuGiamGiaKhachHangRepository.queryPhieuGiamGiaKhachHangOnline(idKhachHang);
+            combinedList.addAll(pgg);
+            combinedList.addAll(pggKH);
+            return combinedList.stream().map(PhieuGiamGiaMapper.INSTANCE::toResponse).collect(Collectors.toList());
+        }
+    }
+
 }

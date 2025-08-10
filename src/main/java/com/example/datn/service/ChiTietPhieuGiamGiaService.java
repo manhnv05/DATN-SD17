@@ -18,4 +18,5 @@ public interface ChiTietPhieuGiamGiaService {
     Page<PhieuGiamGiaDTO> queryPhieuGiamGiaKhachHang(int page, int size, ChiTietPhieuGiamGiaVO request);
     Page<ChiTietPhieuGiamGiaDTO> getpggkh(int page, int size, ChiTietPhieuGiamGiaVO request);
     ChiTietPhieuGiamGiaDTO findVoucherByCodeForCustomer(String maPhieu, Integer idKhachHang);
+    List<PhieuGiamGiaDTO> queryPGGKHOnline(Integer idKhachHang);
 }
