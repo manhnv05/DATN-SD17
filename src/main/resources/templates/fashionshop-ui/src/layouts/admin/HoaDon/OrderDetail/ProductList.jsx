@@ -1,12 +1,16 @@
 import React from "react";
-
+import { Box } from "@mui/material";
 import styles from "./ProductList.module.css";
 import PropTypes from "prop-types";
 import { useState, useEffect, useCallback } from "react";
+import ProductSlideshow from "../../BanHangTaiQuay/component/ProductSlideshow.jsx";
+import ProductSelectionModal from "../../BanHangTaiQuay/component/ProductSelectionModal.jsx"
 const BASE_SERVER_URL = "http://localhost:8080/";
 const ProductList = ({ orderId, orderStatus }) => {
   const [orderData, setOrderData] = useState(null);
   const [productsInOrder, setProductsInOrder] = useState([]);
+    // 1. Thêm state để quản lý việc hiển thị modal
+  const [isModalOpen, setIsModalOpen] = useState(false);
   useEffect(() => {
     if (!orderId) {
       setProducts([]);
@@ -16,8 +20,8 @@ const ProductList = ({ orderId, orderStatus }) => {
       try {
         // Gọi API bằng fetch, 'await' sẽ đợi cho đến khi có phản hồi
         const response = await fetch(
-            `http://localhost:8080/api/hoa-don/${orderId}/san-pham`,
-            { credentials: "include" } // <-- SỬA ở đây
+          `http://localhost:8080/api/hoa-don/${orderId}/san-pham`,
+          { credentials: "include" } // <-- SỬA ở đây
         );
 
         if (!response.ok) {
@@ -44,7 +48,7 @@ const ProductList = ({ orderId, orderStatus }) => {
 
   return (
     <div className={styles["product-list"]}>
-      {orderStatus === "CHỜ XÁC NHẬN" && (
+      {orderStatus === "CHO_XAC_NHAN" && (
         <div className={styles["product-list-header"]}>
           <button className={`${styles.btn} ${styles.btnConfirm}`}>Thêm sản phẩm</button>
         </div>
@@ -57,19 +61,20 @@ const ProductList = ({ orderId, orderStatus }) => {
         // Map dữ liệu từ state 'products' đã được fetch ở trên
         productsInOrder.map((product) => (
           <div key={product.id || product.maSanPhamChiTiet} className={styles["product-item"]}>
-            <div className={styles["product-image"]}>
-              <img
-                src={BASE_SERVER_URL + product.duongDanAnh}
-                alt={product.tenSanPham} // Sử dụng 'tenSanPham' cho alt text
-              />
-            </div>
+            <Box sx={{ position: "relative", width: 150, height: 150, ml: 2 }}>
+            <ProductSlideshow product={{
+    ...product,
+    listUrlImage: product.hinhAnhctsp
+}} />
+            </Box>
             <div className={styles["product-details"]}>
               <p className={styles["product-name"]}>
-                {product.tenSanPham} ({product.maSanPhamChiTiet})
+                {product.tenSanPham} ({product.maSanPhamChiTiet}) 
               </p>
               <p className={styles["product-price"]}>
                 {(product.thanhTien || 0).toLocaleString("vi-VN")} VND
               </p>
+               <p className={styles["product-info"]}>{product.tenMauSac}</p>
               <p className={styles["product-info"]}>Size: {product.tenKichThuoc}</p>
               <p className={styles["product-info"]}>x{product.soLuong}</p>
             </div>

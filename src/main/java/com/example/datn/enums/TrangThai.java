@@ -40,9 +40,9 @@ public enum TrangThai {
                 // Chỉ cho phép hoàn thành khi đang vận chuyển hoặc đã xác nhận (tại quầy)
                 return this == DANG_VAN_CHUYEN || this == DA_XAC_NHAN;
             case HUY:
-                // Cho phép hủy khi chưa hoàn thành hoặc chưa bị hủy
-                return this != HOAN_THANH && this != HUY;
-            // ... định nghĩa tất cả các quy tắc hợp lệ khác
+                return this == CHO_XAC_NHAN
+                        || this == DA_XAC_NHAN;
+
             default:
                 return false;
         }
