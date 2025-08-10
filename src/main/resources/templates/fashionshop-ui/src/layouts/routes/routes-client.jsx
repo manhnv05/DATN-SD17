@@ -3,6 +3,7 @@ import Shop from "layouts/client/shop";
 import Blog from "layouts/client/blog";
 import Contact from "layouts/client/contact";
 import About from "layouts/client/about";
+import ProductDetail from "layouts/client/shop/detail"; // chỉnh lại path cho đúng nếu cần
 import SignIn from "layouts/admin/authentication/sign-in"; // chỉnh lại path cho đúng nếu cần
 import SignUp from "layouts/admin/authentication/sign-up";
 import CartPage from "layouts/client/card/CartPage" 
@@ -64,6 +65,14 @@ const routesClient = [
         component: <About />,
         noCollapse: true,
         hidden: false,
+    },
+    {
+        name: "Chi tiết sản phẩm",
+        key: "product-detail",
+        route: "/shop/detail/:id",
+        component: <ProductDetail />,
+        noCollapse: true,
+        hidden: true,
     },
     {
         name: "Đăng nhập",

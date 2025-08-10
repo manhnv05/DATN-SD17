@@ -30,15 +30,9 @@ import ViewDiscountEventPage from "../admin/GiamGia/ViewDiscountEventPage";
 import OAuth2RedirectHandler from "../admin/authentication/OAuth2RedirectHandler";
 
 
-import SignIn from "../admin/authentication/sign-in";
-import SignUp from "../admin/authentication/sign-up";
-
 import Shop from "../../examples/Icons/Shop";
 import Office from "../../examples/Icons/Office";
 import Settings from "../../examples/Icons/Settings";
-import Document from "../../examples/Icons/Document";
-import SpaceShip from "../../examples/Icons/SpaceShip";
-import CustomerSupport from "../../examples/Icons/CustomerSupport";
 import CreditCard from "../../examples/Icons/CreditCard";
 import Cube from "../../examples/Icons/Cube";
 
@@ -193,34 +187,6 @@ const routesAdmin = [
     component: <KhachHang />,
     noCollapse: true,
   },
-  // { type: "title", title: "Account Pages", key: "account-pages" },
-  // {
-  //   type: "collapse",
-  //   name: "Profile",
-  //   key: "profile",
-  //   route: "/profile",
-  //   icon: <CustomerSupport size="12px" />,
-  //   //component: <Profile />,
-  //   noCollapse: true,
-  // },
-  // {
-  //   type: "collapse",
-  //   name: "Sign In",
-  //   key: "sign-in",
-  //   route: "/authentication/sign-in",
-  //   icon: <Document size="12px" />,
-  //   component: <SignIn />,
-  //   noCollapse: true,
-  // },
-  // {
-  //   type: "collapse",
-  //   name: "Sign Up",
-  //   key: "sign-up",
-  //   route: "/authentication/sign-up",
-  //   icon: <SpaceShip size="12px" />,
-  //   component: <SignUp />,
-  //   noCollapse: true,
-  // },
   {
     type: "item",
     name: "Thêm Sản Phẩm",
