@@ -19,6 +19,7 @@ import {
 import { ShoppingCart, Person, Search, Menu as MenuIcon, Favorite as FavoriteIcon } from "@mui/icons-material";
 import { useNavigate, Link as RouterLink } from "react-router-dom";
 import logoImg from "assets/images/logo4.png";
+import { logout } from "../data/logout";
 
 // Fake number of favorite products for demo
 const demoFavoriteCount = 4;
@@ -43,7 +44,7 @@ function Logo() {
 }
 
 const navItems = [
-    { label: "OUTLET", red: true },
+    { label: "OUTLET", red: true, route: "/outlet-sales" },
     { label: "HOME", route: "/home" },
     { label: "SHOP", route: "/shop" },
     { label: "ABOUT", route: "/about" },
@@ -67,7 +68,6 @@ export default function Header() {
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
 
-    // Lấy email, username, role từ localStorage
     const email = localStorage.getItem("email") || "";
     const username = localStorage.getItem("username");
     const role = localStorage.getItem("role");
@@ -90,14 +90,21 @@ export default function Header() {
     }
 
     function handleLogout() {
-        localStorage.removeItem("role");
-        localStorage.removeItem("username");
-        localStorage.removeItem("name");
-        localStorage.removeItem("email");
-        handleCloseMenu();
-        setTimeout(function () {
-            navigate("/home");
-        }, 150);
+        logout()
+            .catch((err) => {
+                // Có thể show thông báo nếu muốn
+                console.error("Đăng xuất thất bại:", err.message);
+            })
+            .finally(() => {
+                localStorage.removeItem("role");
+                localStorage.removeItem("username");
+                localStorage.removeItem("name");
+                localStorage.removeItem("email");
+                handleCloseMenu();
+                setTimeout(function () {
+                    navigate("/home");
+                }, 150);
+            });
     }
 
     function handleLogin() {
@@ -460,9 +467,9 @@ export default function Header() {
                                 {renderAccountMenu()}
                             </React.Fragment>
                         )}
-                        <IconButton 
-                          component="a"
-    href="/card"
+                        <IconButton
+                            component={RouterLink} // use RouterLink for client-side routing
+                            to="/card"
                         sx={{
                             bgcolor: "#fff",
                             border: "1.5px solid #e3f0fa",

@@ -49,7 +49,7 @@ import OAuth2RedirectHandler from "./layouts/admin/authentication/OAuth2Redirect
 import SignIn from "./layouts/admin/authentication/sign-in";
 import SignUp from "./layouts/admin/authentication/sign-up";
 
-// Hàm lọc routes menu theo role
+// Lọc route theo role
 function filterRoutesByRole(routes, role) {
     const allowedKeysForStaff = ["dashboard", "billing", "sales"];
     if (role === "QUANLY" || role === "QUANTRIVIEN") return routes;
@@ -59,13 +59,11 @@ function filterRoutesByRole(routes, role) {
     return [];
 }
 
-// Hàm lấy tất cả path admin (cho logic isAdminPage)
-// SỬA ĐỂ MATCH ĐƯỢC CẢ ROUTE DẠNG ĐỘNG NHƯ /nhanvien/detail/:id
+// Lấy tất cả route admin cho kiểm tra isAdminPage
 function extractAllAdminRoutes(routes) {
     let allRoutes = [];
     routes.forEach(route => {
         if (route.route) {
-            // Nếu có : thì chỉ lấy phần trước dấu :
             const baseRoute = "/" + route.route.replace(/^\//, "").split("/:")[0];
             allRoutes.push(baseRoute);
         }
@@ -74,24 +72,43 @@ function extractAllAdminRoutes(routes) {
     return allRoutes;
 }
 
-// Phân quyền route admin
+// Guard cho admin, KHÔNG redirect ở các route public
 function RequireAdmin(props) {
     const role = localStorage.getItem("role");
     const location = useLocation();
     const pathname = location.pathname;
-    // Các route cho NHANVIEN
     const allowedForStaff = ["/dashboard", "/OrderManagementPage", "/sales", "/QuanLyHoaDon"];
+
+    // DEBUG LOG
+    console.log("[DEBUG] RequireAdmin check:", { pathname, role });
+
+    // Nếu đang ở route đăng nhập/đăng ký thì KHÔNG redirect về /home
+    if (
+        pathname.startsWith("/authentication/sign-in")
+        || pathname.startsWith("/authentication/sign-up")
+        // || pathname.startsWith("/forgot-password") // Nếu có forgot-password page riêng thì mở dòng này
+    ) {
+        console.log("[DEBUG] RequireAdmin: Bypass for public route");
+        return props.children;
+    }
+
+    // Nếu là nhân viên mà truy cập route không được phép
     if (role === "NHANVIEN" && !allowedForStaff.some(r => pathname.startsWith(r))) {
+        console.log("[DEBUG] RequireAdmin: Staff, not allowed, redirect /dashboard");
         return <Navigate to="/dashboard" replace />;
     }
+    // Nếu không phải role hợp lệ thì về home
     if (!["NHANVIEN", "QUANLY", "QUANTRIVIEN"].includes(role)) {
+        console.log("[DEBUG] RequireAdmin: No valid role, redirect /home");
         return <Navigate to="/home" replace />;
     }
+    console.log("[DEBUG] RequireAdmin: Access granted");
     return props.children;
 }
 RequireAdmin.propTypes = {
     children: PropTypes.node
 };
+
 function WrapperRTL(props) {
     return (
         <CacheProvider value={props.rtlCache}>
@@ -129,7 +146,9 @@ export default function App() {
     const location = useLocation();
     const pathname = location.pathname;
     const role = localStorage.getItem("role");
-    // Lọc menu theo role
+    const [showChat1, setShowChat1] = useState(true);
+    const [showChat2, setShowChat2] = useState(true);
+
     const filteredRoutesAdmin = useMemo(() => filterRoutesByRole(routesAdmin, role), [role]);
     useMemo(() => {
         const cacheRtl = createCache({
@@ -175,7 +194,8 @@ export default function App() {
             return null;
         });
     }
-    const configsButton = (
+
+    const configsButton = showChat1 && (
         <SoftBox
             display="flex"
             justifyContent="center"
@@ -199,6 +219,32 @@ export default function App() {
                 }
             }}
         >
+            <span
+                style={{
+                    position: "absolute",
+                    top: "-10px",
+                    right: "-10px",
+                    width: "20px",
+                    height: "20px",
+                    background: "#ff5b5b",
+                    color: "white",
+                    borderRadius: "50%",
+                    fontWeight: "bold",
+                    fontSize: "16px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    zIndex: 100
+                }}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setShowChat1(false);
+                }}
+                title="Đóng"
+            >
+                ×
+            </span>
             <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="36"
@@ -235,7 +281,7 @@ export default function App() {
             c-0.133,0.1-0.28,0.15-0.435,0.15c-0.15,0-0.291-0.047-0.41-0.136l-3.972-2.99
             c-0.808-0.601-1.76-0.918-2.757-0.918c-1.576,0-3.025,0.791-3.876,2.116l-1.211,1.891l-4.12,6.695
             c-0.392,0.614-0.422,1.372-0.071,2.014c0.358,0.654,1.034,1.06,1.764,1.06c0.428,0,0.843-0.142,1.2-0.411l5.694-4.215
-            c0.133-0.1,0.28-0.15,0.435-0.15c0.15,0,0.291,0.047,0.41,0.136l3.972,2.99c0.809,0.602,1.76,0.918,2.757,0.918
+            c0.133-0.1,0.28-0.15,0.435-0.15c0.15,0,0.291-0.047,0.41-0.136l3.972,2.99c0.809,0.602,1.76,0.918,2.757,0.918
             c1.576,0,3.025-0.791,3.876-2.116l1.211-1.891l4.12-6.695c0.392-0.614,0.422-1.372,0.071-2.014
             C36.398,17.698,35.722,17.292,34.992,17.292z"
                 />
@@ -258,7 +304,8 @@ export default function App() {
             </svg>
         </SoftBox>
     );
-    const configsButton2 = (
+
+    const configsButton2 = showChat2 && (
         <SoftBox
             display="flex"
             justifyContent="center"
@@ -282,6 +329,32 @@ export default function App() {
                 }
             }}
         >
+            <span
+                style={{
+                    position: "absolute",
+                    top: "-10px",
+                    right: "-10px",
+                    width: "20px",
+                    height: "20px",
+                    background: "#ff5b5b",
+                    color: "white",
+                    borderRadius: "50%",
+                    fontWeight: "bold",
+                    fontSize: "16px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    zIndex: 100
+                }}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setShowChat2(false);
+                }}
+                title="Đóng"
+            >
+                ×
+            </span>
             <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 64 64" style={{ userSelect: "none" }}>
                 <defs>
                     <linearGradient id="gr1" x1="39.938" x2="39.938" y1="30" y2="39" gradientUnits="userSpaceOnUse" spreadMethod="reflect">
@@ -320,135 +393,161 @@ export default function App() {
             </svg>
         </SoftBox>
     );
+
     const allAdminRoutes = useMemo(() => extractAllAdminRoutes(routesAdmin), []);
-    const isAdminPage = allAdminRoutes.some((r) => pathname.startsWith(r));
-    if (direction === "rtl") {
-        return (
-            <WrapperRTL rtlCache={rtlCache}>
-                {isAdminPage ? (
-                    <RequireAdmin>
-                        {layout === "dashboard" && (
-                            <>
-                                <Sidenav
-                                    color={sidenavColor}
-                                    brand={brand}
-                                    routes={filteredRoutesAdmin}
-                                    onMouseEnter={handleOnMouseEnter}
-                                    onMouseLeave={handleOnMouseLeave}
-                                />
-                                {configsButton}
-                                {configsButton2}
-                            </>
-                        )}
-                        <Routes>
-                            {getRoutes(routesAdmin)}
-                            <Route path="/SanPham" element={<SanPham />} />
-                            <Route path="/Brand" element={<ThuongHieu />} />
-                            <Route path="/material" element={<ChatLieu />} />
-                            <Route path="/category" element={<DanhMuc />} />
-                            <Route path="/size" element={<KichThuoc />} />
-                            <Route path="/color" element={<MauSac />} />
-                            <Route path="/sleeve" element={<TayAo />} />
-                            <Route path="/colar" element={<CoAo />} />
-                            <Route path="/image" element={<HinhAnh />} />
-                            <Route path="/SanPham/ThemMoi" element={<ProductForm />} />
-                            <Route path="/SanPham/ChiTietSanPham/:id" element={<ProductDetailForm />} />
-                            <Route path="/discount" element={<PhieuGiamPage />} />
-                            <Route path="/discount-event" element={<GiamGia />} />
-                            <Route path="/OrderManagementPage" element={<OrderManagementPage />} />
-                            <Route path="/QuanLyHoaDon/:orderId" element={<OrderDetailPage />} />
-                            <Route path="/discount-event/add" element={<AddDiscountEventPage />} />
-                            <Route path="/discount-event/view" element={<ViewDiscountEventPage />} />
-                            <Route path="/PhieuGiam/ThemMoi" element={<AddPhieuGiam />} />
-                            <Route path="/PhieuGiam/update/:id" element={<UpdatePhieuGiam />} />
-                            <Route path="/customer-management" element={<KhachHang />} />
-                            <Route path="/khachhang/add" element={<AddKhachHang />} />
-                            <Route path="/khachhang/detail/:id" element={<DetailKhachHang />} />
-                            <Route path="/khachhang/update/:id" element={<UpdateKhachHang />} />
-                            <Route path="/staff-management" element={<NhanVien />} />
-                            <Route path="/nhanvien/add" element={<AddNhanVien />} />
-                            <Route path="/nhanvien/detail/:id" element={<DetailNhanVien />} />
-                            <Route path="/nhanvien/update/:id" element={<UpdateNhanVien />} />
-                            <Route path="/sales" element={<SalesDashboardPage />} />
-                            <Route path="/dashboard" element={<DashboardStats />} />
-                            <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
-                            <Route path="/authentication/sign-in" element={<SignIn />} />
-                            <Route path="/authentication/sign-up" element={<SignUp />} />
-                            <Route path="*" element={<Navigate to="/dashboard" />} />
-                        </Routes>
-                    </RequireAdmin>
-                ) : (
-                    <Routes>
-                        <Route path="/home" element={<Home />} />
-                        {getRoutes(routesClient)}
-                        <Route path="*" element={<Navigate to="/home" />} />
-                    </Routes>
-                )}
-            </WrapperRTL>
-        );
-    }
-    return (
-        <WrapperLTR>
-            {isAdminPage ? (
-                <RequireAdmin>
-                    {layout === "dashboard" && (
+    // Sửa: chỉ là trang admin nếu KHÔNG phải trang login/signup
+    const isAdminPage = allAdminRoutes.some((r) =>
+            pathname.startsWith(r) &&
+            !pathname.startsWith("/authentication/sign-in") &&
+            !pathname.startsWith("/authentication/sign-up")
+        // && !pathname.startsWith("/forgot-password")
+    );
+
+    // DEBUG LOG cho xác định route
+    console.log("[DEBUG] pathname:", pathname, "| isAdminPage:", isAdminPage, "| role:", role);
+
+    // Các route public (login, signup, forgot-password) phải luôn nằm ngoài guard/wildcard
+    return direction === "rtl" ? (
+        <WrapperRTL rtlCache={rtlCache}>
+            <>
+                {configsButton}
+                {configsButton2}
+                <Routes>
+                    <Route path="/authentication/sign-in" element={<SignIn />} />
+                    <Route path="/authentication/sign-up" element={<SignUp />} />
+                    {/* Nếu forgot-password là page riêng, thêm route tại đây */}
+                    {/* <Route path="/forgot-password" element={<ForgotPasswordPage />} /> */}
+                    {isAdminPage ? (
+                        <Route
+                            path="*"
+                            element={
+                                <RequireAdmin>
+                                    {layout === "dashboard" && (
+                                        <Sidenav
+                                            color={sidenavColor}
+                                            brand={brand}
+                                            routes={filteredRoutesAdmin}
+                                            onMouseEnter={handleOnMouseEnter}
+                                            onMouseLeave={handleOnMouseLeave}
+                                        />
+                                    )}
+                                    <Routes>
+                                        {getRoutes(routesAdmin)}
+                                        <Route path="/SanPham" element={<SanPham />} />
+                                        <Route path="/Brand" element={<ThuongHieu />} />
+                                        <Route path="/material" element={<ChatLieu />} />
+                                        <Route path="/category" element={<DanhMuc />} />
+                                        <Route path="/size" element={<KichThuoc />} />
+                                        <Route path="/color" element={<MauSac />} />
+                                        <Route path="/sleeve" element={<TayAo />} />
+                                        <Route path="/colar" element={<CoAo />} />
+                                        <Route path="/image" element={<HinhAnh />} />
+                                        <Route path="/SanPham/ThemMoi" element={<ProductForm />} />
+                                        <Route path="/SanPham/ChiTietSanPham/:id" element={<ProductDetailForm />} />
+                                        <Route path="/discount" element={<PhieuGiamPage />} />
+                                        <Route path="/discount-event" element={<GiamGia />} />
+                                        <Route path="/OrderManagementPage" element={<OrderManagementPage />} />
+                                        <Route path="/QuanLyHoaDon/:orderId" element={<OrderDetailPage />} />
+                                        <Route path="/discount-event/add" element={<AddDiscountEventPage />} />
+                                        <Route path="/discount-event/view" element={<ViewDiscountEventPage />} />
+                                        <Route path="/PhieuGiam/ThemMoi" element={<AddPhieuGiam />} />
+                                        <Route path="/PhieuGiam/update/:id" element={<UpdatePhieuGiam />} />
+                                        <Route path="/customer-management" element={<KhachHang />} />
+                                        <Route path="/khachhang/add" element={<AddKhachHang />} />
+                                        <Route path="/khachhang/detail/:id" element={<DetailKhachHang />} />
+                                        <Route path="/khachhang/update/:id" element={<UpdateKhachHang />} />
+                                        <Route path="/staff-management" element={<NhanVien />} />
+                                        <Route path="/nhanvien/add" element={<AddNhanVien />} />
+                                        <Route path="/nhanvien/detail/:id" element={<DetailNhanVien />} />
+                                        <Route path="/nhanvien/update/:id" element={<UpdateNhanVien />} />
+                                        <Route path="/sales" element={<SalesDashboardPage />} />
+                                        <Route path="/dashboard" element={<DashboardStats />} />
+                                        <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
+                                        <Route path="*" element={<Navigate to="/dashboard" />} />
+                                    </Routes>
+                                </RequireAdmin>
+                            }
+                        />
+                    ) : (
                         <>
-                            <Sidenav
-                                color={sidenavColor}
-                                brand={brand}
-                                routes={filteredRoutesAdmin}
-                                onMouseEnter={handleOnMouseEnter}
-                                onMouseLeave={handleOnMouseLeave}
-                            />
-                            {configsButton}
-                            {configsButton2}
+                            <Route path="/home" element={<Home />} />
+                            {getRoutes(routesClient)}
+                            <Route path="*" element={<Navigate to="/home" />} />
                         </>
                     )}
-                    <Routes>
-                        {getRoutes(routesAdmin)}
-                        <Route path="/SanPham" element={<SanPham />} />
-                        <Route path="/Brand" element={<ThuongHieu />} />
-                        <Route path="/material" element={<ChatLieu />} />
-                        <Route path="/category" element={<DanhMuc />} />
-                        <Route path="/size" element={<KichThuoc />} />
-                        <Route path="/color" element={<MauSac />} />
-                        <Route path="/sleeve" element={<TayAo />} />
-                        <Route path="/colar" element={<CoAo />} />
-                        <Route path="/image" element={<HinhAnh />} />
-                        <Route path="/SanPham/ThemMoi" element={<ProductForm />} />
-                        <Route path="/SanPham/ChiTietSanPham/:id" element={<ProductDetailForm />} />
-                        <Route path="/discount" element={<PhieuGiamPage />} />
-                        <Route path="/discount-event" element={<GiamGia />} />
-                        <Route path="/OrderManagementPage" element={<OrderManagementPage />} />
-                        <Route path="/QuanLyHoaDon/:orderId" element={<OrderDetailPage />} />
-                        <Route path="/discount-event/add" element={<AddDiscountEventPage />} />
-                        <Route path="/discount-event/view" element={<ViewDiscountEventPage />} />
-                        <Route path="/PhieuGiam/ThemMoi" element={<AddPhieuGiam />} />
-                        <Route path="/PhieuGiam/update/:id" element={<UpdatePhieuGiam />} />
-                        <Route path="/customer-management" element={<KhachHang />} />
-                        <Route path="/khachhang/add" element={<AddKhachHang />} />
-                        <Route path="/khachhang/detail/:id" element={<DetailKhachHang />} />
-                        <Route path="/khachhang/update/:id" element={<UpdateKhachHang />} />
-                        <Route path="/staff-management" element={<NhanVien />} />
-                        <Route path="/nhanvien/add" element={<AddNhanVien />} />
-                        <Route path="/nhanvien/detail/:id" element={<DetailNhanVien />} />
-                        <Route path="/nhanvien/update/:id" element={<UpdateNhanVien />} />
-                        <Route path="/sales" element={<SalesDashboardPage />} />
-                        <Route path="/dashboard" element={<DashboardStats />} />
-                        <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
-                        <Route path="/authentication/sign-in" element={<SignIn />} />
-                        <Route path="/authentication/sign-up" element={<SignUp />} />
-                        <Route path="*" element={<Navigate to="/dashboard" />} />
-                    </Routes>
-                </RequireAdmin>
-            ) : (
-                <Routes>
-                    
-                    <Route path="/home" element={<Home />} />
-                    {getRoutes(routesClient)}
-                    <Route path="*" element={<Navigate to="/home" />} />
                 </Routes>
-            )}
+            </>
+        </WrapperRTL>
+    ) : (
+        <WrapperLTR>
+            <>
+                {configsButton}
+                {configsButton2}
+                <Routes>
+                    <Route path="/authentication/sign-in" element={<SignIn />} />
+                    <Route path="/authentication/sign-up" element={<SignUp />} />
+                    {/* Nếu forgot-password là page riêng, thêm route tại đây */}
+                    {/* <Route path="/forgot-password" element={<ForgotPasswordPage />} /> */}
+                    {isAdminPage ? (
+                        <Route
+                            path="*"
+                            element={
+                                <RequireAdmin>
+                                    {layout === "dashboard" && (
+                                        <Sidenav
+                                            color={sidenavColor}
+                                            brand={brand}
+                                            routes={filteredRoutesAdmin}
+                                            onMouseEnter={handleOnMouseEnter}
+                                            onMouseLeave={handleOnMouseLeave}
+                                        />
+                                    )}
+                                    <Routes>
+                                        {getRoutes(routesAdmin)}
+                                        <Route path="/SanPham" element={<SanPham />} />
+                                        <Route path="/Brand" element={<ThuongHieu />} />
+                                        <Route path="/material" element={<ChatLieu />} />
+                                        <Route path="/category" element={<DanhMuc />} />
+                                        <Route path="/size" element={<KichThuoc />} />
+                                        <Route path="/color" element={<MauSac />} />
+                                        <Route path="/sleeve" element={<TayAo />} />
+                                        <Route path="/colar" element={<CoAo />} />
+                                        <Route path="/image" element={<HinhAnh />} />
+                                        <Route path="/SanPham/ThemMoi" element={<ProductForm />} />
+                                        <Route path="/SanPham/ChiTietSanPham/:id" element={<ProductDetailForm />} />
+                                        <Route path="/discount" element={<PhieuGiamPage />} />
+                                        <Route path="/discount-event" element={<GiamGia />} />
+                                        <Route path="/OrderManagementPage" element={<OrderManagementPage />} />
+                                        <Route path="/QuanLyHoaDon/:orderId" element={<OrderDetailPage />} />
+                                        <Route path="/discount-event/add" element={<AddDiscountEventPage />} />
+                                        <Route path="/discount-event/view" element={<ViewDiscountEventPage />} />
+                                        <Route path="/PhieuGiam/ThemMoi" element={<AddPhieuGiam />} />
+                                        <Route path="/PhieuGiam/update/:id" element={<UpdatePhieuGiam />} />
+                                        <Route path="/customer-management" element={<KhachHang />} />
+                                        <Route path="/khachhang/add" element={<AddKhachHang />} />
+                                        <Route path="/khachhang/detail/:id" element={<DetailKhachHang />} />
+                                        <Route path="/khachhang/update/:id" element={<UpdateKhachHang />} />
+                                        <Route path="/staff-management" element={<NhanVien />} />
+                                        <Route path="/nhanvien/add" element={<AddNhanVien />} />
+                                        <Route path="/nhanvien/detail/:id" element={<DetailNhanVien />} />
+                                        <Route path="/nhanvien/update/:id" element={<UpdateNhanVien />} />
+                                        <Route path="/sales" element={<SalesDashboardPage />} />
+                                        <Route path="/dashboard" element={<DashboardStats />} />
+                                        <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
+                                        <Route path="*" element={<Navigate to="/dashboard" />} />
+                                    </Routes>
+                                </RequireAdmin>
+                            }
+                        />
+                    ) : (
+                        <>
+                            <Route path="/home" element={<Home />} />
+                            {getRoutes(routesClient)}
+                            <Route path="*" element={<Navigate to="/home" />} />
+                        </>
+                    )}
+                </Routes>
+            </>
         </WrapperLTR>
     );
 }
