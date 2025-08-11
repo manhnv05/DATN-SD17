@@ -1,5 +1,5 @@
-// src/context/CartContext.js
 import React, { createContext, useState, useContext } from 'react';
+import PropTypes from 'prop-types';
 
 // 1. Tạo Context object
 const CartContext = createContext();
@@ -18,6 +18,11 @@ export const CartProvider = ({ children }) => {
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+};
+
+// Thêm PropTypes cho children để tránh warning ESLint
+CartProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 // 3. Tạo một hook tùy chỉnh để dễ dàng sử dụng context

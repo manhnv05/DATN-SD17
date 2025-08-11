@@ -6,8 +6,10 @@ import About from "layouts/client/about";
 import ProductDetail from "layouts/client/shop/detail"; // chỉnh lại path cho đúng nếu cần
 import SignIn from "layouts/admin/authentication/sign-in"; // chỉnh lại path cho đúng nếu cần
 import SignUp from "layouts/admin/authentication/sign-up";
-import CartPage from "layouts/client/card/CartPage" 
-import CheckoutPage from "layouts/client/card/CheckoutPage" // chỉnh lại path cho đúng nếu cần
+import CartPage from "layouts/client/card";
+import Order from "layouts/client/order";
+import CheckoutPage from "layouts/client/card/CheckoutPage"; // chỉnh lại path cho đúng nếu cần
+import OutletSales from "layouts/client/outlet-sales"; // chỉnh lại path cho đúng nếu cần
 
 const routesClient = [
     {
@@ -43,6 +45,14 @@ const routesClient = [
         hidden: false,
     },
     {
+        name: "Đơn hàng",
+        key: "order",
+        route: "/order",
+        component: <Order />,
+        noCollapse: true,
+        hidden: true,
+    },
+    {
         name: "Blog",
         key: "blog",
         route: "/blog",
@@ -63,6 +73,14 @@ const routesClient = [
         key: "about",
         route: "/about",
         component: <About />,
+        noCollapse: true,
+        hidden: false,
+    },
+    {
+        name: "Outlet Sales",
+        key: "outlet-sales",
+        route: "/outlet-sales",
+        component: <OutletSales />,
         noCollapse: true,
         hidden: false,
     },
