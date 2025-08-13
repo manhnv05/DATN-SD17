@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -58,9 +59,10 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
 
     @Query("""
         SELECT ctsp FROM ChiTietSanPham ctsp
-        WHERE ctsp.soLuong < 10
+        WHERE ctsp.soLuong < :slQuery
+        ORDER BY ctsp.soLuong desc
     """)
-    Page<ChiTietSanPham> getChiTietSanPhamSapHetHan(Pageable pageable);
+    Page<ChiTietSanPham> getChiTietSanPhamSapHetHan(Pageable pageable, @Param("slQuery") Integer slQuery);
 
     @Query("""
         SELECT ctsp FROM ChiTietSanPham ctsp

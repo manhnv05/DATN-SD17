@@ -38,7 +38,7 @@ public class ThongKeServiceImpl implements ThongKeService {
     private ChiTietSanPhamRepository chiTietSanPhamRepository;
 
     @Override
-    public Map<String, ThongKeDTO> getThongKe() {
+    public Map<String, ThongKeDTO> getThongKe(LocalDateTime bd, LocalDateTime kt) {
         Map<String, ThongKeDTO> thongKeDTOMap = new HashMap<>();
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay(); // 00:00:00
         LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX); // 23:59:59.999999999
@@ -47,10 +47,15 @@ public class ThongKeServiceImpl implements ThongKeService {
         List<HoaDon> hoaDonsCuaTuanNay = thongKeRepository.getThongKeTuanNay();
         List<HoaDon> hoaDonsCuaThangNay = thongKeRepository.getThongKeThangNay();
         List<HoaDon> hoaDonsCuaNamNay = thongKeRepository.getThongKeNamNay();
+        ThongKeVoSearch thongKeVoSearch = new ThongKeVoSearch();
+        thongKeVoSearch.setTuNgay(bd);
+        thongKeVoSearch.setDenNgay(kt);
+        List<HoaDon> hoaDonsCuaKhoangTG = thongKeRepository.getAllByQuery(thongKeVoSearch);
         thongKeDTOMap.put("homNay", getThongKeByHoaDons(hoaDons));
         thongKeDTOMap.put("tuanNay", getThongKeByHoaDons(hoaDonsCuaTuanNay));
         thongKeDTOMap.put("thangNay", getThongKeByHoaDons(hoaDonsCuaThangNay));
         thongKeDTOMap.put("namNay", getThongKeByHoaDons(hoaDonsCuaNamNay));
+        thongKeDTOMap.put("tuyChinh", getThongKeByHoaDons(hoaDonsCuaKhoangTG));
         return thongKeDTOMap;
     }
 
@@ -82,20 +87,21 @@ public class ThongKeServiceImpl implements ThongKeService {
     }
 
     @Override
-    public Page<ChiTietSanPhamSapHetDTO> getAllChiTietSanPhamSapHetHan(int page, int size) {
+    public Page<ChiTietSanPhamSapHetDTO> getAllChiTietSanPhamSapHetHan(int page, int size, Integer slQuery) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<ChiTietSanPham> chiTietSanPhamPage = chiTietSanPhamRepository.getChiTietSanPhamSapHetHan(pageable);
+        Page<ChiTietSanPham> chiTietSanPhamPage = chiTietSanPhamRepository.getChiTietSanPhamSapHetHan(pageable, slQuery);
         return chiTietSanPhamPage.map(chiTietSanPham -> {
             ChiTietSanPhamSapHetDTO chiTietSanPhamDTO = new ChiTietSanPhamSapHetDTO();
             chiTietSanPhamDTO.setTenSanPham(chiTietSanPham.getSanPham().getTenSanPham());
             chiTietSanPhamDTO.setSoLuong(chiTietSanPham.getSoLuong());
             chiTietSanPhamDTO.setGiaTien(chiTietSanPham.getGia());
+            chiTietSanPhamDTO.setMaspCt(chiTietSanPham.getMaSanPhamChiTiet());
             return chiTietSanPhamDTO;
         });
     }
 
     @Override
-    public ThongKeBieuDoDTO getBieuDo(int check) {
+    public ThongKeBieuDoDTO getBieuDo(int check, LocalDateTime bd, LocalDateTime kt) {
         if(check == 1){
             LocalDateTime startOfDay = LocalDate.now().atStartOfDay(); // 00:00:00
             LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX); // 23:59:59.999999999
@@ -111,8 +117,15 @@ public class ThongKeServiceImpl implements ThongKeService {
             List<HoaDon> hoaDons = thongKeRepository.getThongKeThangNay();
             return getBieuDoAll(hoaDons);
         }
-        else{
+        else if (check == 4){
             List<HoaDon> hoaDon = thongKeRepository.getThongKeNamNay();
+            return getBieuDoAll(hoaDon);
+        }
+        else {
+            ThongKeVoSearch thongKeVoSearch = new ThongKeVoSearch();
+            thongKeVoSearch.setTuNgay(bd);
+            thongKeVoSearch.setDenNgay(kt);
+            List<HoaDon> hoaDon = thongKeRepository.getAllByQuery(thongKeVoSearch);
             return getBieuDoAll(hoaDon);
         }
     }
