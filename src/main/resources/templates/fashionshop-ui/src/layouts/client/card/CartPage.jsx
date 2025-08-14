@@ -22,8 +22,9 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import RemoveIcon from "@mui/icons-material/Remove";
 import AddIcon from "@mui/icons-material/Add";
-import { useCart } from './CartProvider';
+import { useCart } from "./CartProvider";
 import { toast } from "react-toastify";
+import ProductSlideshow from "../../admin/BanHangTaiQuay/component/ProductSlideshow.jsx";
 // Hàm định dạng tiền tệ
 const formatCurrency = (amount) => {
   if (typeof amount !== "number") return "0 VND";
@@ -32,53 +33,21 @@ const formatCurrency = (amount) => {
 
 const cartId = "testcart";
 const CartPage = () => {
-  
-    const { cartItems, setCartItems, cartId } = useCart();  // State cho sản phẩm trong giỏ, ban đầu là mảng rỗng
-  const [loading, setLoading] = useState(true); // State để kiểm soát trạng thái loading
+  const { cartItems, setCartItems, cartId, isLoading } = useCart();
   const [quantities, setQuantities] = useState({});
-  // States cho form và select
-  useEffect(() => {
-    const cartId = "testcart"; // ID giỏ hàng để test
-    const apiUrl = `http://localhost:8080/api/v1/cart/${cartId}`;
-
-    const fetchCartItems = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get(apiUrl);
-
-        // **PHẦN QUAN TRỌNG: CHUYỂN ĐỔI DỮ LIỆU TỪ API**
-        // API trả về: { idChiTietSanPham, tenSanPham, donGia, ... }
-        // Component cần: { id, name, price, ... }
-        const formattedData = response.data.map((item) => ({
-          id: item.idChiTietSanPham, // Chuyển idChiTietSanPham -> id
-          name: item.tenSanPham, // Chuyển tenSanPham -> name
-          price: item.donGia, // Chuyển donGia -> price
-          quantity: item.soLuong, // Chuyển soLuong -> quantity
-          size: item.tenKichCo, // Chuyển tenKichCo -> size
-          color: item.tenMauSac, // Chuyển tenMauSac -> color
-          image: item.hinhAnh || "https://i.imgur.com/G5g066E.png", // Dùng ảnh mặc định nếu API không có ảnh
-          sale: false, // Bạn có thể thêm logic cho sale nếu API có hỗ trợ
-        }));
-
-        setCartItems(formattedData);
-        const initialQuantities = formattedData.reduce((acc, item) => {
-          acc[item.id] = item.quantity;
-          return acc;
-        }, {});
-        setQuantities(initialQuantities); // Cập nhật state với dữ liệu đã được định dạng
-      } catch (error) {
-        console.error("Lỗi khi lấy dữ liệu giỏ hàng:", error);
-        // Có thể thêm xử lý báo lỗi cho người dùng ở đây
-      } finally {
-        setLoading(false); // Kết thúc loading
-      }
-    };
-
-    fetchCartItems();
-  }, [cartId, setCartItems]);
+  const totalProducts = cartItems.length;
   const handleQuantityChange = (id, newQuantity) => {
     setQuantities((prev) => ({ ...prev, [id]: newQuantity }));
   };
+  useEffect(() => {
+    // Đồng bộ state 'quantities' với dữ liệu từ context khi cartItems thay đổi
+    // Điều này đảm bảo số lượng sản phẩm được hiển thị chính xác khi tải trang
+    const initialQuantities = cartItems.reduce((acc, item) => {
+      acc[item.id] = item.quantity;
+      return acc;
+    }, {});
+    setQuantities(initialQuantities);
+  }, [cartItems]); // Phụ thuộc vào cartItems từ context
   const handleUpdateQuantity = async (itemId, newQuantity) => {
     const quantity = parseInt(newQuantity, 10);
 
@@ -110,7 +79,7 @@ const CartPage = () => {
         toast.error(`${errorData.message}`);
       }
       const oldQuantity = cartItems.find((item) => item.id === itemId)?.quantity;
-      setQuantities((prev) => ({ ...prev, [itemId]: oldQuantity || 1 }));
+      setQuantities((prev) => ({ ...prev, [itemId]: oldQuantity || 10 }));
     }
   };
   const handlRemoveItem = (itemId) => {
@@ -123,7 +92,7 @@ const CartPage = () => {
       toast.error("Lỗi xóa sản phẩm ");
     }
   };
-  // Các phép tính tổng tiền vẫn giữ nguyên, chúng sẽ tự động tính lại khi state thay đổi
+
   const itemSubtotal = cartItems.reduce(
     (sum, item) => sum + item.price * (quantities[item.id] || 0),
     0
@@ -150,7 +119,7 @@ const CartPage = () => {
   const orderTotal = itemSubtotal + shipping;
 
   // Hiển thị trạng thái loading
-  if (loading) {
+  if (isLoading) {
     return (
       <Box
         sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}
@@ -159,7 +128,7 @@ const CartPage = () => {
       </Box>
     );
   }
-  if (!loading && cartItems.length === 0) {
+  if (!isLoading && cartItems.length === 0) {
     return (
       <Box sx={{ bgcolor: "#fff" }}>
         <Header />
@@ -192,7 +161,9 @@ const CartPage = () => {
   return (
     <Box sx={{ bgcolor: "#fff" }}>
       <Header />
-
+      <Typography variant="h4" component="h1" sx={{ mb: 2, fontWeight: 600, textAlign: "center",mt :3 }}>
+        GIỎ HÀNG({totalProducts})
+      </Typography>
       <Container maxWidth="lg" sx={{ pt: 5, pb: 10 }}>
         <Grid container spacing={{ xs: 5, md: 8 }}>
           {/* CỘT GIỎ HÀNG BÊN TRÁI */}
@@ -209,12 +180,7 @@ const CartPage = () => {
                   <Grid container spacing={{ xs: 2, md: 3 }} key={item.id}>
                     {/* ... Toàn bộ phần render item của bạn giữ nguyên ... */}
                     <Grid item xs={12} sm={3}>
-                      <Box
-                        component="img"
-                        src={item.image}
-                        alt={item.name}
-                        sx={{ width: "100%", height: "auto", borderRadius: 0.5 }}
-                      />
+                      <ProductSlideshow product={item} />
                     </Grid>
                     <Grid item xs={12} sm={9}>
                       <Box
@@ -335,7 +301,7 @@ const CartPage = () => {
                           </Box>
                           <Box sx={{ textAlign: "right" }}>
                             <Typography variant="caption" color="text.secondary">
-                           Thành tiền
+                              Thành tiền
                             </Typography>
                             <Typography fontWeight={600}>
                               {formatCurrency(item.price * (quantities[item.id] || 1))}
@@ -351,76 +317,80 @@ const CartPage = () => {
           </Grid>
 
           {/* CỘT TÓM TẮT ĐƠN HÀNG BÊN PHẢI */}
-        <Grid item xs={12} lg={4}>
-  <Paper
-    variant="outlined"
-    sx={{
-      p: 3,
-      borderRadius: 2, // Tăng độ bo tròn cho đẹp hơn
-      position: "sticky",
-      top: 100,
-    }}
-  >
-    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-      Cộng giỏ hàng
-    </Typography>
+          <Grid item xs={12} lg={4}>
+            <Paper
+              variant="outlined"
+              sx={{
+                p: 3,
+                borderRadius: 2, // Tăng độ bo tròn cho đẹp hơn
+                position: "sticky",
+                top: 100,
+              }}
+            >
+              <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+                Cộng giỏ hàng
+              </Typography>
 
-    {/* TẠM TÍNH */}
-    <Stack
-      direction="row"
-      justifyContent="space-between"
-      alignItems="center"
-      sx={{ mb: 2 }}
-    >
-      <Typography fontWeight={600}>Tạm tính</Typography>
-      <Typography variant="h6" fontWeight={600}>
-        {formatCurrency(itemSubtotal)}
-      </Typography>
-    </Stack>
+              {/* TẠM TÍNH */}
+              <Stack
+                direction="row"
+                justifyContent="space-between"
+                alignItems="center"
+                sx={{ mb: 2 }}
+              >
+                <Typography fontWeight={600}>Tạm tính</Typography>
+                <Typography variant="h6" fontWeight={600}>
+                  {formatCurrency(itemSubtotal)}
+                </Typography>
+              </Stack>
 
-    <Divider />
+              <Divider />
 
-    {/* CHÚ THÍCH */}
-    <Typography variant="body2" color="text.secondary" sx={{ my: 2, textAlign: 'center' }}>
-      Phí vận chuyển và mã giảm giá sẽ được áp dụng ở bước thanh toán.
-    </Typography>
+              {/* CHÚ THÍCH */}
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ my: 2, textAlign: "center" }}
+              >
+                Phí vận chuyển và mã giảm giá sẽ được áp dụng ở bước thanh toán.
+              </Typography>
 
-    {/* NÚT HÀNH ĐỘNG CHÍNH */}
-    <Button
-      fullWidth
-      variant="contained"
-      size="large"
-     href="/pay"// Điều hướng đến trang thanh toán
-      sx={{
-        py: 1.5,
-        bgcolor: "#FF0000",
-        color: "white",
-        fontWeight: 700,
-        "&:hover": { bgcolor: "#D90000" },
-      }}
-    >
-      Tiến hành Thanh toán
-    </Button>
+              {/* NÚT HÀNH ĐỘNG CHÍNH */}
+              <Button
+                fullWidth
+                variant="contained"
+                size="large"
+                href="/pay" // Điều hướng đến trang thanh toán
+                sx={{
+                  py: 1.5,
+                  bgcolor: "#FF0000",
+                  color: "white",
+                  fontWeight: 700,
+                  "&:hover": { bgcolor: "#D90000" },
+                }}
+              >
+                Tiến hành Thanh toán
+              </Button>
 
-    {/* NÚT HÀNH ĐỘNG PHỤ */}
-    <Button
-      fullWidth
-      variant="outlined"
-      size="large"
-      onClick={() => navigate('/shop')} // Điều hướng về trang cửa hàng
-      sx={{
-        mt: 1,
-        py: 1.5,
-        color: "black",
-        borderColor: "black",
-        fontWeight: 700,
-        "&:hover": { borderColor: "black", bgcolor: "rgba(0, 0, 0, 0.04)" },
-      }}
-    >
-      Tiếp tục mua sắm
-    </Button>
-  </Paper>
-</Grid>
+              {/* NÚT HÀNH ĐỘNG PHỤ */}
+              <Button
+                fullWidth
+                variant="outlined"
+                size="large"
+                onClick={() => navigate("/shop")} // Điều hướng về trang cửa hàng
+                sx={{
+                  mt: 1,
+                  py: 1.5,
+                  color: "black",
+                  borderColor: "black",
+                  fontWeight: 700,
+                  "&:hover": { borderColor: "black", bgcolor: "rgba(0, 0, 0, 0.04)" },
+                }}
+              >
+                Tiếp tục mua sắm
+              </Button>
+            </Paper>
+          </Grid>
         </Grid>
       </Container>
 
