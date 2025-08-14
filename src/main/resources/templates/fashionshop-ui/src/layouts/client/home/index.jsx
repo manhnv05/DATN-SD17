@@ -23,6 +23,7 @@ import CardGiftcardIcon from "@mui/icons-material/CardGiftcard";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+import { useNavigate } from "react-router-dom";
 
 function useCountdown(targetDate) {
     const calculateTimeLeft = () => {
@@ -47,6 +48,7 @@ function useCountdown(targetDate) {
 
 export default function HomePage() {
     const theme = useTheme();
+    const navigate = useNavigate();
     const saleEndAt = new Date("2025-08-15T23:59:59");
     const { days, hours, minutes, seconds, finished } = useCountdown(saleEndAt);
 
@@ -300,11 +302,13 @@ export default function HomePage() {
                                     justifyContent: "flex-start",
                                     transition: "box-shadow 0.22s, transform 0.19s",
                                     position: "relative",
+                                    cursor: "pointer",
                                     "&:hover": {
                                         boxShadow: "0 12px 48px 0 #ffe60033",
                                         transform: "translateY(-8px) scale(1.03)"
                                     }
                                 }}
+                                onClick={() => navigate(`/shop/detail/${index}`)}
                             >
                                 {item.discount && (
                                     <Chip
@@ -422,7 +426,10 @@ export default function HomePage() {
                                                 },
                                                 transition: "all 0.15s"
                                             }}
-                                            onClick={() => handleToggleFavorite(index)}
+                                            onClick={e => {
+                                                e.stopPropagation();
+                                                handleToggleFavorite(index);
+                                            }}
                                         >
                                             {favoriteIndexes.includes(index) ? <FavoriteIcon /> : <FavoriteBorderIcon />}
                                         </IconButton>
@@ -442,7 +449,10 @@ export default function HomePage() {
                                                 background: "#6cacec",
                                                 "&:hover": { background: "#205072" }
                                             }}
-                                            onClick={() => handleAddToCart(item)}
+                                            onClick={e => {
+                                                e.stopPropagation();
+                                                handleAddToCart(item);
+                                            }}
                                         >
                                             Thêm vào giỏ
                                         </Button>

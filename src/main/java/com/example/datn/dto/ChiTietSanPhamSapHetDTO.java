@@ -10,6 +10,8 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ChiTietSanPhamSapHetDTO {
+    private String maspCt;
+
     private String tenSanPham;
 
     private int soLuong;

@@ -1,3 +1,5 @@
+import dayjs from "dayjs";
+
 export async function loadThongKe() {
     try {
         const response = await fetch("http://localhost:8080/thong_ke", {
@@ -26,6 +28,7 @@ export async function loadThongKe() {
 
 export async function fetchThongKeAlternative(page, size, search, startDate, endDate) {
     try {
+        
         const searchObject = {};
         if (search) {
             searchObject.boLocNgayTuanThangNam = search.trim();
@@ -34,7 +37,7 @@ export async function fetchThongKeAlternative(page, size, search, startDate, end
             searchObject.tuNgay = dayjs(startDate).format('YYYY-MM-DDTHH:mm:ss');
             searchObject.denNgay = dayjs(endDate).format('YYYY-MM-DDTHH:mm:ss');
         }
-
+        console.log(searchObject)
         const response = await fetch(`http://localhost:8080/thong_ke?page=${page}&size=${size}`, {
             method: 'POST',
             headers: {
@@ -59,10 +62,20 @@ export async function fetchThongKeAlternative(page, size, search, startDate, end
         throw error;
     }
 }
+function formatDateToISO(date) {
+    if (!date) return null;
+    return date.toISOString().slice(0, 19); // yyyy-MM-ddTHH:mm:ss
+}
 
-export async function loadBieuDo(check) {
+export async function loadBieuDo(check ,startDate,endDate) {
     try {
-        const response = await fetch(`http://localhost:8080/thong_ke/bieudo/${check}`, {
+        let url = `http://localhost:8080/thong_ke/bieudo/${check}`;
+        if (startDate && endDate) {
+            const ngayBD = formatDateToISO(startDate);
+            const ngayKt = formatDateToISO(endDate);
+            url += `?ngayBD=${ngayBD}&ngayKt=${ngayKt}`;
+        }
+        const response = await fetch(url, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
