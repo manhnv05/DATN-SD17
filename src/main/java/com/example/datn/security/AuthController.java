@@ -245,4 +245,40 @@ public class AuthController {
 
         return ResponseEntity.badRequest().body("Email không hợp lệ!");
     }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpServletResponse.SC_UNAUTHORIZED)
+                    .body(Collections.singletonMap("message", "Chưa đăng nhập"));
+        }
+
+        String username = authentication.getName();
+
+        // Kiểm tra nhân viên trước
+        Optional<NhanVien> nvOpt = nhanVienRepository.findByEmail(username);
+        if (nvOpt.isPresent()) {
+            NhanVien nv = nvOpt.get();
+            Map<String, Object> res = new HashMap<>();
+            res.put("id", nv.getId()); // id nhân viên
+            res.put("username", nv.getEmail());
+            res.put("role", "NHANVIEN");
+            return ResponseEntity.ok(res);
+        }
+
+        // Nếu không phải nhân viên thì check khách hàng
+        Optional<KhachHang> khOpt = khachHangRepository.findByEmail(username);
+        if (khOpt.isPresent()) {
+            KhachHang kh = khOpt.get();
+            Map<String, Object> res = new HashMap<>();
+            res.put("id", kh.getId()); // id khách hàng
+            res.put("username", kh.getEmail());
+            res.put("role", "KHACHHANG");
+            return ResponseEntity.ok(res);
+        }
+
+        // Không tìm thấy user
+        return ResponseEntity.status(HttpServletResponse.SC_UNAUTHORIZED)
+                .body(Collections.singletonMap("message", "Không tìm thấy thông tin người dùng"));
+    }
 }
