@@ -19,6 +19,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
@@ -95,18 +97,27 @@ public class PhieuGiamGiaServiceImpl implements PhieuGiamGiaService {
     }
 
     @Override
-    public void sendMailToListCustomer( SendMailRequestData sendMailRequestData) {
-        PhieuGiamGia phieuGiamGia = PhieuGiamGiaMapper.INSTANCE.toPhieuGiamGia(sendMailRequestData.getPhieuGiamGiaVO());
+    public void sendMailToListCustomer(SendMailRequestData sendMailRequestData) {
+        PhieuGiamGia phieuGiamGia = PhieuGiamGiaMapper.INSTANCE
+                .toPhieuGiamGia(sendMailRequestData.getPhieuGiamGiaVO());
         String subject = "Bạn nhận được phiếu giảm giá!";
-        for(String email : sendMailRequestData.getEmails()){
-            String body = buildHtmlBody(phieuGiamGia);
-            try {
-                emailService.sendEmail(email, subject, body);
-            }
-            catch(Exception e){
-                throw new AppException(ErrorCode.MAIL_ERROR);
-            }
+
+        // Tạo ThreadPool cố định 10 luồng
+        ExecutorService executor = Executors.newFixedThreadPool(10);
+
+        for (String email : sendMailRequestData.getEmails()) {
+            executor.submit(() -> {
+                String body = buildHtmlBody(phieuGiamGia);
+                try {
+                    emailService.sendEmail(email, subject, body);
+                } catch (Exception e) {
+                    // Log lỗi nhưng không dừng toàn bộ tiến trình
+                    System.err.println("Lỗi gửi mail tới: " + email + " - " + e.getMessage());
+                }
+            });
         }
+
+        executor.shutdown(); // Không nhận thêm task mới
     }
 
     @Override
