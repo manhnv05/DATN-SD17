@@ -30,25 +30,6 @@ const viewOptions = [5, 10, 20];
 const getTrangThaiText = (val) =>
     val === 1 || val === "1" || val === "Hiển thị" ? "Hiển thị" : "Ẩn";
 
-function generateMaMau(existingList = []) {
-    const numbers = existingList
-        .map((item) => {
-            const match = /^MS(\d{4})$/.exec(item.maMau || "");
-            return match ? parseInt(match[1], 10) : null;
-        })
-        .filter((num) => num !== null)
-        .sort((a, b) => a - b);
-    let next = 1;
-    for (let i = 0; i < numbers.length; i++) {
-        if (numbers[i] !== i + 1) {
-            next = i + 1;
-            break;
-        }
-        next = numbers.length + 1;
-    }
-    return "MS" + String(next).padStart(4, "0");
-}
-
 function getPaginationItems(current, total) {
     if (total <= 5) return Array.from({ length: total }, (_, i) => i);
     if (current <= 1) return [0, 1, "...", total - 2, total - 1];
@@ -94,15 +75,6 @@ function ColorTable() {
     const handleMenuClose = () => setAnchorEl(null);
 
     useEffect(() => {
-        if (showModal && colorsData.content) {
-            setNewColor((prev) => ({
-                ...prev,
-                maMau: generateMaMau(colorsData.content),
-            }));
-        }
-    }, [showModal, colorsData.content]);
-
-    useEffect(() => {
         setLoading(true);
         setError("");
         let url = `http://localhost:8080/mauSac?page=${queryParams.page}&size=${queryParams.size}`;
@@ -111,7 +83,7 @@ function ColorTable() {
         if (queryParams.trangThai !== "Tất cả")
             url += `&trangThai=${queryParams.trangThai === "Hiển thị" ? 1 : 0}`;
         fetch(url, {
-            credentials: "include", // <-- Thêm dòng này để gửi cookie JSESSIONID cho backend
+            credentials: "include",
         })
             .then((res) => {
                 if (!res.ok) throw new Error("Lỗi khi tải dữ liệu màu sắc");
@@ -125,6 +97,10 @@ function ColorTable() {
     const handleAddColor = () => {
         if (!newColor.tenMauSac) {
             toast.error("Tên màu sắc không được để trống");
+            return;
+        }
+        if (!newColor.maMau) {
+            toast.error("Mã màu không được để trống");
             return;
         }
         setLoading(true);
@@ -165,6 +141,10 @@ function ColorTable() {
     const handleSaveEdit = () => {
         if (!editColor.tenMauSac) {
             toast.error("Tên màu sắc không được để trống");
+            return;
+        }
+        if (!editColor.maMau) {
+            toast.error("Mã màu không được để trống");
             return;
         }
         setLoading(true);
@@ -315,6 +295,14 @@ function ColorTable() {
                     />
                 </FormControl>
                 <FormControl fullWidth sx={{ mb: 2 }}>
+                    <Input
+                        placeholder="Mã màu (ví dụ: #FF0000)"
+                        value={newColor.maMau}
+                        onChange={(e) => setNewColor({ ...newColor, maMau: e.target.value })}
+                        type="text"
+                    />
+                </FormControl>
+                <FormControl fullWidth sx={{ mb: 2 }}>
                     <Select
                         value={newColor.trangThai}
                         onChange={(e) => setNewColor({ ...newColor, trangThai: e.target.value })}
@@ -361,6 +349,14 @@ function ColorTable() {
                         placeholder="Tên màu sắc"
                         value={editColor?.tenMauSac || ""}
                         onChange={(e) => setEditColor({ ...editColor, tenMauSac: e.target.value })}
+                    />
+                </FormControl>
+                <FormControl fullWidth sx={{ mb: 2 }}>
+                    <Input
+                        placeholder="Mã màu (ví dụ: #FF0000)"
+                        value={editColor?.maMau || ""}
+                        onChange={(e) => setEditColor({ ...editColor, maMau: e.target.value })}
+                        type="text"
                     />
                 </FormControl>
                 <FormControl fullWidth sx={{ mb: 2 }}>

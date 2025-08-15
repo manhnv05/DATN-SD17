@@ -48,6 +48,8 @@ import ViewDiscountEventPage from "./layouts/admin/GiamGia/ViewDiscountEventPage
 import OAuth2RedirectHandler from "./layouts/admin/authentication/OAuth2RedirectHandler";
 import SignIn from "./layouts/admin/authentication/sign-in";
 import SignUp from "./layouts/admin/authentication/sign-up";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // Lọc route theo role
 function filterRoutesByRole(routes, role) {
@@ -410,6 +412,17 @@ export default function App() {
     return direction === "rtl" ? (
         <WrapperRTL rtlCache={rtlCache}>
             <>
+                <ToastContainer
+                    position="top-right"
+                    autoClose={3000}
+                    hideProgressBar={false}
+                    newestOnTop={false}
+                    closeOnClick
+                    rtl={false}
+                    pauseOnFocusLoss
+                    draggable
+                    pauseOnHover
+                />
                 {configsButton}
                 {configsButton2}
                 <Routes>

@@ -15,62 +15,62 @@ import {
     useMediaQuery,
 } from "@mui/material";
 
-// Fake blog posts data
+// Dữ liệu bài viết blog mẫu
 const blogPosts = [
     {
         id: 1,
-        title: "Going all-in with minimal design",
+        title: "Theo đuổi thiết kế tối giản toàn diện",
         image: "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=600&q=80",
-        date: "08 Aug, 2025",
+        date: "08 Tháng 08, 2025",
         author: "Alex Smith",
-        excerpt: "Discover how minimal design can transform your workspace into a place of calm and productivity. Simplicity is the ultimate sophistication.",
+        excerpt: "Khám phá cách thiết kế tối giản có thể biến không gian làm việc của bạn trở nên bình yên và hiệu quả. Đơn giản là đỉnh cao của sự tinh tế.",
     },
     {
         id: 2,
-        title: "Exploring new ways of decorating",
+        title: "Khám phá những cách trang trí mới",
         image: "https://images.unsplash.com/photo-1465101178521-c1a9136a3b99?auto=format&fit=crop&w=600&q=80",
-        date: "01 Aug, 2025",
+        date: "01 Tháng 08, 2025",
         author: "Jennifer Doe",
-        excerpt: "From sustainable materials to smart layouts, see the newest trends in home decoration that bring comfort and style to your living space.",
+        excerpt: "Từ vật liệu bền vững đến bố trí thông minh, cùng xem các xu hướng trang trí nhà mới nhất mang lại sự thoải mái và phong cách cho không gian sống.",
     },
     {
         id: 3,
-        title: "Handmade pieces that took time to make",
+        title: "Đồ thủ công mất nhiều thời gian chế tác",
         image: "https://images.unsplash.com/photo-1519408469771-2586093c3d5b?auto=format&fit=crop&w=600&q=80",
-        date: "25 Jul, 2025",
+        date: "25 Tháng 07, 2025",
         author: "Chris Lee",
-        excerpt: "Appreciate the art of craftsmanship by exploring these handmade items that are unique, meaningful, and carefully crafted.",
+        excerpt: "Trân trọng nghệ thuật thủ công qua những món đồ thủ công độc đáo, ý nghĩa và được làm tỉ mỉ từng chi tiết.",
     },
 ];
 
-// Fake blog categories
+// Danh mục blog mẫu
 const blogCategories = [
-    "Minimalism",
-    "Decorating",
-    "Handmade",
-    "Workspace",
-    "Inspiration",
+    "Tối giản",
+    "Trang trí",
+    "Thủ công",
+    "Không gian làm việc",
+    "Truyền cảm hứng",
 ];
 
-// Fake recent posts (can reuse above images)
+// Bài viết gần đây (dùng lại ảnh trên)
 const recentPosts = [
     {
         id: 1,
-        title: "Going all-in with minimal design",
+        title: "Theo đuổi thiết kế tối giản toàn diện",
         image: "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=80&q=80",
-        date: "08 Aug, 2025",
+        date: "08 Tháng 08, 2025",
     },
     {
         id: 2,
-        title: "Exploring new ways of decorating",
+        title: "Khám phá những cách trang trí mới",
         image: "https://images.unsplash.com/photo-1465101178521-c1a9136a3b99?auto=format&fit=crop&w=80&q=80",
-        date: "01 Aug, 2025",
+        date: "01 Tháng 08, 2025",
     },
     {
         id: 3,
-        title: "Handmade pieces that took time to make",
+        title: "Đồ thủ công mất nhiều thời gian chế tác",
         image: "https://images.unsplash.com/photo-1519408469771-2586093c3d5b?auto=format&fit=crop&w=80&q=80",
-        date: "25 Jul, 2025",
+        date: "25 Tháng 07, 2025",
     },
 ];
 
@@ -115,7 +115,7 @@ export default function BlogPage() {
                 </Typography>
             </Box>
 
-            {/* Content */}
+            {/* Nội dung */}
             <Box sx={{
                 maxWidth: 1260,
                 mx: "auto",
@@ -125,7 +125,7 @@ export default function BlogPage() {
                 gap: 4,
                 mb: 7
             }}>
-                {/* Blog list */}
+                {/* Danh sách bài viết */}
                 <Box sx={{ flex: 1 }}>
                     {blogPosts.map((post) => (
                         <Paper
@@ -157,7 +157,7 @@ export default function BlogPage() {
                                 <Stack direction="row" spacing={1.2} alignItems="center" mb={1}>
                                     <Typography sx={{ fontSize: 13.5, color: "#888" }}>{post.date}</Typography>
                                     <Divider orientation="vertical" flexItem sx={{ mx: 1.2, borderColor: "#e3f0fa" }} />
-                                    <Typography sx={{ fontSize: 13.5, color: "#888" }}>by {post.author}</Typography>
+                                    <Typography sx={{ fontSize: 13.5, color: "#888" }}>bởi {post.author}</Typography>
                                 </Stack>
                                 <Typography variant="h5" fontWeight={900} sx={{ mb: 1.3, color: "#205072", letterSpacing: 0.7 }}>
                                     {post.title}
@@ -174,13 +174,13 @@ export default function BlogPage() {
                                         "&:hover": { textDecoration: "underline" }
                                     }}
                                 >
-                                    Read more
+                                    Đọc tiếp
                                 </Typography>
                             </Box>
                         </Paper>
                     ))}
                 </Box>
-                {/* Sidebar */}
+                {/* Thanh bên phải */}
                 <Box sx={{
                     width: { xs: "100%", md: 290 },
                     flexShrink: 0,
@@ -194,7 +194,7 @@ export default function BlogPage() {
                         boxShadow: "0 4px 18px 0 #bde0fe22",
                         border: "1.5px solid #e3f0fa"
                     }}>
-                        <Typography sx={{ fontWeight: 900, fontSize: 18, mb: 2, color: "#205072" }}>Categories</Typography>
+                        <Typography sx={{ fontWeight: 900, fontSize: 18, mb: 2, color: "#205072" }}>Danh mục</Typography>
                         <List dense sx={{ pl: 0 }}>
                             {blogCategories.map((cat, idx) => (
                                 <ListItem key={cat} sx={{ pl: 0, py: 0.7 }}>
@@ -221,7 +221,7 @@ export default function BlogPage() {
                         boxShadow: "0 4px 18px 0 #bde0fe22",
                         border: "1.5px solid #e3f0fa"
                     }}>
-                        <Typography sx={{ fontWeight: 900, fontSize: 18, mb: 2, color: "#205072" }}>Recent Posts</Typography>
+                        <Typography sx={{ fontWeight: 900, fontSize: 18, mb: 2, color: "#205072" }}>Bài viết mới</Typography>
                         <List dense sx={{ pl: 0 }}>
                             {recentPosts.map((post) => (
                                 <ListItem key={post.id} alignItems="flex-start" sx={{ pl: 0, py: 1.2 }}>

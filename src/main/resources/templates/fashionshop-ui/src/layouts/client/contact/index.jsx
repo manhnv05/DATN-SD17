@@ -74,7 +74,7 @@ export default function ContactPage() {
                         border: "1.5px solid #bde0fe"
                     }}
                 >
-                    Contact
+                    Liên hệ
                 </Typography>
             </Box>
 
@@ -94,10 +94,10 @@ export default function ContactPage() {
                     fontWeight={900}
                     sx={{ mb: 1.5, color: "#205072", letterSpacing: 1.1 }}
                 >
-                    Get in Touch With Us
+                    Liên hệ với chúng tôi
                 </Typography>
                 <Typography sx={{ color: "#888", mb: 5, fontSize: 16 }}>
-                    We are here to answer any question you may have. Reach out to us and we&apos;ll respond as soon as we can.
+                    Chúng tôi ở đây để trả lời bất kỳ câu hỏi nào của bạn. Liên hệ với chúng tôi và chúng tôi sẽ trả lời ngay khi có thể.
                 </Typography>
                 <Grid container spacing={5} justifyContent="center" alignItems="flex-start">
                     <Grid item xs={12} md={5}>
@@ -116,7 +116,7 @@ export default function ContactPage() {
                                 <Stack direction="row" spacing={2} alignItems="flex-start">
                                     <LocationOnIcon sx={{ fontSize: 28, color: "#ffb300", mt: 0.5 }} />
                                     <Box textAlign="left">
-                                        <Typography sx={{ fontWeight: 700, fontSize: 16.5, color: "#205072" }}>Address</Typography>
+                                        <Typography sx={{ fontWeight: 700, fontSize: 16.5, color: "#205072" }}>Địa chỉ</Typography>
                                         <Typography sx={{ color: "#666", fontSize: 15.2, mt: 0.3 }}>
                                             1234 Main Street<br />Hanoi, Vietnam
                                         </Typography>
@@ -125,7 +125,7 @@ export default function ContactPage() {
                                 <Stack direction="row" spacing={2} alignItems="flex-start">
                                     <PhoneIcon sx={{ fontSize: 26, color: "#43a047", mt: 0.3 }} />
                                     <Box textAlign="left">
-                                        <Typography sx={{ fontWeight: 700, fontSize: 16.5, color: "#205072" }}>Phone</Typography>
+                                        <Typography sx={{ fontWeight: 700, fontSize: 16.5, color: "#205072" }}>Số điện thoại</Typography>
                                         <Typography sx={{ color: "#666", fontSize: 15.2, mt: 0.3 }}>
                                             (+84) 357 420 420
                                         </Typography>
@@ -134,9 +134,9 @@ export default function ContactPage() {
                                 <Stack direction="row" spacing={2} alignItems="flex-start">
                                     <AccessTimeIcon sx={{ fontSize: 25, color: "#1976d2", mt: 0.2 }} />
                                     <Box textAlign="left">
-                                        <Typography sx={{ fontWeight: 700, fontSize: 16.5, color: "#205072" }}>Working Time</Typography>
+                                        <Typography sx={{ fontWeight: 700, fontSize: 16.5, color: "#205072" }}>Thời gian làm việc</Typography>
                                         <Typography sx={{ color: "#666", fontSize: 15.2, mt: 0.3 }}>
-                                            8:00 - 20:00 (Mon - Sat)
+                                            8:00 - 20:00 (Thứ 2 - Thứ 7)
                                         </Typography>
                                     </Box>
                                 </Stack>
@@ -157,14 +157,17 @@ export default function ContactPage() {
                         >
                             {submitted ? (
                                 <Typography sx={{ color: "#388e3c", fontWeight: 700, fontSize: 17.5 }}>
-                                    Thank you! Your message has been sent.
+                                    Cảm ơn bạn! Tin nhắn của bạn đã được gửi.
                                 </Typography>
                             ) : (
                                 <form onSubmit={handleSubmit}>
                                     <Grid container spacing={2}>
                                         <Grid item xs={12} sm={6}>
+                                            <Typography variant="h6" sx={{ mb: 1, color: "#205072", fontWeight: 700 }}>
+                                                Tên
+                                            </Typography>
                                             <TextField
-                                                label="Name"
+                                                //label="Name"
                                                 name="name"
                                                 value={form.name}
                                                 onChange={handleChange}
@@ -174,8 +177,11 @@ export default function ContactPage() {
                                             />
                                         </Grid>
                                         <Grid item xs={12} sm={6}>
+                                            <Typography variant="h6" sx={{ mb: 1, color: "#205072", fontWeight: 700 }}>
+                                                Email
+                                            </Typography>
                                             <TextField
-                                                label="Email Address"
+                                                //label="Email Address"
                                                 name="email"
                                                 type="email"
                                                 value={form.email}
@@ -186,8 +192,11 @@ export default function ContactPage() {
                                             />
                                         </Grid>
                                         <Grid item xs={12}>
+                                            <Typography variant="h6" sx={{ mb: 1, color: "#205072", fontWeight: 700 }}>
+                                                Chủ đề
+                                            </Typography>
                                             <TextField
-                                                label="Subject"
+                                                //label="Subject"
                                                 name="subject"
                                                 value={form.subject}
                                                 onChange={handleChange}
@@ -197,8 +206,11 @@ export default function ContactPage() {
                                             />
                                         </Grid>
                                         <Grid item xs={12}>
+                                            <Typography variant="h6" sx={{ mb: 1, color: "#205072", fontWeight: 700 }}>
+                                                Tin nhắn
+                                            </Typography>
                                             <TextField
-                                                label="Message"
+                                                //label="Message"
                                                 name="message"
                                                 value={form.message}
                                                 onChange={handleChange}

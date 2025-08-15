@@ -45,11 +45,11 @@ function Logo() {
 
 const navItems = [
     { label: "OUTLET", red: true, route: "/outlet-sales" },
-    { label: "HOME", route: "/home" },
-    { label: "SHOP", route: "/shop" },
-    { label: "ABOUT", route: "/about" },
-    { label: "BLOG", route: "/blog" },
-    { label: "CONTACT", route: "/contact" }
+    { label: "Trang chủ", route: "/home" },
+    { label: "Cửa hàng", route: "/shop" },
+    { label: "Giới thiệu", route: "/about" },
+    { label: "Bài viết", route: "/blog" },
+    { label: "Liên hệ", route: "/contact" }
 ];
 
 const subNavItems = [
@@ -336,30 +336,7 @@ export default function Header() {
                         </Stack>
                     )}
                     <Stack direction="row" spacing={1.1} alignItems="center" minWidth={isMobile ? 0 : 180}>
-                        <Paper
-                            component="form"
-                            sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                borderRadius: 5,
-                                boxShadow: "none",
-                                bgcolor: "#f6faff",
-                                px: 1.1,
-                                py: 0.25,
-                                minWidth: isMobile ? 90 : 150,
-                                mr: 0.3,
-                                border: "1px solid #e3f0fa"
-                            }}
-                        >
-                            <InputBase
-                                placeholder="Tìm kiếm sản phẩm…"
-                                sx={{ ml: 0.7, flex: 1, fontSize: 14.1, color: "#1976d2" }}
-                                inputProps={{ "aria-label": "search" }}
-                            />
-                            <IconButton sx={{ p: 0.4 }}>
-                                <Search sx={{ color: "#1976d2", fontSize: 21 }} />
-                            </IconButton>
-                        </Paper>
+                        {/**/}
                         {/* Nút trái tim - đẹp đều với các icon khác */}
                         <IconButton
                             sx={{

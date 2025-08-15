@@ -34,4 +34,30 @@ public interface SanPhamRepository extends JpaRepository<SanPham, Integer>, JpaS
 
     @Query("SELECT s.maSanPham FROM SanPham s")
     List<String> findAllMaSanPham();
+
+    @Query("SELECT DISTINCT sp FROM SanPham sp " +
+            "LEFT JOIN sp.chiTietSanPhams ctsp " +
+            "LEFT JOIN ctsp.mauSac ms " +
+            "LEFT JOIN ctsp.kichThuoc kt " +
+            "LEFT JOIN ctsp.thuongHieu th " +
+            "LEFT JOIN sp.danhMuc dm " +
+            "WHERE (:keyword IS NULL OR LOWER(sp.tenSanPham) LIKE CONCAT('%', :keyword, '%')) " +
+            "AND (:color IS NULL OR ms.maMau = :color) " +
+            "AND (:size IS NULL OR kt.ma = :size) " +
+            "AND (:brand IS NULL OR th.tenThuongHieu = :brand) " +
+            "AND (:category IS NULL OR dm.tenDanhMuc = :category) " +
+            "AND (:priceMin IS NULL OR ctsp.gia >= :priceMin) " +
+            "AND (:priceMax IS NULL OR ctsp.gia <= :priceMax) " +
+            "AND sp.trangThai = 1 " +
+            "AND (ctsp IS NULL OR ctsp.trangThai = 1)")
+    Page<SanPham> searchWithFilter(
+            @Param("keyword") String keyword,
+            @Param("color") String color,
+            @Param("size") String size,
+            @Param("brand") String brand,
+            @Param("category") String category,
+            @Param("priceMin") Integer priceMin,
+            @Param("priceMax") Integer priceMax,
+            Pageable pageable
+    );
 }

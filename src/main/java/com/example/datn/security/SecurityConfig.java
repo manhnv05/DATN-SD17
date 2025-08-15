@@ -3,6 +3,7 @@ package com.example.datn.security;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -24,6 +25,9 @@ public class SecurityConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
+    @Autowired
+    private CustomOAuth2UserService oAuth2UserService; // Inject Custom OAuth2 User Service
+
     /**
      * SuccessHandler cho login truyền thống (API/fetch): trả JSON có role
      */
@@ -32,6 +36,7 @@ public class SecurityConfig {
                 .findFirst()
                 .map(auth -> auth.getAuthority().replace("ROLE_", ""))
                 .orElse("KHACHHANG");
+        logger.info("[DEBUG] apiLoginSuccessHandler CALLED, role={}", role);
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         response.getWriter().write("{\"message\": \"Login successful\", \"role\": \"" + role + "\"}");
@@ -42,10 +47,16 @@ public class SecurityConfig {
     private final AuthenticationSuccessHandler oauth2SuccessHandler = (request, response, authentication) -> {
         String role = authentication.getAuthorities().stream()
                 .findFirst()
-                .map(auth -> auth.getAuthority().replace("ROLE_", ""))
+                .map(auth -> {
+                    logger.info("[DEBUG] oauth2SuccessHandler CALLED, authority={}", auth.getAuthority());
+                    return auth.getAuthority().replace("ROLE_", "");
+                })
                 .orElse("KHACHHANG");
+        logger.info("[DEBUG] oauth2SuccessHandler ROLE={}, redirecting...", role);
+        String redirectUrl = "http://localhost:3000/oauth2/redirect?role=" + role;
+        logger.info("[DEBUG] oauth2SuccessHandler set Location header: {}", redirectUrl);
         response.setStatus(HttpServletResponse.SC_FOUND);
-        response.setHeader("Location", "http://localhost:3000/oauth2/redirect?role=" + role);
+        response.setHeader("Location", redirectUrl);
     };
 
     @Bean
@@ -71,6 +82,7 @@ public class SecurityConfig {
                         .loginPage("/api/auth/login")
                         .successHandler(apiLoginSuccessHandler) // trả JSON có role
                         .failureHandler((request, response, exception) -> {
+                            logger.info("[DEBUG] formLogin FAILURE HANDLER called");
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json");
                             response.getWriter().write("{\"message\": \"Login failed\"}");
@@ -80,11 +92,15 @@ public class SecurityConfig {
                 )
                 .oauth2Login(oauth2 -> oauth2
                         .loginPage("/oauth2/authorization/google")
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(oAuth2UserService)
+                        )
                         .successHandler(oauth2SuccessHandler) // redirect về FE!
                 )
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) -> {
+                            logger.info("[DEBUG] exceptionHandling AUTH ENTRYPOINT called");
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json");
                             response.getWriter().write("{\"message\": \"Unauthorized\"}");

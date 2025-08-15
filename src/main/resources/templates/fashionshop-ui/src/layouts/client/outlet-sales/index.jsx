@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Header from "../components/header";
 import Footer from "../components/footer";
 import {
@@ -9,63 +9,18 @@ import {
     Stack,
     Button,
     Chip,
-    Divider,
     Tooltip,
     IconButton,
     Rating,
-    useMediaQuery
+    useMediaQuery,
+    CircularProgress,
 } from "@mui/material";
 import FavoriteBorderIcon from "@mui/icons-material/FavoriteBorder";
 import FavoriteIcon from "@mui/icons-material/Favorite";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import { styled } from "@mui/material/styles";
-
-// Dummy data: các sản phẩm đang sale cực mạnh
-const outletProducts = [
-    {
-        name: "DENIM JACKET OUTLET",
-        img: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80",
-        oldPrice: "799.000",
-        salePrice: "299.000",
-        discount: "-63%"
-    },
-    {
-        name: "OUTLET TEE BASIC",
-        img: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=400&q=80",
-        oldPrice: "349.000",
-        salePrice: "119.000",
-        discount: "-66%"
-    },
-    {
-        name: "OUTLET HOODIE",
-        img: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=400&q=80",
-        oldPrice: "599.000",
-        salePrice: "249.000",
-        discount: "-58%"
-    },
-    {
-        name: "OUTLET SHORTS",
-        img: "https://images.unsplash.com/photo-1469398715555-76331e2b1b47?auto=format&fit=crop&w=400&q=80",
-        oldPrice: "259.000",
-        salePrice: "99.000",
-        discount: "-62%"
-    },
-    {
-        name: "OUTLET JEANS",
-        img: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80",
-        oldPrice: "499.000",
-        salePrice: "199.000",
-        discount: "-60%"
-    },
-    {
-        name: "OUTLET POLO SHIRT",
-        img: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=400&q=80",
-        oldPrice: "299.000",
-        salePrice: "99.000",
-        discount: "-67%"
-    }
-    // ...bạn có thể thêm sản phẩm outlet khác
-];
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const OutletBlock = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(2.5),
@@ -82,9 +37,44 @@ const OutletBlock = styled(Paper)(({ theme }) => ({
 
 export default function OutletSalePage() {
     const isMobile = useMediaQuery("(max-width:900px)");
+    const navigate = useNavigate();
+
+    // State cho API
+    const [products, setProducts] = useState([]);
+    const [ratings, setRatings] = useState([]);
     const [favoriteIndexes, setFavoriteIndexes] = useState([]);
     const [cartIndexes, setCartIndexes] = useState([]);
-    const [ratings, setRatings] = useState(outletProducts.map(() => 4));
+    const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(0);
+    const [pageSize, setPageSize] = useState(12);
+    const [totalPages, setTotalPages] = useState(1);
+
+    useEffect(() => {
+        fetchProducts(page, pageSize);
+        // eslint-disable-next-line
+    }, [page, pageSize]);
+
+    const fetchProducts = (page, pageSize) => {
+        setLoading(true);
+        axios.get("http://localhost:8080/api/outlet/products", {
+            params: {
+                page: page,
+                pageSize: pageSize
+            }
+        })
+            .then(res => {
+                setProducts(res.data.content || []);
+                setTotalPages(res.data.totalPages || 1);
+                setRatings((res.data.content || []).map(() => 4));
+                setLoading(false);
+            })
+            .catch(() => {
+                setProducts([]);
+                setTotalPages(1);
+                setRatings([]);
+                setLoading(false);
+            });
+    };
 
     const handleToggleFavorite = (index) => {
         setFavoriteIndexes((prev) =>
@@ -104,6 +94,19 @@ export default function OutletSalePage() {
 
     const handleChangeRating = (index, value) => {
         setRatings(prev => prev.map((r, i) => (i === index ? value : r)));
+    };
+
+    // Chuyển hướng sang trang chi tiết sản phẩm outlet
+    const handleGoToDetail = (id) => {
+        navigate(`/shop/detail/${id}`);
+    };
+
+    // Phân trang dạng 1 2 3 ... cuối-1 cuối nếu > 5 trang
+    const getPaginationItems = () => {
+        if (totalPages <= 5) return Array.from({ length: totalPages }, (_, i) => i);
+        if (page <= 2) return [0, 1, 2, "...", totalPages - 2, totalPages - 1];
+        if (page >= totalPages - 3) return [0, 1, "...", totalPages - 3, totalPages - 2, totalPages - 1];
+        return [0, 1, "...", page, "...", totalPages - 2, totalPages - 1];
     };
 
     return (
@@ -161,152 +164,225 @@ export default function OutletSalePage() {
                         Sản phẩm không đổi trả, không áp dụng cùng các khuyến mãi khác.
                     </Typography>
                 </Paper>
-                <Grid container spacing={4}>
-                    {outletProducts.map((item, idx) => (
-                        <Grid item xs={12} sm={6} md={4} key={idx}>
-                            <OutletBlock>
-                                {/* Giảm giá lớn */}
-                                <Chip
-                                    label={item.discount}
-                                    color="error"
-                                    sx={{
-                                        position: "absolute",
-                                        top: 18,
-                                        left: 18,
-                                        fontWeight: 900,
-                                        bgcolor: "#e53935",
-                                        color: "#fff",
-                                        fontSize: 15,
-                                        px: 1.4,
-                                        zIndex: 3,
-                                        letterSpacing: 1,
-                                        boxShadow: "0 2px 8px 0 #ff525288"
-                                    }}
-                                    size="small"
-                                />
-                                <Chip
-                                    label="OUTLET"
-                                    sx={{
-                                        position: "absolute",
-                                        top: 18,
-                                        right: 18,
-                                        bgcolor: "#ffd600",
-                                        color: "#e53935",
-                                        fontWeight: 900,
-                                        fontSize: 15,
-                                        px: 1.3,
-                                        zIndex: 3,
-                                        boxShadow: "0 2px 12px 0 #ffe60077"
-                                    }}
-                                    size="small"
-                                />
-                                <Box
-                                    sx={{
-                                        width: "100%",
-                                        aspectRatio: "4/3",
-                                        borderRadius: 4,
-                                        overflow: "hidden",
-                                        boxShadow: "0 2px 10px 0 #bde0fe22",
-                                        border: "1.5px solid #ffe259",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        background: "#fff8e1",
-                                        mb: 2
-                                    }}
-                                >
-                                    <Box
-                                        component="img"
-                                        src={item.img}
-                                        alt={item.name}
-                                        sx={{
-                                            width: "100%",
-                                            height: "100%",
-                                            objectFit: "cover",
-                                            display: "block"
-                                        }}
-                                    />
-                                </Box>
-                                <Typography fontWeight={900} sx={{ fontSize: 17.2, mb: 0.6, color: "#b71c1c", letterSpacing: 0.3 }}>
-                                    {item.name}
+                {loading ? (
+                    <Stack alignItems="center" py={8}>
+                        <CircularProgress />
+                    </Stack>
+                ) : (
+                    <Grid container spacing={4}>
+                        {products.length === 0 ? (
+                            <Grid item xs={12}>
+                                <Typography align="center" color="text.secondary" sx={{ mt: 8, fontSize: 20 }}>
+                                    Không có sản phẩm outlet nào!
                                 </Typography>
-                                <Rating
-                                    size="small"
-                                    precision={0.5}
-                                    value={ratings[idx]}
-                                    sx={{ mb: 0.7 }}
-                                    onChange={(_, value) => handleChangeRating(idx, value)}
-                                />
-                                <Stack direction="row" spacing={1.1} alignItems="center" justifyContent="center" sx={{ mb: 1.2 }}>
-                                    <Typography sx={{ fontWeight: 900, fontSize: 17, color: "#e53935" }}>
-                                        {item.salePrice}₫
-                                    </Typography>
-                                    <Typography sx={{ color: "#bbb", textDecoration: "line-through", fontSize: 15.2, fontWeight: 700 }}>
-                                        {item.oldPrice}₫
-                                    </Typography>
-                                </Stack>
-                                <Box sx={{ mt: "auto", width: "100%" }}>
-                                    <Stack direction="row" justifyContent="center" alignItems="center" spacing={2}>
-                                        <Tooltip title={favoriteIndexes.includes(idx) ? "Bỏ yêu thích" : "Yêu thích"}>
-                                            <IconButton
+                            </Grid>
+                        ) : (
+                            products.map((item, idx) => (
+                                <Grid item xs={12} sm={6} md={4} key={item.id}>
+                                    <OutletBlock
+                                        onClick={() => handleGoToDetail(item.id)}
+                                        sx={{
+                                            cursor: "pointer",
+                                            "&:hover": {
+                                                boxShadow: "0 10px 36px 0 #ffd58055",
+                                                border: "1.5px solid #ffb300",
+                                                transform: "translateY(-8px) scale(1.03)"
+                                            }
+                                        }}
+                                    >
+                                        <Chip
+                                            label={`-${item.phanTramGiamGia || 0}%`}
+                                            color="error"
+                                            sx={{
+                                                position: "absolute",
+                                                top: 18,
+                                                left: 18,
+                                                fontWeight: 900,
+                                                bgcolor: "#e53935",
+                                                color: "#fff",
+                                                fontSize: 15,
+                                                px: 1.4,
+                                                zIndex: 3,
+                                                letterSpacing: 1,
+                                                boxShadow: "0 2px 8px 0 #ff525288"
+                                            }}
+                                            size="small"
+                                            onClick={e => e.stopPropagation()}
+                                        />
+                                        <Chip
+                                            label="OUTLET"
+                                            sx={{
+                                                position: "absolute",
+                                                top: 18,
+                                                right: 18,
+                                                bgcolor: "#ffd600",
+                                                color: "#e53935",
+                                                fontWeight: 900,
+                                                fontSize: 15,
+                                                px: 1.3,
+                                                zIndex: 3,
+                                                boxShadow: "0 2px 12px 0 #ffe60077"
+                                            }}
+                                            size="small"
+                                            onClick={e => e.stopPropagation()}
+                                        />
+                                        <Box
+                                            sx={{
+                                                width: "100%",
+                                                aspectRatio: "4/3",
+                                                borderRadius: 4,
+                                                overflow: "hidden",
+                                                boxShadow: "0 2px 10px 0 #bde0fe22",
+                                                border: "1.5px solid #ffe259",
+                                                display: "flex",
+                                                alignItems: "center",
+                                                justifyContent: "center",
+                                                background: "#fff8e1",
+                                                mb: 2
+                                            }}
+                                        >
+                                            <Box
+                                                component="img"
+                                                src={item.imageUrl || "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=600&q=80"}
+                                                alt={item.tenSanPham}
                                                 sx={{
-                                                    color: favoriteIndexes.includes(idx) ? "#e53935" : "#bbb",
-                                                    border: favoriteIndexes.includes(idx) ? "2px solid #e53935" : "2px solid #ececec",
-                                                    bgcolor: "#fff",
-                                                    borderRadius: "50%",
-                                                    boxShadow: favoriteIndexes.includes(idx) ? "0 4px 16px #ffe6e6" : "none",
-                                                    "&:hover": {
-                                                        color: "#e53935",
-                                                        border: "2px solid #e53935",
-                                                        background: "#ffe6e6"
-                                                    },
-                                                    transition: "all 0.15s"
+                                                    width: "100%",
+                                                    height: "100%",
+                                                    objectFit: "cover",
+                                                    display: "block"
                                                 }}
-                                                onClick={() => handleToggleFavorite(idx)}
-                                            >
-                                                {favoriteIndexes.includes(idx) ? <FavoriteIcon /> : <FavoriteBorderIcon />}
-                                            </IconButton>
-                                        </Tooltip>
-                                        <Tooltip title="Thêm vào giỏ hàng">
-                                            <Button
-                                                variant="contained"
-                                                color="primary"
-                                                startIcon={<ShoppingCartIcon />}
-                                                sx={{
-                                                    fontWeight: 700,
-                                                    borderRadius: 3,
-                                                    px: 2.2,
-                                                    fontSize: 15,
-                                                    boxShadow: "0 2px 8px 0 #ffd58066",
-                                                    background: "#ffe259",
-                                                    color: "#b71c1c",
-                                                    "&:hover": { background: "#ffb300", color: "#fff" }
-                                                }}
-                                                onClick={() => handleAddToCart(idx)}
-                                            >
-                                                Thêm vào giỏ
-                                            </Button>
-                                        </Tooltip>
-                                    </Stack>
-                                </Box>
-                            </OutletBlock>
-                        </Grid>
-                    ))}
-                </Grid>
+                                            />
+                                        </Box>
+                                        <Typography fontWeight={900} sx={{ fontSize: 17.2, mb: 0.6, color: "#b71c1c", letterSpacing: 0.3 }}>
+                                            {item.tenSanPham}
+                                        </Typography>
+                                        <Rating
+                                            size="small"
+                                            precision={0.5}
+                                            value={ratings[idx]}
+                                            sx={{ mb: 0.7 }}
+                                            onChange={(_, value) => handleChangeRating(idx, value)}
+                                            onClick={e => e.stopPropagation()}
+                                        />
+                                        <Stack direction="row" spacing={1.1} alignItems="center" justifyContent="center" sx={{ mb: 1.2 }}>
+                                            <Typography sx={{ fontWeight: 900, fontSize: 17, color: "#e53935" }}>
+                                                {item.giaSauKhiGiam ? item.giaSauKhiGiam.toLocaleString("vi-VN") : ""}₫
+                                            </Typography>
+                                            <Typography sx={{ color: "#bbb", textDecoration: "line-through", fontSize: 15.2, fontWeight: 700 }}>
+                                                {item.giaTruocKhiGiam ? item.giaTruocKhiGiam.toLocaleString("vi-VN") : ""}₫
+                                            </Typography>
+                                        </Stack>
+                                        <Box sx={{ mt: "auto", width: "100%" }}>
+                                            <Stack direction="row" justifyContent="center" alignItems="center" spacing={2}>
+                                                <Tooltip title={favoriteIndexes.includes(idx) ? "Bỏ yêu thích" : "Yêu thích"}>
+                                                    <IconButton
+                                                        sx={{
+                                                            color: favoriteIndexes.includes(idx) ? "#e53935" : "#bbb",
+                                                            border: favoriteIndexes.includes(idx) ? "2px solid #e53935" : "2px solid #ececec",
+                                                            bgcolor: "#fff",
+                                                            borderRadius: "50%",
+                                                            boxShadow: favoriteIndexes.includes(idx) ? "0 4px 16px #ffe6e6" : "none",
+                                                            "&:hover": {
+                                                                color: "#e53935",
+                                                                border: "2px solid #e53935",
+                                                                background: "#ffe6e6"
+                                                            },
+                                                            transition: "all 0.15s"
+                                                        }}
+                                                        onClick={e => {
+                                                            e.stopPropagation();
+                                                            handleToggleFavorite(idx);
+                                                        }}
+                                                    >
+                                                        {favoriteIndexes.includes(idx) ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+                                                    </IconButton>
+                                                </Tooltip>
+                                                <Tooltip title="Thêm vào giỏ hàng">
+                                                    <Button
+                                                        variant="contained"
+                                                        color="primary"
+                                                        startIcon={<ShoppingCartIcon />}
+                                                        sx={{
+                                                            fontWeight: 700,
+                                                            borderRadius: 3,
+                                                            px: 2.2,
+                                                            fontSize: 15,
+                                                            boxShadow: "0 2px 8px 0 #ffd58066",
+                                                            background: "#ffe259",
+                                                            color: "#b71c1c",
+                                                            "&:hover": { background: "#ffb300", color: "#fff" }
+                                                        }}
+                                                        onClick={e => {
+                                                            e.stopPropagation();
+                                                            handleAddToCart(idx);
+                                                        }}
+                                                    >
+                                                        Thêm vào giỏ
+                                                    </Button>
+                                                </Tooltip>
+                                            </Stack>
+                                        </Box>
+                                    </OutletBlock>
+                                </Grid>
+                            ))
+                        )}
+                    </Grid>
+                )}
+                {/* Phân trang */}
                 <Stack direction="row" justifyContent="center" alignItems="center" mt={5} spacing={2}>
-                    <Button variant="outlined" size="small" sx={{
-                        minWidth: 38, borderRadius: 2.3, color: "#b71c1c", borderColor: "#ffe259",
-                        "&:hover": { borderColor: "#e53935", bgcolor: "#fffbe6" }
-                    }}>1</Button>
-                    <Button variant="outlined" size="small" sx={{
-                        minWidth: 38, borderRadius: 2.3, color: "#b71c1c", borderColor: "#ffe259",
-                        "&:hover": { borderColor: "#e53935", bgcolor: "#fffbe6" }
-                    }}>2</Button>
-                    <Typography sx={{ mx: 1, color: "#888" }}>...</Typography>
-                    <Button variant="outlined" size="small" sx={{
-                        minWidth: 38, borderRadius: 2.3, color: "#b71c1c", borderColor: "#ffe259",
-                        "&:hover": { borderColor: "#e53935", bgcolor: "#fffbe6" }
-                    }}>6</Button>
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        disabled={page === 0}
+                        onClick={() => setPage(page - 1)}
+                        sx={{
+                            minWidth: 38,
+                            borderRadius: 2.3,
+                            color: page === 0 ? "#bdbdbd" : "#b71c1c",
+                            borderColor: "#ffe259",
+                            fontWeight: 600
+                        }}
+                    >
+                        Trước
+                    </Button>
+                    {getPaginationItems().map((item, idx) =>
+                        item === "..." ? (
+                            <Typography key={idx} sx={{ mx: 1, color: "#888", minWidth: 24, textAlign: "center" }}>...</Typography>
+                        ) : (
+                            <Button
+                                key={item}
+                                variant={item === page ? "contained" : "outlined"}
+                                size="small"
+                                sx={{
+                                    minWidth: 38,
+                                    borderRadius: 2.3,
+                                    color: item === page ? "#fff" : "#b71c1c",
+                                    borderColor: "#ffe259",
+                                    bgcolor: item === page ? "#b71c1c" : "#fff",
+                                    fontWeight: item === page ? 700 : 500,
+                                    "&:hover": { borderColor: "#e53935", bgcolor: "#fffbe6" }
+                                }}
+                                onClick={() => setPage(item)}
+                            >
+                                {item + 1}
+                            </Button>
+                        )
+                    )}
+                    <Button
+                        variant="outlined"
+                        size="small"
+                        disabled={page === totalPages - 1 || totalPages === 0}
+                        onClick={() => setPage(page + 1)}
+                        sx={{
+                            minWidth: 38,
+                            borderRadius: 2.3,
+                            color: page === totalPages - 1 || totalPages === 0 ? "#bdbdbd" : "#b71c1c",
+                            borderColor: "#ffe259",
+                            fontWeight: 600
+                        }}
+                    >
+                        Sau
+                    </Button>
                 </Stack>
             </Box>
             <Box mt={8}>

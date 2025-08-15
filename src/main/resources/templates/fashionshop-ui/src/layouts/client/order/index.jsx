@@ -1,88 +1,27 @@
 import React, { useState } from "react";
 import {
-    Box,
-    Grid,
-    Paper,
-    TextField,
-    Button,
-    Typography,
-    Radio,
-    FormControlLabel,
-    RadioGroup,
-    InputAdornment,
-    Avatar,
-    Divider,
-    Stack,
-    Autocomplete,
-    Modal,
-    IconButton
+    Box, Grid, Paper, TextField, Button, Typography, Radio, FormControlLabel,
+    RadioGroup, InputAdornment, Avatar, Divider, Stack, Autocomplete, Modal, IconButton
 } from "@mui/material";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import ConfirmationNumberOutlinedIcon from "@mui/icons-material/ConfirmationNumberOutlined";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
-import CloseIcon from "@mui/icons-material/Close";
-import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import RemoveIcon from "@mui/icons-material/Remove";
 import AddIcon from "@mui/icons-material/Add";
-
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import VNPAY_LOGO from "../../../assets/images/vnPay.png";
 import MOMO_LOGO from "../../../assets/images/momo.png";
 import ZALOPAY_LOGO from "../../../assets/images/zalopay.png";
 
-const cartItem = {
-    name: "SWE VISION L/S TEE - CREAM",
-    price: 528000,
-    salePrice: 480000,
-    img: "https://product.hstatic.net/200000690725/product/5_6e6e1d0b6d9e4e2ebf8ec8a9a1b07ee8_large.jpg",
-    quantity: 1,
-    size: "M"
-};
-
-const SIZE_OPTIONS = ["M", "L", "XL"];
-
-const PROVINCES = [
-    "Hồ Chí Minh", "Hà Nội", "Đà Nẵng", "An Giang", "Bà Rịa – Vũng Tàu", "Bình Dương", "Bình Phước"
-];
-const DISTRICTS = {
-    "Hồ Chí Minh": ["Quận 1", "Quận 3", "Quận 5", "Quận 7"],
-    "Hà Nội": ["Ba Đình", "Đống Đa", "Hoàn Kiếm"],
-    "Đà Nẵng": ["Hải Châu", "Thanh Khê"],
-    "An Giang": ["Long Xuyên", "Châu Đốc"],
-    "Bà Rịa – Vũng Tàu": ["Bà Rịa", "Vũng Tàu"],
-    "Bình Dương": ["Thủ Dầu Một", "Dĩ An"],
-    "Bình Phước": ["Đồng Xoài"]
-};
-const WARDS = {
-    "Quận 1": ["Bến Nghé", "Bến Thành", "Cầu Kho"],
-    "Quận 3": ["Phường 1", "Phường 3"],
-    "Ba Đình": ["Phúc Xá", "Trúc Bạch"],
-    "Hải Châu": ["Hải Châu 1", "Hòa Thuận Đông"],
-    "Long Xuyên": ["Mỹ Bình", "Mỹ Long"],
-    "Bà Rịa": ["Phước Trung", "Long Tâm"],
-    "Thủ Dầu Một": ["Chánh Nghĩa", "Hiệp Thành"],
-    "Đồng Xoài": ["Tân Bình", "Tân Phú"]
-};
-
-const AVAILABLE_COUPONS = [
-    { code: "SALE10", label: "Giảm 10%", best: true },
-    { code: "FREESHIP", label: "Miễn phí vận chuyển", best: false },
-    { code: "SUMMER2025", label: "Ưu đãi hè 2025", best: false }
-];
-
-const PRIMARY_BLUE = "#2274cf";
-const WHITE = "#fff";
-const LIGHT_BLUE_BG = "#f4f8fd";
-const BORDER_COLOR = "#e0e7f5";
-const DISABLED_BG = "#f4f7fa";
-const MAIN_TEXT_COLOR = "#16345a";
-const SIZE_MODAL_BG = "#f6f8f5";
-const SIZE_MODAL_BTN_BG = "#fafbfa";
-const SIZE_MODAL_BTN_ACTIVE_BG = "#fff";
-const SIZE_MODAL_BTN_BORDER = "#56806b";
-const SIZE_MODAL_BTN_COLOR = "#222";
-const SIZE_MODAL_BTN_ACTIVE_COLOR = "#56806b";
-const SIZE_MODAL_BTN_HEIGHT = 40;
+import {
+    cartItem, SIZE_OPTIONS, PROVINCES, DISTRICTS, WARDS, AVAILABLE_COUPONS,
+    PRIMARY_BLUE, WHITE, LIGHT_BLUE_BG, BORDER_COLOR, DISABLED_BG, MAIN_TEXT_COLOR
+} from "./constants";
+import ModalCouponContent from "./ModalCouponContent";
+import SizeModalContent from "./SizeModalContent";
+import Footer from "../components/footer";
+import { Link as RouterLink } from "react-router-dom";
 
 export default function OrderForm() {
     const [form, setForm] = useState({
@@ -166,233 +105,88 @@ export default function OrderForm() {
     let total = cartItem.salePrice * cartQuantity;
     if (appliedCoupon === "SALE10") total = Math.floor(total * 0.9);
 
-    const bestCoupon = AVAILABLE_COUPONS.find(coupon => coupon.best);
-    const otherCoupons = AVAILABLE_COUPONS.filter(coupon => !coupon.best);
-
-    const ModalCouponContent = (
+    // Banner inline code (giống giỏ hàng, có nút quay lại)
+    const Banner = (
         <Box
             sx={{
-                bgcolor: WHITE,
-                borderRadius: 3,
-                width: 350,
-                maxWidth: "90vw",
-                mx: "auto",
-                mt: 7,
-                p: 0,
-                boxShadow: 8,
-                outline: "none",
+                width: "100%",
+                height: { xs: 90, md: 140 },
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                mb: 3,
+                mt: 2,
+                px: 0,
+                background: "linear-gradient(90deg, #ffe169 0%, #ffc94a 60%, #ffb55e 100%)",
+                borderRadius: { xs: "0 0 28px 28px", md: "0 60px 0 60px" },
+                boxShadow: "0 8px 32px 0 #ffd58033",
+                position: "relative",
                 overflow: "hidden"
             }}
         >
-            <Box sx={{ display: "flex", alignItems: "center", borderBottom: `1px solid ${BORDER_COLOR}`, p: 2, pb: 1.5 }}>
-                <IconButton size="small" sx={{ mr: 1 }} onClick={() => setCouponModalOpen(false)}>
-                    <CloseIcon />
-                </IconButton>
-                <Typography sx={{ fontWeight: 700, flex: 1, textAlign: "center", fontSize: 17, color: MAIN_TEXT_COLOR }}>
-                    Chọn mã khuyến mãi
-                </Typography>
-                <Box width={32} />
-            </Box>
-            <Box sx={{ p: 3, pt: 1.5, textAlign: "center" }}>
-                {AVAILABLE_COUPONS.length === 0 ? (
-                    <Box>
-                        <LocalOfferOutlinedIcon sx={{ color: "#bbb", fontSize: 56, mb: 2 }} />
-                        <Typography color="#888" fontWeight={500}>
-                            Không có mã khuyến mãi phù hợp
-                        </Typography>
-                    </Box>
-                ) : (
-                    <Box>
-                        {bestCoupon && (
-                            <Button
-                                variant="outlined"
-                                fullWidth
-                                sx={{
-                                    mb: 1.5,
-                                    borderRadius: 3,
-                                    fontWeight: 700,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "flex-start",
-                                    fontSize: 15,
-                                    borderWidth: 2,
-                                    borderColor: PRIMARY_BLUE,
-                                    bgcolor: LIGHT_BLUE_BG,
-                                    color: PRIMARY_BLUE,
-                                    textTransform: "none",
-                                    "& .MuiSvgIcon-root": { mr: 1 }
-                                }}
-                                onClick={() => handleQuickCouponSelect(bestCoupon)}
-                                startIcon={<ConfirmationNumberOutlinedIcon sx={{ color: PRIMARY_BLUE }} />}
-                            >
-                                {bestCoupon.label}
-                                <Typography variant="caption" sx={{ color: "#888", ml: 1 }}>
-                                    ({bestCoupon.code})
-                                </Typography>
-                                <Box sx={{
-                                    ml: 1.5,
-                                    px: 1.2,
-                                    py: 0.2,
-                                    bgcolor: PRIMARY_BLUE,
-                                    color: WHITE,
-                                    fontWeight: 700,
-                                    fontSize: 12,
-                                    borderRadius: 1
-                                }}>
-                                    Tốt nhất
-                                </Box>
-                            </Button>
-                        )}
-                        {otherCoupons.map((coupon) => (
-                            <Button
-                                key={coupon.code}
-                                variant="outlined"
-                                fullWidth
-                                sx={{
-                                    my: 0.5,
-                                    borderRadius: 3,
-                                    fontWeight: 600,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "flex-start",
-                                    fontSize: 15,
-                                    color: PRIMARY_BLUE,
-                                    borderColor: BORDER_COLOR,
-                                    textTransform: "none"
-                                }}
-                                onClick={() => handleQuickCouponSelect(coupon)}
-                                startIcon={<ConfirmationNumberOutlinedIcon sx={{ color: "#bdbdbd" }} />}
-                            >
-                                {coupon.label}
-                                <Typography variant="caption" sx={{ color: "#888", ml: 1 }}>
-                                    ({coupon.code})
-                                </Typography>
-                            </Button>
-                        ))}
-                        {(!bestCoupon && otherCoupons.length === 0) && (
-                            <Box sx={{ mt: 3, mb: 2 }}>
-                                <LocalOfferOutlinedIcon sx={{ color: "#bbb", fontSize: 56, mb: 2 }} />
-                                <Typography color="#888" fontWeight={500}>
-                                    Không có mã khuyến mãi phù hợp
-                                </Typography>
-                            </Box>
-                        )}
-                    </Box>
-                )}
-            </Box>
-            <Box sx={{ borderTop: `1px solid ${BORDER_COLOR}`, bgcolor: "#fafafa", p: 1.3 }}>
+            <Stack
+                direction="row"
+                alignItems="center"
+                spacing={2}
+                justifyContent="center"
+                sx={{ mx: "auto" }}
+            >
                 <Button
-                    fullWidth
-                    variant="contained"
-                    color="inherit"
-                    onClick={() => setCouponModalOpen(false)}
+                    variant="outlined"
+                    color="primary"
+                    startIcon={<ArrowBackIcon />}
+                    component={RouterLink}
+                    to="/card"
                     sx={{
-                        bgcolor: "#eee",
-                        color: "#444",
-                        boxShadow: "none",
                         fontWeight: 700,
-                        borderRadius: 2,
-                        fontSize: 15,
-                        textTransform: "none"
-                    }}
-                >Đóng</Button>
-            </Box>
-        </Box>
-    );
-
-    const SizeModalContent = (
-        <Box
-            sx={{
-                bgcolor: WHITE,
-                borderRadius: '20px',
-                width: 440,
-                maxWidth: "95vw",
-                mx: "auto",
-                mt: 7,
-                p: 0,
-                boxShadow: 8,
-                outline: "none",
-                overflow: "hidden",
-                minHeight: "520px",
-                display: "flex",
-                flexDirection: "column"
-            }}
-        >
-            <Box sx={{ display: "flex", alignItems: "center", borderBottom: "1px solid #f0f1ee", p: 2, pb: 1.5 }}>
-                <IconButton size="small" sx={{ mr: 1, bgcolor: "#f5f7f2", borderRadius: 2 }} onClick={() => setSizeModalOpen(false)}>
-                    <CloseIcon />
-                </IconButton>
-                <Typography sx={{ fontWeight: 700, flex: 1, textAlign: "center", fontSize: 18, color: "#23351e" }}>
-                    Chọn phân loại
-                </Typography>
-                <Box width={36} />
-            </Box>
-            <Box sx={{ p: 3, pt: 2, pb: 2, display: "flex", alignItems: "center", borderBottom: "1px solid #f0f1ee" }}>
-                <Avatar
-                    src={cartItem.img}
-                    alt={cartItem.name}
-                    variant="rounded"
-                    sx={{ width: 64, height: 64, borderRadius: 2, flexShrink: 0, mr: 2 }}
-                />
-                <Typography fontWeight={700} fontSize={20} color="#23351e">
-                    {cartItem.price.toLocaleString()}₫
-                </Typography>
-            </Box>
-            <Box sx={{ p: 3, pt: 2, bgcolor: "#fafbfa", borderBottom: "1px solid #f0f1ee" }}>
-                <Typography fontWeight={600} fontSize={16} sx={{ mb: 2 }} color="#23351e">
-                    Kích thước
-                </Typography>
-                <Stack direction="row" spacing={2}>
-                    {SIZE_OPTIONS.map((size) => (
-                        <Button
-                            key={size}
-                            variant="outlined"
-                            sx={{
-                                minWidth: 56,
-                                borderRadius: 3,
-                                fontWeight: 600,
-                                fontSize: 15,
-                                bgcolor: selectedSize === size ? SIZE_MODAL_BTN_ACTIVE_BG : SIZE_MODAL_BTN_BG,
-                                borderColor: selectedSize === size ? SIZE_MODAL_BTN_BORDER : "#e0e0e0",
-                                color: selectedSize === size ? SIZE_MODAL_BTN_ACTIVE_COLOR : SIZE_MODAL_BTN_COLOR,
-                                boxShadow: "none",
-                                textTransform: "none",
-                                height: SIZE_MODAL_BTN_HEIGHT,
-                                px: 3
-                            }}
-                            onClick={() => setSelectedSize(size)}
-                        >
-                            {size}
-                        </Button>
-                    ))}
-                </Stack>
-            </Box>
-            <Box sx={{ flex: 1, bgcolor: "#f3f4f3" }} />
-            <Box sx={{ p: 2.5, bgcolor: "#f3f4f3" }}>
-                <Button
-                    fullWidth
-                    variant="contained"
-                    onClick={() => setSizeModalOpen(false)}
-                    sx={{
-                        bgcolor: "#6e8c74",
-                        color: "#fff",
                         borderRadius: 3,
-                        fontWeight: 700,
-                        fontSize: 17,
-                        textTransform: "none",
-                        py: 1.2,
-                        boxShadow: "none",
-                        "&:hover": { bgcolor: "#4f6f56" }
+                        px: 2.1,
+                        background: "#fff",
+                        color: "#1976d2",
+                        border: "1.5px solid #bde0fe",
+                        boxShadow: "0 2px 8px 0 #bde0fe22",
+                        "&:hover": {
+                            background: "#e3f0fa",
+                            color: "#0d47a1",
+                            borderColor: "#1976d2",
+                        },
+                        fontSize: 15.5,
+                        position: "absolute",
+                        left: { xs: 8, sm: 28 },
+                        top: "50%",
+                        transform: "translateY(-50%)",
                     }}
                 >
-                    Xác nhận
+                    Quay lại
                 </Button>
-            </Box>
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                    <ShoppingCartIcon sx={{ fontSize: 33, color: "#1976d2" }} />
+                    <Typography
+                        variant="h4"
+                        fontWeight={800}
+                        sx={{
+                            color: "#1976d2",
+                            px: 2.2,
+                            py: 0.7,
+                            borderRadius: 5,
+                            fontSize: { xs: 21, sm: 27 },
+                            bgcolor: "#fff",
+                            border: "1.5px solid #bde0fe",
+                            boxShadow: "0 2px 8px 0 #bde0fe22",
+                            textAlign: "center",
+                            minWidth: 160,
+                        }}
+                    >
+                        Thanh Toán Đơn Hàng
+                    </Typography>
+                </Stack>
+            </Stack>
         </Box>
     );
 
     return (
-        <Box sx={{ bgcolor: LIGHT_BLUE_BG, minHeight: "100vh", py: 4 }}>
+        <Box sx={{ bgcolor: LIGHT_BLUE_BG, minHeight: "100vh", py: 0 }}>
+            {Banner}
             <Grid container justifyContent="center" spacing={4}>
                 <Grid item xs={12} md={7} lg={6}>
                     <Paper elevation={2} sx={{ p: 3, borderRadius: 3, mb: 2, bgcolor: WHITE }}>
@@ -800,7 +594,11 @@ export default function OrderForm() {
                                 aria-labelledby="modal-size"
                                 sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}
                             >
-                                {SizeModalContent}
+                                <SizeModalContent
+                                    selectedSize={selectedSize}
+                                    setSelectedSize={setSelectedSize}
+                                    onClose={() => setSizeModalOpen(false)}
+                                />
                             </Modal>
                         </Paper>
                         <Paper elevation={2} sx={{ p: 2, borderRadius: 3, bgcolor: WHITE, position: "relative" }}>
@@ -868,7 +666,10 @@ export default function OrderForm() {
                                 aria-labelledby="modal-coupon"
                                 sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}
                             >
-                                {ModalCouponContent}
+                                <ModalCouponContent
+                                    onClose={() => setCouponModalOpen(false)}
+                                    handleQuickCouponSelect={handleQuickCouponSelect}
+                                />
                             </Modal>
                         </Paper>
                         <Paper elevation={2} sx={{ p: 2, borderRadius: 3, bgcolor: WHITE }}>
@@ -924,6 +725,7 @@ export default function OrderForm() {
                     </Stack>
                 </Grid>
             </Grid>
+            <Footer />
         </Box>
     );
 }
