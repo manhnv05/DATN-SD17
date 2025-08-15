@@ -100,7 +100,7 @@ export default function AboutPage() {
                         border: "1.5px solid #bde0fe"
                     }}
                 >
-                    About Us
+                    Giới thiệu về Fashion Shop
                 </Typography>
             </Box>
 
@@ -130,15 +130,17 @@ export default function AboutPage() {
                     </Grid>
                     <Grid item xs={12} md={6}>
                         <Typography variant="h4" fontWeight={900} sx={{ mb: 2, color: "#205072", letterSpacing: 1.1 }}>
-                            Who We Are
+                            Chúng tôi là ai?
                         </Typography>
                         <Typography sx={{ fontSize: 17, color: "#444", mb: 2, lineHeight: 1.7 }}>
-                            At <b>COOLMATE</b>, we are passionate about creating stylish, high-quality, and affordable fashion for everyone.
-                            Since our founding, we&apos;ve been committed to making a positive impact on our customers, our team, and our community.
+                            Tại <b>Fashion shop</b>, chúng tôi đam mê tạo ra thời trang phong cách, chất lượng cao và giá cả
+                            phải chăng cho tất cả mọi người. Kể từ khi thành lập, chúng tôi đã cam kết tạo ra tác động tích
+                            cực đến khách hàng, đội ngũ và cộng đồng của chúng tôi.
                         </Typography>
                         <Typography sx={{ fontSize: 16, color: "#888", lineHeight: 1.7 }}>
-                            Our journey started with a simple belief: fashion should be accessible and enjoyable for all.
-                            Today, we continue to grow, innovate, and inspire with every collection, every product, and every story we share.
+                            Hành trình của chúng tôi bắt đầu với một niềm tin đơn giản: thời trang phải dễ tiếp cận và thú
+                            vị cho tất cả mọi người. Ngày nay, chúng tôi tiếp tục phát triển, đổi mới và truyền cảm hứng với
+                            mọi bộ sưu tập, mọi sản phẩm và mọi câu chuyện mà chúng tôi chia sẻ.
                         </Typography>
                     </Grid>
                 </Grid>
@@ -154,33 +156,33 @@ export default function AboutPage() {
                     border: "1.5px solid #e3f0fa"
                 }}>
                     <Typography variant="h5" fontWeight={900} sx={{ mb: 3, color: "#205072" }}>
-                        Our Values
+                        Giá trị của chúng tôi
                     </Typography>
                     <Grid container spacing={4}>
                         <Grid item xs={12} md={4}>
                             <Stack alignItems="center" spacing={1.5}>
                                 <FavoriteIcon sx={{ fontSize: 38, color: "#e53935" }} />
-                                <Typography fontWeight={700} sx={{ fontSize: 17.5, color: "#e53935" }}>Passion</Typography>
+                                <Typography fontWeight={700} sx={{ fontSize: 17.5, color: "#e53935" }}>Tình yêu</Typography>
                                 <Typography sx={{ color: "#666", fontSize: 15, textAlign: "center", lineHeight: 1.6 }}>
-                                    We put our heart into everything we do, from design to service.
+                                    Chúng tôi đặt trái tim của mình vào mọi thứ chúng tôi làm, từ thiết kế đến dịch vụ.
                                 </Typography>
                             </Stack>
                         </Grid>
                         <Grid item xs={12} md={4}>
                             <Stack alignItems="center" spacing={1.5}>
                                 <StarIcon sx={{ fontSize: 38, color: "#ffe600" }} />
-                                <Typography fontWeight={700} sx={{ fontSize: 17.5, color: "#ffd600" }}>Quality</Typography>
+                                <Typography fontWeight={700} sx={{ fontSize: 17.5, color: "#ffd600" }}>Chất lượng</Typography>
                                 <Typography sx={{ color: "#666", fontSize: 15, textAlign: "center", lineHeight: 1.6 }}>
-                                    We are committed to bringing premium quality to every product.
+                                    Chúng tôi cam kết mang lại chất lượng cao cho mọi sản phẩm.
                                 </Typography>
                             </Stack>
                         </Grid>
                         <Grid item xs={12} md={4}>
                             <Stack alignItems="center" spacing={1.5}>
                                 <GroupsIcon sx={{ fontSize: 38, color: "#00bfae" }} />
-                                <Typography fontWeight={700} sx={{ fontSize: 17.5, color: "#00bfae" }}>Community</Typography>
+                                <Typography fontWeight={700} sx={{ fontSize: 17.5, color: "#00bfae" }}>Cộng đồng</Typography>
                                 <Typography sx={{ color: "#666", fontSize: 15, textAlign: "center", lineHeight: 1.6 }}>
-                                    We believe in building a supportive, diverse, and inclusive community.
+                                    Chúng tôi tin tưởng vào việc xây dựng một cộng đồng hỗ trợ, đa dạng và hòa nhập.
                                 </Typography>
                             </Stack>
                         </Grid>
@@ -215,7 +217,7 @@ export default function AboutPage() {
             {/* Meet our team */}
             <Box sx={{ maxWidth: 1120, mx: "auto", px: 2, mb: 12 }}>
                 <Typography variant="h5" fontWeight={900} sx={{ mb: 3.5, color: "#205072" }}>
-                    Meet Our Team
+                    Đôi ngũ của chúng tôi
                 </Typography>
                 <Grid container spacing={4} justifyContent="center">
                     {teamMembers.map((member, idx) => (

@@ -22,4 +22,7 @@ public interface HinhAnhRepository extends JpaRepository<HinhAnh, Integer>, JpaS
      @Query(value = "SELECT * FROM hinh_anh ha WHERE NOT EXISTS (SELECT 1 FROM spct_hinhanh sh WHERE sh.id_hinh_anh = ha.id)", nativeQuery = true)
      List<HinhAnh> findHinhAnhChuaGanSanPham();
 
+    @Query("SELECT ha FROM HinhAnh ha JOIN ha.spctHinhAnhs s WHERE s.chiTietSanPham.id = :ctspId")
+    List<HinhAnh> findByChiTietSanPhamId(Integer ctspId);
+
 }

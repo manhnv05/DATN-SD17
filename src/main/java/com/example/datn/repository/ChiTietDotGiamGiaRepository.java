@@ -29,6 +29,8 @@ public interface ChiTietDotGiamGiaRepository extends JpaRepository<ChiTietDotGia
 """)
     List<DotGiamGia> getDotGiamGiaByIdChiTietSanPham(@Param("idctsp") int idChiTietSanPham);
 
+    List<ChiTietDotGiamGia> findByChiTietSanPhamId(Integer chiTietSanPhamId);
+
 
     @Query("SELECT ctdgg FROM ChiTietDotGiamGia ctdgg " +
             "JOIN FETCH ctdgg.dotGiamGia dgg " +

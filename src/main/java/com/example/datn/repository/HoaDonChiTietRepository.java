@@ -40,4 +40,17 @@ GROUP BY hdct.id_san_pham_chi_tiet
 ORDER BY SUM(hdct.so_luong) DESC, MAX(hd.ngay_tao) DESC
 """,nativeQuery = true)
     Page<Integer> findBestSellingProductIdsAllTime(Pageable pageable);
+
+
+    // Trả về id sản phẩm cùng tổng số lượng bán, sắp xếp giảm dần. Lấy top N sản phẩm bán chạy nhất.
+    @Query("SELECT ctsp.sanPham.id, SUM(hdct.soLuong) " +
+            "FROM HoaDonChiTiet hdct " +
+            "JOIN hdct.sanPhamChiTiet ctsp " +
+            "GROUP BY ctsp.sanPham.id " +
+            "ORDER BY SUM(hdct.soLuong) DESC")
+    List<Object[]> findBestSellingProductIds();
+
+    @Query("SELECT COALESCE(SUM(hdct.soLuong),0) FROM HoaDonChiTiet hdct " +
+            "WHERE hdct.sanPhamChiTiet.sanPham.id = :sanPhamId AND hdct.trangThai = true")
+    Integer countSoldBySanPhamId(Integer sanPhamId);
 }
