@@ -71,4 +71,9 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
     """)
     List<ChiTietSanPham> getChiTietSanPhamTrangThai();
 
+    @Query("SELECT c FROM ChiTietSanPham c WHERE c.sanPham.id = :idSanPham AND c.mauSac.id = :idMauSac AND c.kichThuoc.id = :idKichThuoc")
+    ChiTietSanPham findExisting(@Param("idSanPham") Integer idSanPham,
+                                @Param("idMauSac") Integer idMauSac,
+                                @Param("idKichThuoc") Integer idKichThuoc);
+
 }

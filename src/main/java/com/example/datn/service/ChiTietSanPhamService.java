@@ -15,6 +15,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import jakarta.validation.Valid;
 
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Validated
+@Transactional
 public class ChiTietSanPhamService {
 
     @Autowired
@@ -55,6 +57,37 @@ public class ChiTietSanPhamService {
     private HinhAnhRepository hinhAnhRepository;
 
     public Integer save(@Valid ChiTietSanPhamVO vO) {
+        // Kiểm tra trùng CTSP theo idSanPham, idMauSac, idKichThuoc (có thể bổ sung thêm idChatLieu, idCoAo,... nếu muốn)
+        ChiTietSanPham existing = chiTietSanPhamRepository.findExisting(
+                vO.getIdSanPham(),
+                vO.getIdMauSac(),
+                vO.getIdKichThuoc()
+        );
+
+        if (existing != null) {
+            // Cộng dồn số lượng và cập nhật giá mới nhất
+            existing.setSoLuong(existing.getSoLuong() + vO.getSoLuong());
+            existing.setGia(vO.getGia());
+            existing.setTrongLuong(vO.getTrongLuong());
+            existing.setMoTa(vO.getMoTa());
+            existing.setTrangThai(vO.getTrangThai());
+            // Update mapping hình ảnh nếu có
+            if (vO.getHinhAnhIds() != null) {
+                spctHinhAnhRepository.deleteByChiTietSanPham_Id(existing.getId());
+                for (Integer idHinhAnh : vO.getHinhAnhIds()) {
+                    HinhAnh hinhAnh = hinhAnhRepository.findById(idHinhAnh)
+                            .orElseThrow(() -> new RuntimeException("Không tìm thấy hình ảnh với id=" + idHinhAnh));
+                    SpctHinhAnh mapping = new SpctHinhAnh();
+                    mapping.setChiTietSanPham(existing);
+                    mapping.setHinhAnh(hinhAnh);
+                    spctHinhAnhRepository.save(mapping);
+                }
+            }
+            chiTietSanPhamRepository.save(existing);
+            return existing.getId();
+        }
+
+        // Nếu không trùng, tạo mới CTSP và tự gen mã
         ChiTietSanPham bean = new ChiTietSanPham();
         BeanUtils.copyProperties(vO, bean);
 
@@ -77,28 +110,40 @@ public class ChiTietSanPhamService {
         if (vO.getIdTayAo() != null)
             bean.setTayAo(tayAoRepository.findById(vO.getIdTayAo()).orElse(null));
 
-        bean = chiTietSanPhamRepository.save(bean);
+        // Tự động sinh mã CTSP + 4 số, ví dụ CTSP0001
+        String maMoi = genMaSanPhamChiTiet();
+        bean.setMaSanPhamChiTiet(maMoi);
 
-        System.out.println("Đã lưu ChiTietSanPham với id: " + bean.getId());
+        bean = chiTietSanPhamRepository.save(bean);
 
         // --- Mapping nhiều hình ảnh ---
         if (vO.getHinhAnhIds() != null && !vO.getHinhAnhIds().isEmpty()) {
-            System.out.println("Danh sách id hình ảnh: " + vO.getHinhAnhIds());
             for (Integer idHinhAnh : vO.getHinhAnhIds()) {
-                System.out.println("Mapping hình ảnh với id: " + idHinhAnh);
                 HinhAnh hinhAnh = hinhAnhRepository.findById(idHinhAnh)
                         .orElseThrow(() -> new RuntimeException("Không tìm thấy hình ảnh với id=" + idHinhAnh));
                 SpctHinhAnh mapping = new SpctHinhAnh();
                 mapping.setChiTietSanPham(bean);
                 mapping.setHinhAnh(hinhAnh);
                 spctHinhAnhRepository.save(mapping);
-                System.out.println("Đã lưu mapping cho hình ảnh id: " + idHinhAnh);
             }
-        } else {
-            System.out.println("Không có hình ảnh nào để mapping!");
         }
 
         return bean.getId();
+    }
+
+    // Hàm sinh mã tự động CTSPxxxx
+    private String genMaSanPhamChiTiet() {
+        List<String> allMa = chiTietSanPhamRepository.findAllMaChiTietSanPham();
+        int max = allMa.stream()
+                .filter(ma -> ma != null && ma.startsWith("CTSP"))
+                .mapToInt(ma -> {
+                    try {
+                        return Integer.parseInt(ma.substring(4));
+                    } catch (Exception e) {
+                        return 0;
+                    }
+                }).max().orElse(0);
+        return String.format("CTSP%04d", max + 1);
     }
 
     public void delete(Integer id) {

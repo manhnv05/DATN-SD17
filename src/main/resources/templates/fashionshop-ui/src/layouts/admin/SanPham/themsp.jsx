@@ -33,7 +33,7 @@ const normalizeUrl = (url) =>
 async function generateMaSanPhamUnique() {
     try {
         const res = await fetch(apiUrl("/sanPham/all-ma"), {
-            credentials: "include", // <-- THÊM DÒNG NÀY
+            credentials: "include",
         });
         const data = await res.json();
         if (!Array.isArray(data)) {
@@ -63,7 +63,7 @@ async function generateMaSanPhamUnique() {
 async function fetchAllMaSanPhamChiTiet() {
     try {
         const res = await fetch(apiUrl("/chiTietSanPham/all-ma"), {
-            credentials: "include", // <-- THÊM DÒNG NÀY
+            credentials: "include",
         });
         const data = await res.json();
         if (!Array.isArray(data)) return [];
@@ -192,12 +192,13 @@ function ProductForm() {
     const [newProductCategory, setNewProductCategory] = useState("");
     const [newProductDesc, setNewProductDesc] = useState("");
     const [addProductLoading, setAddProductLoading] = useState(false);
-    const [addError, setAddError] = useState(""); // SỬA: THÊM KHAI BÁO useState CHO addError
+    const [addError, setAddError] = useState("");
     const [addSuccess, setAddSuccess] = useState("");
     const autoFocusRef = useRef(null);
     const [newProductCountry, setNewProductCountry] = useState("");
     const [addProductValidate, setAddProductValidate] = useState({});
     const [isCheckedAllGlobal, setIsCheckedAllGlobal] = useState(false);
+    const [showAttributes, setShowAttributes] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -500,8 +501,6 @@ function ProductForm() {
         }
     }, [quickWeight.global, quickQty.global, quickPrice.global, isCheckedAllGlobal]);
 
-
-
     const openImageModal = (colorId) => {
         setModalColor("all");
         setShowImageModal(true);
@@ -510,7 +509,6 @@ function ProductForm() {
 
     const closeImageModal = () => setShowImageModal(false);
     const handleSaveImages = () => {
-        // Lưu ảnh chọn dùng chung cho tất cả sản phẩm chi tiết các màu
         setSelectedImages({ all: [...tempImages] });
         closeImageModal();
     };
@@ -530,7 +528,7 @@ function ProductForm() {
 
     const handleAddProduct = async (e) => {
         e.preventDefault();
-        setAddError(""); // SỬA: ĐỔI TỪ setAddProductError thành setAddError nếu đang dùng addError
+        setAddError("");
         setAddSuccess("");
         setAddLoading(true);
 
@@ -718,7 +716,7 @@ function ProductForm() {
         setNewProductCategory(selectedCategory ? selectedCategory : "");
         setNewProductCountry(selectedCountry ? selectedCountry : "");
         setNewProductDesc("");
-        setAddError(""); // SỬA: ĐỔI TỪ setAddProductError thành setAddError nếu đang dùng addError
+        setAddError("");
         setAddSuccess("");
         setAddProductValidate({});
         const code = await generateMaSanPhamUnique();
@@ -727,7 +725,7 @@ function ProductForm() {
 
     const handleAddNewProduct = async () => {
         setAddProductLoading(true);
-        setAddError(""); // SỬA: ĐỔI TỪ setAddProductError thành setAddError nếu đang dùng addError
+        setAddError("");
         setAddSuccess("");
         const errors = {};
         if (!newProductName || !newProductName.trim()) errors.newProductName = "Tên sản phẩm không được để trống";

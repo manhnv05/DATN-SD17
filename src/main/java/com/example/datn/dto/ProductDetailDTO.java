@@ -9,7 +9,7 @@ public class ProductDetailDTO {
     private String tenSanPham;
     private String maSanPham;
     private String moTa;
-    private Integer gia; // Giá gốc
+    private Integer gia;
     private Integer giaTruocKhiGiam; // Nếu có khuyến mãi
     private Integer giaSauKhiGiam; // Nếu có khuyến mãi
     private Integer phanTramGiamGia; // Nếu có khuyến mãi
@@ -18,6 +18,7 @@ public class ProductDetailDTO {
     private List<String> images;
     private List<MauSacDTO> colors;
     private List<String> sizes;
+    private List<VariantDTO> variants;
     private Double rating;
     private Integer sold;
     private String shipping;
