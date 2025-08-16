@@ -150,7 +150,7 @@ const fetchCustomStats = async (startDate, endDate) => {
             const ngayKt = formatDateToISO(endDate);
             url += `?ngayBD=${ngayBD}&ngayKt=${ngayKt}`;
         }
-        
+
         const response = await fetch(url, {
             method: "GET",
             headers: {
@@ -169,7 +169,7 @@ const fetchCustomStats = async (startDate, endDate) => {
 // Hàm fetch dữ liệu sản phẩm sắp hết hàng
 const fetchLowStockProducts = async (slQuery = 1000, page = 0, size = 99) => {
     try {
-        
+
         const response = await fetch(
             `http://localhost:8080/thong_ke/sanPhamSapHet?slQuery=${slQuery}&page=${page}&size=${size}`, {
             method: "GET",
@@ -353,53 +353,58 @@ export default function DashboardStats() {
     }
 
     const loadTK = async () => {
-        const data = await loadThongKe()
-        setStatsData([
-            {
-                title: 'Hôm nay',
-                value: formatCurrency(data.data.homNay.tongTienTatCa),
-                icon: Today,
-                color: '#17a2b8',
-                stats: [
-                    { label: 'Sản phẩm', value: data.data.homNay.tongSanPham },
-                    { label: 'Đơn thành công', value: data.data.homNay.tongDonHoanThanh },
-                    { label: 'Đơn hủy', value: data.data.homNay.tongDonHuy }
-                ]
-            },
-            {
-                title: 'Tuần này',
-                value: formatCurrency(data.data.tuanNay.tongTienTatCa),
-                icon: CalendarToday,
-                color: '#fd7e14',
-                stats: [
-                    { label: 'Sản phẩm', value: data.data.tuanNay.tongSanPham },
-                    { label: 'Đơn thành công', value: data.data.tuanNay.tongDonHoanThanh },
-                    { label: 'Đơn hủy', value: data.data.tuanNay.tongDonHuy }
-                ]
-            },
-            {
-                title: 'Tháng này',
-                value: formatCurrency(data.data.thangNay.tongTienTatCa),
-                icon: DateRange,
-                color: '#007bff',
-                stats: [
-                    { label: 'Sản phẩm', value: data.data.thangNay.tongSanPham },
-                    { label: 'Đơn thành công', value: data.data.thangNay.tongDonHoanThanh },
-                    { label: 'Đơn hủy', value: data.data.thangNay.tongDonHuy }
-                ]
-            },
-            {
-                title: 'Năm này',
-                value: formatCurrency(data.data.namNay.tongTienTatCa),
-                icon: Event,
-                color: '#28a745',
-                stats: [
-                    { label: 'Sản phẩm', value: data.data.namNay.tongSanPham },
-                    { label: 'Đơn thành công', value: data.data.namNay.tongDonHoanThanh },
-                    { label: 'Đơn hủy', value: data.data.namNay.tongDonHuy }
-                ]
-            }
-        ]);
+        try {
+            const data = await loadThongKe()
+            setStatsData([
+                {
+                    title: 'Hôm nay',
+                    value: formatCurrency(data.data.homNay.tongTienTatCa),
+                    icon: Today,
+                    color: '#17a2b8',
+                    stats: [
+                        { label: 'Sản phẩm', value: data.data.homNay.tongSanPham },
+                        { label: 'Đơn thành công', value: data.data.homNay.tongDonHoanThanh },
+                        { label: 'Đơn hủy', value: data.data.homNay.tongDonHuy }
+                    ]
+                },
+                {
+                    title: 'Tuần này',
+                    value: formatCurrency(data.data.tuanNay.tongTienTatCa),
+                    icon: CalendarToday,
+                    color: '#fd7e14',
+                    stats: [
+                        { label: 'Sản phẩm', value: data.data.tuanNay.tongSanPham },
+                        { label: 'Đơn thành công', value: data.data.tuanNay.tongDonHoanThanh },
+                        { label: 'Đơn hủy', value: data.data.tuanNay.tongDonHuy }
+                    ]
+                },
+                {
+                    title: 'Tháng này',
+                    value: formatCurrency(data.data.thangNay.tongTienTatCa),
+                    icon: DateRange,
+                    color: '#007bff',
+                    stats: [
+                        { label: 'Sản phẩm', value: data.data.thangNay.tongSanPham },
+                        { label: 'Đơn thành công', value: data.data.thangNay.tongDonHoanThanh },
+                        { label: 'Đơn hủy', value: data.data.thangNay.tongDonHuy }
+                    ]
+                },
+                {
+                    title: 'Năm này',
+                    value: formatCurrency(data.data.namNay.tongTienTatCa),
+                    icon: Event,
+                    color: '#28a745',
+                    stats: [
+                        { label: 'Sản phẩm', value: data.data.namNay.tongSanPham },
+                        { label: 'Đơn thành công', value: data.data.namNay.tongDonHoanThanh },
+                        { label: 'Đơn hủy', value: data.data.namNay.tongDonHuy }
+                    ]
+                }
+            ]);
+        }
+        catch {
+            console.log("nodata")
+        }
     }
 
     // Hàm load thống kê tùy chỉnh
@@ -428,8 +433,13 @@ export default function DashboardStats() {
     };
 
     const fetchBieuDo = async () => {
-        const data = await loadBieuDo(check, startDate, endDate)
-        setDataResponse(data.data)
+        try {
+            const data = await loadBieuDo(check, startDate, endDate);
+            setDataResponse(data.data);
+        } catch (error) {
+            console.error('Error loading BieuDo:', error);
+        }
+
     }
 
     useEffect(() => {
@@ -447,7 +457,7 @@ export default function DashboardStats() {
 
     useEffect(() => {
         fetchData()
-    }, [page, viewCount, startDate, endDate, search,check])
+    }, [page, viewCount, startDate, endDate, search, check])
 
     // useEffect cho sản phẩm sắp hết hàng
     useEffect(() => {
@@ -474,12 +484,12 @@ export default function DashboardStats() {
 
                         <Grid container spacing={3}>
                             {displayStatsData.map((stat, index) => (
-                                <Grid 
-                                    item 
-                                    xs={12} 
-                                    sm={6} 
-                                    md={stat.title === 'Tùy chỉnh' ? 12 : (customStatsData ? 6 : 6)} 
-                                    lg={stat.title === 'Tùy chỉnh' ? 12 : (customStatsData ? 6 : 6)} 
+                                <Grid
+                                    item
+                                    xs={12}
+                                    sm={6}
+                                    md={stat.title === 'Tùy chỉnh' ? 12 : (customStatsData ? 6 : 6)}
+                                    lg={stat.title === 'Tùy chỉnh' ? 12 : (customStatsData ? 6 : 6)}
                                     key={index}
                                 >
                                     <StatCard {...stat} />
