@@ -34,8 +34,8 @@ public class ChiTietSanPhamVO implements Serializable {
     @NotNull(message = "Tay áo không được để trống")
     private Integer idTayAo;
 
-    @NotBlank(message = "Mã sản phẩm chi tiết không được để trống")
-    private String maSanPhamChiTiet;
+//    @NotBlank(message = "Mã sản phẩm chi tiết không được để trống")
+//    private String maSanPhamChiTiet;
 
     @NotNull(message = "Giá không được để trống")
     @Positive(message = "Giá phải lớn hơn 0")

@@ -50,6 +50,13 @@ function formatStatus(status) {
     }
 }
 
+function getStringVal(val, mainKey, fallbackKey) {
+    if (typeof val === "object" && val !== null) {
+        return val[mainKey] || (fallbackKey && val[fallbackKey]) || "--";
+    }
+    return val || "--";
+}
+
 const trangThaiList = ["Tất cả", "Đang bán", "Ngừng bán"];
 const defaultFilter = {
     trangThai: "Tất cả",
@@ -259,27 +266,39 @@ function ProductDetailTable() {
         ) {
             return false;
         }
-        if (filters.chatLieu !== "Tất cả" && item.tenChatLieu !== filters.chatLieu) {
+        if (
+            filters.chatLieu !== "Tất cả" &&
+            getStringVal(item.tenChatLieu, "tenChatLieu") !== filters.chatLieu
+        ) {
             return false;
         }
         if (
             filters.thuongHieu !== "Tất cả" &&
-            item.tenThuongHieu !== filters.thuongHieu
+            getStringVal(item.tenThuongHieu, "tenThuongHieu") !== filters.thuongHieu
         ) {
             return false;
         }
-        if (filters.coAo !== "Tất cả" && item.tenCoAo !== filters.coAo) {
+        if (
+            filters.coAo !== "Tất cả" &&
+            getStringVal(item.tenCoAo, "tenCoAo") !== filters.coAo
+        ) {
             return false;
         }
-        if (filters.tayAo !== "Tất cả" && item.tenTayAo !== filters.tayAo) {
+        if (
+            filters.tayAo !== "Tất cả" &&
+            getStringVal(item.tenTayAo, "tenTayAo") !== filters.tayAo
+        ) {
             return false;
         }
-        if (filters.mauSac !== "Tất cả" && item.tenMauSac !== filters.mauSac) {
+        if (
+            filters.mauSac !== "Tất cả" &&
+            getStringVal(item.tenMauSac, "tenMauSac") !== filters.mauSac
+        ) {
             return false;
         }
         if (
             filters.kichCo !== "Tất cả" &&
-            item.tenKichThuoc !== filters.kichCo
+            getStringVal(item.tenKichThuoc, "tenKichCo", "ma") !== filters.kichCo
         ) {
             return false;
         }
@@ -290,30 +309,24 @@ function ProductDetailTable() {
                     item.maSanPhamChiTiet
                         .toLowerCase()
                         .includes(filters.search.toLowerCase())) ||
-                (item.tenChatLieu &&
-                    item.tenChatLieu
-                        .toLowerCase()
-                        .includes(filters.search.toLowerCase())) ||
-                (item.tenThuongHieu &&
-                    item.tenThuongHieu
-                        .toLowerCase()
-                        .includes(filters.search.toLowerCase())) ||
-                (item.tenCoAo &&
-                    item.tenCoAo
-                        .toLowerCase()
-                        .includes(filters.search.toLowerCase())) ||
-                (item.tenTayAo &&
-                    item.tenTayAo
-                        .toLowerCase()
-                        .includes(filters.search.toLowerCase())) ||
-                (item.tenMauSac &&
-                    item.tenMauSac
-                        .toLowerCase()
-                        .includes(filters.search.toLowerCase())) ||
-                (item.tenKichThuoc &&
-                    item.tenKichThuoc
-                        .toLowerCase()
-                        .includes(filters.search.toLowerCase()))
+                (getStringVal(item.tenChatLieu, "tenChatLieu")
+                    .toLowerCase()
+                    .includes(filters.search.toLowerCase())) ||
+                (getStringVal(item.tenThuongHieu, "tenThuongHieu")
+                    .toLowerCase()
+                    .includes(filters.search.toLowerCase())) ||
+                (getStringVal(item.tenCoAo, "tenCoAo")
+                    .toLowerCase()
+                    .includes(filters.search.toLowerCase())) ||
+                (getStringVal(item.tenTayAo, "tenTayAo")
+                    .toLowerCase()
+                    .includes(filters.search.toLowerCase())) ||
+                (getStringVal(item.tenMauSac, "tenMauSac")
+                    .toLowerCase()
+                    .includes(filters.search.toLowerCase())) ||
+                (getStringVal(item.tenKichThuoc, "tenKichCo", "ma")
+                    .toLowerCase()
+                    .includes(filters.search.toLowerCase()))
             )
         ) {
             return false;
@@ -342,12 +355,12 @@ function ProductDetailTable() {
             ),
             stt: idx + 1,
             maSanPhamChiTiet: item.maSanPhamChiTiet,
-            chatLieu: item.tenChatLieu || "",
-            thuongHieu: item.tenThuongHieu || "",
-            coAo: item.tenCoAo || "",
-            tayAo: item.tenTayAo || "",
-            mauSac: item.tenMauSac || "",
-            kichCo: item.tenKichThuoc || "",
+            chatLieu: getStringVal(item.tenChatLieu, "tenChatLieu"),
+            thuongHieu: getStringVal(item.tenThuongHieu, "tenThuongHieu"),
+            coAo: getStringVal(item.tenCoAo, "tenCoAo"),
+            tayAo: getStringVal(item.tenTayAo, "tenTayAo"),
+            mauSac: getStringVal(item.tenMauSac, "tenMauSac"),
+            kichCo: getStringVal(item.tenKichThuoc, "tenKichCo", "ma"),
             soLuong: item.soLuong,
             trongLuong: item.trongLuong,
             gia: item.gia,
@@ -385,27 +398,33 @@ function ProductDetailTable() {
                         Tất cả {label.toLowerCase()}
                     </MenuItem>
                     {options.map(function (opt) {
+                        let value =
+                            opt.tenChatLieu ||
+                            opt.tenThuongHieu ||
+                            opt.tenCoAo ||
+                            opt.tenTayAo ||
+                            opt.tenMauSac ||
+                            opt.tenKichCo ||
+                            opt.tenKichThuoc ||
+                            opt.ma ||
+                            opt;
+                        let display =
+                            opt.tenChatLieu ||
+                            opt.tenThuongHieu ||
+                            opt.tenCoAo ||
+                            opt.tenTayAo ||
+                            opt.tenMauSac ||
+                            opt.tenKichCo ||
+                            opt.tenKichThuoc ||
+                            opt.ma ||
+                            opt;
                         return (
                             <MenuItem
-                                key={opt.id || opt.value || opt}
-                                value={
-                                    opt.tenChatLieu ||
-                                    opt.tenThuongHieu ||
-                                    opt.tenCoAo ||
-                                    opt.tenTayAo ||
-                                    opt.tenMauSac ||
-                                    opt.tenKichThuoc ||
-                                    opt
-                                }
+                                key={opt.id || opt.value || value}
+                                value={value}
                                 sx={{ fontWeight: 500 }}
                             >
-                                {opt.tenChatLieu ||
-                                    opt.tenThuongHieu ||
-                                    opt.tenCoAo ||
-                                    opt.tenTayAo ||
-                                    opt.tenMauSac ||
-                                    opt.tenKichThuoc ||
-                                    opt}
+                                {display}
                             </MenuItem>
                         );
                     })}

@@ -28,7 +28,7 @@ import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 
 export default function ProductDetail() {
-    const { id } = useParams(); // id của chi tiết sản phẩm (ChiTietSanPham)
+    const { id } = useParams();
     const navigate = useNavigate();
 
     // State
@@ -48,15 +48,27 @@ export default function ProductDetail() {
         axios.get(`http://localhost:8080/api/shop/detail/${id}`)
             .then(res => {
                 const p = res.data;
+                const priceMin = p.giaMin || 0;
+                const priceMax = p.giaMax || 0;
+                let defaultColor = (p.colors && p.colors.length > 0) ? p.colors[0] : null;
+                let defaultSize = (p.sizes && p.sizes.length > 0) ? p.sizes[0] : null;
+                let defaultVariant = (p.variants && p.variants.length > 0)
+                    ? (p.variants.find(v =>
+                        (!defaultColor || v.maMau === defaultColor.maMau) &&
+                        (!defaultSize || v.kichThuoc === defaultSize)
+                    ) || p.variants[0])
+                    : null;
                 setProduct({
                     ...p,
                     name: p.tenSanPham,
-                    price: p.giaTruocKhiGiam || p.gia || 0,
-                    sale: p.giaSauKhiGiam || p.gia || 0,
-                    discount: p.phanTramGiamGia ? `-${p.phanTramGiamGia}%` : "",
-                    images: p.images && p.images.length > 0 ? p.images : [
-                        p.imageUrl || "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=600&q=80"
-                    ],
+                    priceMin,
+                    priceMax,
+                    variants: p.variants || [],
+                    images: defaultVariant && defaultVariant.images && defaultVariant.images.length > 0
+                        ? defaultVariant.images
+                        : (p.images && p.images.length > 0 ? p.images : [
+                            p.imageUrl || "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=600&q=80"
+                        ]),
                     colors: p.colors && p.colors.length > 0 ? p.colors : [],
                     sizes: p.sizes && p.sizes.length > 0 ? p.sizes : [],
                     rating: p.rating || 4.5,
@@ -67,12 +79,8 @@ export default function ProductDetail() {
                     detailImg: sizeGuideImg
                 });
                 setSelectedImage(0);
-                setSelectedColor(
-                    (p.colors && p.colors.length > 0) ? p.colors[0] : null
-                );
-                setSelectedSize(
-                    (p.sizes && p.sizes.length > 0) ? p.sizes[0] : null
-                );
+                setSelectedColor(defaultColor);
+                setSelectedSize(defaultSize);
                 setLoading(false);
             })
             .catch(() => {
@@ -81,7 +89,7 @@ export default function ProductDetail() {
             });
     }, [id]);
 
-    // Fetch related products (các sản phẩm cùng danh mục, loại trừ chính sp hiện tại)
+    // Fetch related products
     useEffect(() => {
         if (!id) return;
         axios.get("http://localhost:8080/api/outlet/products", {
@@ -93,10 +101,27 @@ export default function ProductDetail() {
                 name: item.tenSanPham,
                 img: item.imageUrl,
                 price: item.giaSauKhiGiam ? item.giaSauKhiGiam.toLocaleString("vi-VN") : "",
-                rating: 4.5 + Math.random() * 0.5 // random cho đẹp
+                rating: 4.5 + Math.random() * 0.5
             })));
         });
     }, [id]);
+
+    // Nếu FE chọn màu hoặc size, cập nhật ảnh tương ứng variant
+    useEffect(() => {
+        if (!product || !product.variants) return;
+        let variant = product.variants.find(v =>
+            (!selectedColor || v.maMau === selectedColor.maMau) &&
+            (!selectedSize || v.kichThuoc === selectedSize)
+        );
+        if (variant) {
+            setProduct(prev => ({
+                ...prev,
+                images: variant.images && variant.images.length > 0 ? variant.images : prev.images
+            }));
+            setSelectedImage(0);
+        }
+        // eslint-disable-next-line
+    }, [selectedColor, selectedSize]);
 
     if (loading) {
         return (
@@ -122,6 +147,39 @@ export default function ProductDetail() {
                 <Footer />
             </Box>
         );
+    }
+
+    // Xác định variant đúng với màu & size đang chọn
+    let variant = null;
+    if (product && product.variants && selectedColor && selectedSize) {
+        variant = product.variants.find(v =>
+            v.maMau === selectedColor.maMau && v.kichThuoc === selectedSize
+        );
+    }
+
+    let priceDisplay = "";
+    let showDiscount = false;
+    let giaGoc = 0;
+    let giaSale = 0;
+    let discount = "";
+
+    // Khi chưa chọn đủ màu+size: chỉ hiển thị khoảng giá gốc min-max.
+    if (!variant) {
+        priceDisplay = (product.priceMin !== product.priceMax)
+            ? `${Number(product.priceMin).toLocaleString("vi-VN")}₫ - ${Number(product.priceMax).toLocaleString("vi-VN")}₫`
+            : `${Number(product.priceMin).toLocaleString("vi-VN")}₫`;
+        showDiscount = false;
+    } else {
+        // Khi đã chọn đủ màu+size:
+        giaGoc = variant.gia ?? 0;
+        giaSale = variant.giaSauKhiGiam ?? giaGoc;
+        discount = variant.phanTramGiamGia ? `-${variant.phanTramGiamGia}%` : "";
+        showDiscount = variant.giaSauKhiGiam && variant.giaSauKhiGiam < giaGoc;
+        // Nếu có giảm giá: hiển thị giá giảm, giá gốc gạch chân, chip phần trăm giảm giá
+        // Nếu không giảm giá: chỉ hiển thị giá gốc của variant đó (không min max)
+        priceDisplay = showDiscount
+            ? `${Number(giaSale).toLocaleString("vi-VN")}₫`
+            : `${Number(giaGoc).toLocaleString("vi-VN")}₫`;
     }
 
     return (
@@ -207,24 +265,34 @@ export default function ProductDetail() {
                         </Box>
                         <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2 }}>
                             <Typography variant="h5" fontWeight={900} sx={{ color: "#e53935" }}>
-                                {product.sale ? Number(product.sale).toLocaleString("vi-VN") : ""}₫
+                                {priceDisplay}
                             </Typography>
-                            <Typography sx={{ color: "#aaa", textDecoration: "line-through", fontSize: 17, fontWeight: 700 }}>
-                                {product.price ? Number(product.price).toLocaleString("vi-VN") : ""}₫
-                            </Typography>
-                            {product.discount && <Chip
-                                label={product.discount}
-                                color="error"
-                                sx={{
-                                    fontWeight: 900,
-                                    bgcolor: "#ff5252",
-                                    color: "#fff",
-                                    fontSize: 15,
-                                    px: 1.2,
-                                    letterSpacing: 1
-                                }}
-                                size="small"
-                            />}
+                            {showDiscount && (
+                                <Typography sx={{
+                                    color: "#aaa",
+                                    textDecoration: "line-through",
+                                    fontSize: 17,
+                                    fontWeight: 700,
+                                    ml: 1
+                                }}>
+                                    {Number(giaGoc).toLocaleString("vi-VN")}₫
+                                </Typography>
+                            )}
+                            {discount && showDiscount && (
+                                <Chip
+                                    label={discount}
+                                    color="error"
+                                    sx={{
+                                        fontWeight: 900,
+                                        bgcolor: "#ff5252",
+                                        color: "#fff",
+                                        fontSize: 15,
+                                        px: 1.2,
+                                        letterSpacing: 1
+                                    }}
+                                    size="small"
+                                />
+                            )}
                         </Stack>
                         <Divider sx={{ mb: 2 }} />
                         {product.colors && product.colors.length > 0 && (
@@ -247,7 +315,6 @@ export default function ProductDetail() {
                                                     "&:hover": {
                                                         borderColor: "#1976d2"
                                                     },
-                                                    // Nếu là màu trắng thì viền đậm hơn để nổi bật
                                                     borderColor: (color.value || color.maMau) === "#fff" ? "#bbb" : undefined
                                                 }}
                                                 onClick={() => setSelectedColor(color)}
@@ -396,7 +463,6 @@ export default function ProductDetail() {
                             {product.shipping}
                         </Alert>
                         <Divider sx={{ mb: 2 }} />
-                        {/* Bắt đầu căn chỉnh mô tả và ảnh size guide thẳng hàng dọc */}
                         <Box sx={{
                             display: "flex",
                             flexDirection: "column",
@@ -421,7 +487,6 @@ export default function ProductDetail() {
                                 }}
                             />
                         </Box>
-                        {/* Kết thúc căn chỉnh mô tả và ảnh size guide thẳng hàng dọc */}
                     </Grid>
                 </Grid>
             </Box>

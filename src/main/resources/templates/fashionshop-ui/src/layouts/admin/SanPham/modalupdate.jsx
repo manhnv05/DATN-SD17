@@ -270,12 +270,10 @@ function ProductDetailUpdateModal({ open, onClose, detail, onSuccess }) {
             return;
         }
 
-        // Lấy id ảnh hệ thống đã chọn
         const systemImageIds = systemImages
             .filter(img => selectedSystemImages.includes(img.duongDanAnh))
             .map(img => img.id);
 
-        // Nếu có upload ảnh mới, upload trước, lấy id của ảnh vừa upload để đưa vào mảng
         let uploadedImageIds = [];
         if (imageFiles.length > 0) {
             const imgForm = new window.FormData();
@@ -296,10 +294,8 @@ function ProductDetailUpdateModal({ open, onClose, detail, onSuccess }) {
             }
         }
 
-        // Tổng hợp tất cả id ảnh sẽ gán cho SPCT
         const hinhAnhIds = [...systemImageIds, ...uploadedImageIds];
 
-        // Gửi dữ liệu lên API update
         const jsonData = {
             idSanPham: detail.idSanPham,
             maSanPhamChiTiet: detail.maSanPhamChiTiet,
@@ -313,7 +309,7 @@ function ProductDetailUpdateModal({ open, onClose, detail, onSuccess }) {
             soLuong: form.soLuong,
             trongLuong: form.trongLuong,
             trangThai: form.trangThai,
-            hinhAnhIds // <-- gửi mảng id ảnh luôn ở đây!
+            hinhAnhIds
         };
 
         try {

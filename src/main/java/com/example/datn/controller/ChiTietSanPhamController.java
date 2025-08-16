@@ -28,11 +28,13 @@ public class ChiTietSanPhamController {
 
     @PostMapping
     public String save(@Valid @RequestBody ChiTietSanPhamVO vO) {
+        // Không nhận trường mã từ phía client, mã sẽ được tự động tạo trong service
         return chiTietSanPhamService.save(vO).toString();
     }
 
     @PostMapping("/batch")
     public List<Integer> saveBatch(@Valid @RequestBody List<ChiTietSanPhamVO> voList) {
+        // Áp dụng logic cộng dồn hoặc tạo mới cho từng VO trong service
         return voList.stream()
                 .map(chiTietSanPhamService::save)
                 .collect(Collectors.toList());
@@ -91,6 +93,7 @@ public class ChiTietSanPhamController {
         ChiTietSanPhamDotGIamGIaDTO dto = chiTietSanPhamService.getChiTietSanPhamTheoMa(maSanPhamChiTiet);
         return ResponseEntity.ok(dto);
     }
+
     @GetMapping("/ban-chay")
     public ResponseEntity<Page<ChiTietSanPhamDotGIamGIaDTO>> getBestSellers(Pageable pageable) {
         Page<ChiTietSanPhamDotGIamGIaDTO> resultPage = chiTietSanPhamService.getDanhSachSanPhamBanChay(pageable);

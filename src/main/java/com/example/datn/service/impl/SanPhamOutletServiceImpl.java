@@ -34,36 +34,74 @@ public class SanPhamOutletServiceImpl implements SanPhamOutletService {
             return cb.and(predicates.toArray(new Predicate[0]));
         }, pageable);
 
-        // Map ra DTO
-        List<SanPhamOutletDTO> voList = outletPage.getContent().stream().map(ct -> {
-            ChiTietSanPham ctsp = ct.getChiTietSanPham();
-            SanPham sp = ctsp.getSanPham();
+        // Map ra DTO, kiểm tra null đầy đủ
+        List<SanPhamOutletDTO> voList = outletPage.getContent().stream()
+                .filter(Objects::nonNull)
+                .map(ct -> {
+                    ChiTietSanPham ctsp = ct.getChiTietSanPham();
+                    if (ctsp == null) return null;
+                    SanPham sp = ctsp.getSanPham();
+                    if (sp == null) return null;
 
-            SanPhamOutletDTO dto = new SanPhamOutletDTO();
-            dto.setId(ctsp.getId());
-            dto.setTenSanPham(sp.getTenSanPham());
-            dto.setMaSanPham(sp.getMaSanPham());
-            dto.setTenThuongHieu(ctsp.getThuongHieu() != null ? ctsp.getThuongHieu().getTenThuongHieu() : "");
-            dto.setTenDanhMuc(sp.getDanhMuc() != null ? sp.getDanhMuc().getTenDanhMuc() : "");
-            dto.setTenMauSac(ctsp.getMauSac() != null ? ctsp.getMauSac().getTenMauSac() : "");
-            dto.setMaMau(ctsp.getMauSac() != null ? ctsp.getMauSac().getMaMau() : "");
-            dto.setTenKichThuoc(ctsp.getKichThuoc() != null ? ctsp.getKichThuoc().getTenKichCo() : "");
-            dto.setTenChatLieu(ctsp.getChatLieu() != null ? ctsp.getChatLieu().getTenChatLieu() : "");
-            // Ảnh đại diện (ưu tiên ảnh mặc định, fallback ảnh đầu tiên)
-            String imageUrl = "";
-            List<HinhAnh> imgList = hinhAnhRepository.findBySpctHinhAnhs_ChiTietSanPham_Id(ctsp.getId());
-            if (!imgList.isEmpty()) {
-                Optional<HinhAnh> defaultImg = imgList.stream()
-                        .filter(i -> i.getAnhMacDinh() != null && i.getAnhMacDinh() == 1).findFirst();
-                imageUrl = defaultImg.map(HinhAnh::getDuongDanAnh).orElse(imgList.get(0).getDuongDanAnh());
-            }
-            dto.setImageUrl(imageUrl);
-            dto.setGiaTruocKhiGiam(ct.getGiaTruocKhiGiam());
-            dto.setGiaSauKhiGiam(ct.getGiaSauKhiGiam());
-            dto.setPhanTramGiamGia(ct.getDotGiamGia().getPhanTramGiamGia());
-            dto.setMoTa(ctsp.getMoTa());
-            return dto;
-        }).collect(Collectors.toList());
+                    SanPhamOutletDTO dto = new SanPhamOutletDTO();
+                    dto.setId(ctsp.getId());
+                    dto.setTenSanPham(sp.getTenSanPham() != null ? sp.getTenSanPham() : "");
+                    dto.setMaSanPham(sp.getMaSanPham() != null ? sp.getMaSanPham() : "");
+                    dto.setTenThuongHieu(
+                            ctsp.getThuongHieu() != null && ctsp.getThuongHieu().getTenThuongHieu() != null
+                                    ? ctsp.getThuongHieu().getTenThuongHieu()
+                                    : ""
+                    );
+                    dto.setTenDanhMuc(
+                            sp.getDanhMuc() != null && sp.getDanhMuc().getTenDanhMuc() != null
+                                    ? sp.getDanhMuc().getTenDanhMuc()
+                                    : ""
+                    );
+                    dto.setTenMauSac(
+                            ctsp.getMauSac() != null && ctsp.getMauSac().getTenMauSac() != null
+                                    ? ctsp.getMauSac().getTenMauSac()
+                                    : ""
+                    );
+                    dto.setMaMau(
+                            ctsp.getMauSac() != null && ctsp.getMauSac().getMaMau() != null
+                                    ? ctsp.getMauSac().getMaMau()
+                                    : ""
+                    );
+                    dto.setTenKichThuoc(
+                            ctsp.getKichThuoc() != null && ctsp.getKichThuoc().getTenKichCo() != null
+                                    ? ctsp.getKichThuoc().getTenKichCo()
+                                    : ""
+                    );
+                    dto.setTenChatLieu(
+                            ctsp.getChatLieu() != null && ctsp.getChatLieu().getTenChatLieu() != null
+                                    ? ctsp.getChatLieu().getTenChatLieu()
+                                    : ""
+                    );
+                    // Ảnh đại diện (ưu tiên ảnh mặc định, fallback ảnh đầu tiên)
+                    String imageUrl = "";
+                    try {
+                        List<HinhAnh> imgList = hinhAnhRepository.findBySpctHinhAnhs_ChiTietSanPham_Id(ctsp.getId());
+                        if (!imgList.isEmpty()) {
+                            Optional<HinhAnh> defaultImg = imgList.stream()
+                                    .filter(i -> i.getAnhMacDinh() != null && i.getAnhMacDinh() == 1).findFirst();
+                            imageUrl = defaultImg.map(HinhAnh::getDuongDanAnh).orElse(imgList.get(0).getDuongDanAnh());
+                        }
+                    } catch (Exception ex) {
+                        imageUrl = "";
+                    }
+                    dto.setImageUrl(imageUrl);
+                    dto.setGiaTruocKhiGiam(ct.getGiaTruocKhiGiam());
+                    dto.setGiaSauKhiGiam(ct.getGiaSauKhiGiam());
+                    dto.setPhanTramGiamGia(
+                            ct.getDotGiamGia() != null && ct.getDotGiamGia().getPhanTramGiamGia() != null
+                                    ? ct.getDotGiamGia().getPhanTramGiamGia()
+                                    : 0
+                    );
+                    dto.setMoTa(ctsp.getMoTa() != null ? ctsp.getMoTa() : "");
+                    return dto;
+                })
+                .filter(Objects::nonNull) // loại bỏ các bản ghi null ra khỏi kết quả
+                .collect(Collectors.toList());
 
         return new PageImpl<>(voList, pageable, outletPage.getTotalElements());
     }
