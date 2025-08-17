@@ -24,6 +24,6 @@ public class CartItemDisplayDTO {
     private Integer soLuong;
     private BigDecimal donGia;
     private BigDecimal giaGoc;    // Bổ sung: giá gốc để FE có thể hiển thị giá gạch chân nếu có khuyến mãi
-    //private Integer phanTramGiamGia; // Bổ sung: phần trăm giảm giá nếu có
+    private Integer phanTramGiamGia; // Bổ sung: phần trăm giảm giá nếu có
     private List<String> hinhAnh;
 }

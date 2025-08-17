@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,4 +40,8 @@ public interface ChiTietDotGiamGiaRepository extends JpaRepository<ChiTietDotGia
             "AND dgg.trangThai = 1 "
           )
     List<ChiTietDotGiamGia> findAllActiveDiscountsForProducts(List<Integer> productIds);
+
+    //List<ChiTietDotGiamGia> findFirstByChiTietSanPhamIdAndTrangThai(List<Integer> chiTietSanPhamIds, Integer trangThai);
+
+    List<ChiTietDotGiamGia> findByChiTietSanPhamIdInAndTrangThai(Collection<Integer> chiTietSanPhamIds, Integer trangThai);
 }

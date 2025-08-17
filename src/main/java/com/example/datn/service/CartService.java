@@ -2,9 +2,11 @@ package com.example.datn.service;
 
 import com.example.datn.dto.CartItemDisplayDTO;
 import com.example.datn.dto.CartUpdateResponse;
+import com.example.datn.entity.ChiTietDotGiamGia;
 import com.example.datn.entity.ChiTietSanPham;
 import com.example.datn.entity.SanPham;
 import com.example.datn.entity.SanPhamTrongGio;
+import com.example.datn.repository.ChiTietDotGiamGiaRepository;
 import com.example.datn.repository.ChiTietSanPhamRepository;
 import com.example.datn.repository.SanPhamRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,13 +14,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.math.BigDecimal;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.math.BigDecimal;
 
 @RequiredArgsConstructor
 @Service
@@ -28,6 +28,7 @@ public class CartService {
     private RedisTemplate<String, Object> redisTemplate;
     private final SanPhamRepository sanPhamRepository;
     private final ChiTietSanPhamRepository chiTietSanPhamRepository;
+    private final ChiTietDotGiamGiaRepository chiTietDotGiamGiaRepository;
     private static final String CART_KEY_PREFIX = "cart:";
 
     // Lấy giỏ hàng thô từ Redis
@@ -179,6 +180,16 @@ public class CartService {
         Map<Integer, SanPham> sanPhamMap = sanPhamRepository.findAllById(sanPhamIds)
                 .stream()
                 .collect(Collectors.toMap(SanPham::getId, Function.identity()));
+
+        // Lấy giảm giá cho tất cả chi tiết sản phẩm trong giỏ (nếu có)
+        // Giả sử trạng thái 1 là "đang diễn ra" hoặc active, bạn có thể điều chỉnh lại logic này nếu cần!
+        List<ChiTietDotGiamGia> allGiamGias = chiTietDotGiamGiaRepository.findByChiTietSanPhamIdInAndTrangThai(chiTietIds, 1);
+        Map<Integer, ChiTietDotGiamGia> giamGiaMap = new HashMap<>();
+        for (ChiTietDotGiamGia ctdgg : allGiamGias) {
+            // Nếu có nhiều đợt cho cùng 1 sản phẩm, lấy bản đầu tiên (hoặc thay đổi theo logic)
+            giamGiaMap.putIfAbsent(ctdgg.getChiTietSanPham().getId(), ctdgg);
+        }
+
         return cartFromRedis.stream().map(item -> {
             // Lấy chi tiết sản phẩm (size, màu, giá...) từ Map
             ChiTietSanPham ct = chiTietMap.get(item.getChiTietSanPhamId());
@@ -193,8 +204,7 @@ public class CartService {
             if (ct != null) {
                 dto.setTenKichCo(ct.getKichThuoc().getTenKichCo());
                 dto.setTenMauSac(ct.getMauSac().getTenMauSac());
-                // Bổ sung MÃ MÀU HEX cho FE
-                dto.setMaMau(ct.getMauSac().getMaMau()); // <-- Thêm dòng này
+                dto.setMaMau(ct.getMauSac().getMaMau());
                 dto.setTenCoAo(ct.getCoAo().getTenCoAo());
                 dto.setTenTayAo(ct.getTayAo().getTenTayAo());
                 dto.setTenChatLieu(ct.getChatLieu().getTenChatLieu());
@@ -202,12 +212,15 @@ public class CartService {
                 List<String> listAnh = ct.getSpctHinhAnhs().stream()
                         .map(h -> h.getHinhAnh().getDuongDanAnh())
                         .collect(Collectors.toList());
-
                 dto.setHinhAnh(listAnh);
 
-                // bổ sung: giá gốc và phần trăm giảm giá nếu có
-                dto.setGiaGoc(BigDecimal.valueOf(ct.getGia())); // cần có trường này trong entity
-                //dto.setPhanTramGiamGia(ct.getPhanTramGiamGia()); // cần có trường này trong entity
+                dto.setGiaGoc(BigDecimal.valueOf(ct.getGia()));
+
+                // Lấy giảm giá nếu có
+                ChiTietDotGiamGia giamGia = giamGiaMap.get(ct.getId());
+                if (giamGia != null && giamGia.getDotGiamGia() != null) {
+                    dto.setPhanTramGiamGia(giamGia.getDotGiamGia().getPhanTramGiamGia());
+                }
             }
             // Nếu tìm thấy sản phẩm cha, set thông tin cơ bản
             if (sp != null) {
