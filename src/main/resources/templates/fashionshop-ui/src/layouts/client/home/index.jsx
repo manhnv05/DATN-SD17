@@ -75,7 +75,6 @@ export default function HomePage() {
         setLoading(true);
         axios.get("http://localhost:8080/api/home/best-selling?limit=8", { withCredentials: true })
             .then(res => {
-                console.log("DATA BACKEND:", res.data); // Thêm dòng này!
                 setBestSelling(res.data || []);
                 setRatings(res.data ? res.data.map(item => item.rating || 4) : []);
                 setLoading(false);
@@ -95,8 +94,10 @@ export default function HomePage() {
         );
     };
 
+    // Sửa lại: Mua ngay sẽ chuyển sang trang chi tiết sản phẩm cha
     const handleAddToCart = (item) => {
-        alert(`Đã thêm "${item.name}" vào giỏ hàng!`);
+        // Nếu item.id là id sản phẩm cha thì điều hướng sang trang detail
+        navigate(`/shop/detail/${item.id}`);
     };
 
     const handleChangeRating = (index, value) => {
@@ -398,11 +399,10 @@ export default function HomePage() {
                                                 {favoriteIndexes.includes(index) ? <FavoriteIcon /> : <FavoriteBorderIcon />}
                                             </IconButton>
                                         </Tooltip>
-                                        <Tooltip title="Thêm vào giỏ hàng">
+                                        <Tooltip title="Mua ngay">
                                             <Button
                                                 variant="contained"
                                                 color="primary"
-                                                href="/cart"
                                                 startIcon={<ShoppingCartIcon />}
                                                 sx={{
                                                     fontWeight: 700,
@@ -415,10 +415,10 @@ export default function HomePage() {
                                                 }}
                                                 onClick={e => {
                                                     e.stopPropagation();
-                                                    handleAddToCart(item);
+                                                    handleAddToCart(item); // chuyển sang trang chi tiết sản phẩm cha
                                                 }}
                                             >
-                                                Thêm vào giỏ
+                                                Mua ngay
                                             </Button>
                                         </Tooltip>
                                     </Stack>

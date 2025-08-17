@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     AppBar,
     Toolbar,
@@ -80,6 +80,63 @@ export default function Header() {
             avatar: ""
         }
         : null;
+
+    // Đếm số sản phẩm trong giỏ hàng (tăng lên mỗi lần thêm)
+    const [cartCount, setCartCount] = useState(0);
+
+    // Hàm lấy cartCount từ localStorage hoặc từ API (tuỳ nghiệp vụ)
+    useEffect(() => {
+        // Nếu muốn lấy từ API, gọi API lấy giỏ hàng ở đây và đếm tổng số lượng sản phẩm
+        // Ở đây lấy từ localStorage (giả định lưu cart ở localStorage)
+        const cartId = localStorage.getItem("cartId");
+        if (!cartId) {
+            setCartCount(0);
+            return;
+        }
+        // Nếu bạn lưu cart dưới dạng object trong localStorage, ví dụ: {idChiTietSanPham, soLuong}
+        // hoặc luôn fetch từ API thì dùng API, ví dụ:
+        fetch(`http://localhost:8080/api/v1/cart/${cartId}`)
+            .then(res => res.json())
+            .then(data => {
+                let sum = 0;
+                if (Array.isArray(data)) {
+                    sum = data.reduce((total, item) => total + (item.soLuong || 0), 0);
+                }
+                setCartCount(sum);
+            })
+            .catch(() => setCartCount(0));
+        // Nếu không có cartId thì cartCount = 0
+    }, []); // mount lần đầu
+
+    // Để tăng realtime mỗi khi thêm giỏ hàng, bạn có thể dùng window event hoặc context/global state
+    // Ở đây cho ví dụ đơn giản: lắng nghe sự kiện custom 'cart-updated'
+    useEffect(() => {
+        function handleCartUpdated(e) {
+            // e.detail.count là tổng số lượng mới (FE code thêm vào cart xong phải dispatch sự kiện này)
+            if (e && e.detail && typeof e.detail.count === "number") {
+                setCartCount(e.detail.count);
+            } else {
+                // fallback: fetch lại như phía trên
+                const cartId = localStorage.getItem("cartId");
+                if (!cartId) {
+                    setCartCount(0);
+                    return;
+                }
+                fetch(`http://localhost:8080/api/v1/cart/${cartId}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        let sum = 0;
+                        if (Array.isArray(data)) {
+                            sum = data.reduce((total, item) => total + (item.soLuong || 0), 0);
+                        }
+                        setCartCount(sum);
+                    })
+                    .catch(() => setCartCount(0));
+            }
+        }
+        window.addEventListener("cart-updated", handleCartUpdated);
+        return () => window.removeEventListener("cart-updated", handleCartUpdated);
+    }, []);
 
     function handleOpenMenu(event) {
         setAnchorEl(event.currentTarget);
@@ -336,7 +393,6 @@ export default function Header() {
                         </Stack>
                     )}
                     <Stack direction="row" spacing={1.1} alignItems="center" minWidth={isMobile ? 0 : 180}>
-                        {/**/}
                         {/* Nút trái tim - đẹp đều với các icon khác */}
                         <IconButton
                             sx={{
@@ -447,19 +503,19 @@ export default function Header() {
                         <IconButton
                             component={RouterLink} // use RouterLink for client-side routing
                             to="/card"
-                        sx={{
-                            bgcolor: "#fff",
-                            border: "1.5px solid #e3f0fa",
-                            color: "#1976d2",
-                            borderRadius: 2.5,
-                            width: 42,
-                            height: 42,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            "&:hover": { bgcolor: "#e3f0fa", borderColor: "#1976d2" }
-                        }}>
-                            <Badge badgeContent={6} color="error" sx={{
+                            sx={{
+                                bgcolor: "#fff",
+                                border: "1.5px solid #e3f0fa",
+                                color: "#1976d2",
+                                borderRadius: 2.5,
+                                width: 42,
+                                height: 42,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                "&:hover": { bgcolor: "#e3f0fa", borderColor: "#1976d2" }
+                            }}>
+                            <Badge badgeContent={cartCount} color="error" sx={{
                                 "& .MuiBadge-badge": {
                                     background: "#e53935",
                                     color: "#fff",

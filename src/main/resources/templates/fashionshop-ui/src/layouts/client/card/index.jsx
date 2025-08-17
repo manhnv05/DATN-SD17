@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     Box,
     Typography,
@@ -10,7 +10,6 @@ import {
     Chip,
     Checkbox,
     FormControlLabel,
-    useTheme,
 } from "@mui/material";
 import Footer from "../components/footer";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -20,34 +19,10 @@ import RemoveIcon from "@mui/icons-material/Remove";
 import AddIcon from "@mui/icons-material/Add";
 import { styled } from "@mui/material/styles";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
+import axios from "axios";
 import logoImg from "assets/images/logo4.png";
 
-// Dummy data
-const initialCart = [
-    {
-        id: 1,
-        name: "OUTLET TEE BASIC",
-        img: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=400&q=80",
-        price: 119000,
-        oldPrice: 349000,
-        discount: "-66%",
-        qty: 2,
-        size: "M",
-        color: "#000",
-    },
-    {
-        id: 2,
-        name: "DENIM JACKET OUTLET",
-        img: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80",
-        price: 299000,
-        oldPrice: 799000,
-        discount: "-63%",
-        qty: 1,
-        size: "L",
-        color: "#2196f3",
-    },
-];
-
+// --- Styled ---
 const CartBlock = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(2.2),
     borderRadius: 16,
@@ -65,11 +40,60 @@ const CartBlock = styled(Paper)(({ theme }) => ({
 }));
 
 export default function CartPage() {
-    const [cart, setCart] = useState(initialCart);
-    const [selected, setSelected] = useState(cart.map((item) => item.id));
-    const [selectAll, setSelectAll] = useState(true);
+    // Lấy cartId từ localStorage, nếu chưa có thì tạo mới
+    const cartId = React.useMemo(() => {
+        let cid = localStorage.getItem("cartId");
+        if (!cid) {
+            cid = "cart-" + Math.random().toString(36).substring(2, 12);
+            localStorage.setItem("cartId", cid);
+        }
+        return cid;
+    }, []);
+    const [cart, setCart] = useState([]);
+    const [selected, setSelected] = useState([]);
+    const [selectAll, setSelectAll] = useState(false);
     const navigate = useNavigate();
-    const theme = useTheme();
+
+    // Đồng bộ số lượng badge ở header khi giỏ hàng thay đổi
+    const updateCartBadge = (cartArr) => {
+        const sum = cartArr.reduce((total, item) => total + (item.qty || 0), 0);
+        window.dispatchEvent(new CustomEvent("cart-updated", { detail: { count: sum } }));
+    };
+
+    // Fetch cart from API
+    useEffect(() => {
+        async function fetchCart() {
+            try {
+                const res = await axios.get(`http://localhost:8080/api/v1/cart/${cartId}`);
+                const cartData = (res.data || []).map((item, idx) => ({
+                    id: item.idChiTietSanPham,
+                    name: item.tenSanPham,
+                    img: item.hinhAnh && item.hinhAnh.length > 0 ? item.hinhAnh[0] : logoImg,
+                    price: item.donGia || 0,
+                    oldPrice: item.giaGoc || 0,
+                    discount: item.phanTramGiamGia ? `-${item.phanTramGiamGia}%` : "",
+                    qty: item.soLuong,
+                    size: item.tenKichCo,
+                    // code fix: chuẩn hóa mã hex nếu thiếu dấu #
+                    color: item.maMau
+                        ? (item.maMau.startsWith("#") ? item.maMau : "#" + item.maMau)
+                        : "#000",
+                    tenMauSac: item.tenMauSac,
+                }));
+                setCart(cartData);
+                setSelected(cartData.map((item) => item.id));
+                setSelectAll(cartData.length > 0);
+                // Cập nhật badge cart ở header
+                updateCartBadge(cartData);
+            } catch (err) {
+                setCart([]);
+                setSelected([]);
+                setSelectAll(false);
+                updateCartBadge([]);
+            }
+        }
+        fetchCart();
+    }, [cartId]);
 
     // Select/deselect product
     const handleSelect = (id) => {
@@ -89,21 +113,45 @@ export default function CartPage() {
         }
     };
 
-    // Remove item
-    const handleRemove = (id) => {
-        setCart((prev) => prev.filter((item) => item.id !== id));
-        setSelected((prev) => prev.filter((sid) => sid !== id));
+    // Remove item (API)
+    const handleRemove = async (id) => {
+        try {
+            await axios.delete(`http://localhost:8080/api/v1/cart/${cartId}/items/${id}`);
+            setCart((prev) => {
+                const next = prev.filter((item) => item.id !== id);
+                updateCartBadge(next);
+                return next;
+            });
+            setSelected((prev) => prev.filter((sid) => sid !== id));
+        } catch (err) {
+            // Handle error if needed
+        }
     };
 
-    // Change quantity
-    const changeQty = (id, val) => {
-        setCart((prev) =>
-            prev.map((item) =>
-                item.id === id
-                    ? { ...item, qty: Math.max(1, item.qty + val) }
-                    : item
-            )
-        );
+    // Change quantity (API)
+    const changeQty = async (id, val) => {
+        const item = cart.find((i) => i.id === id);
+        if (!item) return;
+        const newQty = Math.max(1, item.qty + val);
+        try {
+            const res = await axios.put(`http://localhost:8080/api/v1/cart/update-quantity`, {
+                cartId: cartId,
+                chiTietSanPhamId: id,
+                soLuong: newQty,
+            });
+            const actualQty = res.data && res.data.soLuong !== undefined ? res.data.soLuong : newQty;
+            setCart((prev) => {
+                const next = prev.map((item) =>
+                    item.id === id
+                        ? { ...item, qty: actualQty }
+                        : item
+                );
+                updateCartBadge(next);
+                return next;
+            });
+        } catch (err) {
+            // Handle error nếu hết kho hoặc lỗi khác
+        }
     };
 
     // Selected total
@@ -112,7 +160,7 @@ export default function CartPage() {
         .reduce((sum, item) => sum + item.price * item.qty, 0);
 
     // Sync select all state
-    React.useEffect(() => {
+    useEffect(() => {
         if (cart.length === 0) {
             setSelected([]);
             setSelectAll(false);
@@ -121,12 +169,11 @@ export default function CartPage() {
         } else {
             setSelectAll(false);
         }
-        // eslint-disable-next-line
     }, [cart, selected]);
 
     return (
         <Box sx={{ bgcolor: "#edf6fb", minHeight: "100vh" }}>
-            {/* Banner gradient vàng-cam, bo tròn lớn, chữ đậm căn giữa, nền oval vàng nhạt */}
+            {/* Banner */}
             <Box
                 sx={{
                     width: "100%",
@@ -309,16 +356,18 @@ export default function CartPage() {
                                         <Typography fontWeight={900} fontSize={17} color="#e53935">
                                             {item.price.toLocaleString()}₫
                                         </Typography>
-                                        <Typography
-                                            sx={{
-                                                color: "#bde0fe",
-                                                textDecoration: "line-through",
-                                                fontSize: 15.5,
-                                                fontWeight: 700,
-                                            }}
-                                        >
-                                            {item.oldPrice.toLocaleString()}₫
-                                        </Typography>
+                                        {item.oldPrice > 0 && item.oldPrice !== item.price && (
+                                            <Typography
+                                                sx={{
+                                                    color: "#bde0fe",
+                                                    textDecoration: "line-through",
+                                                    fontSize: 15.5,
+                                                    fontWeight: 700,
+                                                }}
+                                            >
+                                                {item.oldPrice.toLocaleString()}₫
+                                            </Typography>
+                                        )}
                                         {item.discount && (
                                             <Chip
                                                 label={item.discount}
@@ -348,11 +397,20 @@ export default function CartPage() {
                                                     height: 17,
                                                     borderRadius: "50%",
                                                     background: item.color,
-                                                    border: "2px solid #bde0fe",
+                                                    // Nếu màu là trắng thì thêm border cho dễ nhìn
+                                                    border: `2px solid ${item.color && item.color.toLowerCase() === "#fff" ? "#bbb" : "#bde0fe"}`,
                                                     ml: 0.5,
                                                     verticalAlign: "middle",
                                                 }}
                                             />
+                                            {item.tenMauSac ? (
+                                                <span style={{
+                                                    marginLeft: 8,
+                                                    color: "#1769aa",
+                                                    fontWeight: 600,
+                                                    fontSize: 14
+                                                }}>{item.tenMauSac}</span>
+                                            ) : null}
                                         </Typography>
                                     </Stack>
                                 </Box>

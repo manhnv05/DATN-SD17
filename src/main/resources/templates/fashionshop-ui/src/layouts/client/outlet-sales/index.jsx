@@ -84,21 +84,18 @@ export default function OutletSalePage() {
         );
     };
 
-    const handleAddToCart = (index) => {
-        setCartIndexes((prev) =>
-            prev.includes(index)
-                ? prev
-                : [...prev, index]
-        );
+    const handleAddToCart = (product) => {
+        // Chuyển sang trang chi tiết sản phẩm cha khi ấn Mua ngay
+        navigate(`/shop/detail/${product.id}`);
     };
 
     const handleChangeRating = (index, value) => {
         setRatings(prev => prev.map((r, i) => (i === index ? value : r)));
     };
 
-    // Chuyển hướng sang trang chi tiết sản phẩm outlet
-    const handleGoToDetail = (id) => {
-        navigate(`/shop/detail/${id}`);
+    // Chuyển hướng sang trang chi tiết sản phẩm (id sản phẩm cha) khi click vào card
+    const handleGoToDetail = (product) => {
+        navigate(`/shop/detail/${product.id}`);
     };
 
     // Phân trang dạng 1 2 3 ... cuối-1 cuối nếu > 5 trang
@@ -180,7 +177,7 @@ export default function OutletSalePage() {
                             products.map((item, idx) => (
                                 <Grid item xs={12} sm={6} md={4} key={item.id}>
                                     <OutletBlock
-                                        onClick={() => handleGoToDetail(item.id)}
+                                        onClick={() => handleGoToDetail(item)}
                                         sx={{
                                             cursor: "pointer",
                                             "&:hover": {
@@ -297,7 +294,7 @@ export default function OutletSalePage() {
                                                         {favoriteIndexes.includes(idx) ? <FavoriteIcon /> : <FavoriteBorderIcon />}
                                                     </IconButton>
                                                 </Tooltip>
-                                                <Tooltip title="Thêm vào giỏ hàng">
+                                                <Tooltip title="Mua ngay">
                                                     <Button
                                                         variant="contained"
                                                         color="primary"
@@ -314,10 +311,10 @@ export default function OutletSalePage() {
                                                         }}
                                                         onClick={e => {
                                                             e.stopPropagation();
-                                                            handleAddToCart(idx);
+                                                            handleAddToCart(item);
                                                         }}
                                                     >
-                                                        Thêm vào giỏ
+                                                        Mua ngay
                                                     </Button>
                                                 </Tooltip>
                                             </Stack>

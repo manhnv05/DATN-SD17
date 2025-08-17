@@ -40,6 +40,14 @@ export default function ProductDetail() {
     const [favorite, setFavorite] = useState(false);
     const [relatedProducts, setRelatedProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [addCartStatus, setAddCartStatus] = useState({ loading: false, success: false, error: "" });
+
+    // Cart ID lấy từ localStorage hoặc tạo mới
+    const cartId = localStorage.getItem("cartId") || (() => {
+        const newId = "cart-" + Math.random().toString(36).substring(2, 12);
+        localStorage.setItem("cartId", newId);
+        return newId;
+    })();
 
     // Fetch product detail
     useEffect(() => {
@@ -123,6 +131,76 @@ export default function ProductDetail() {
         // eslint-disable-next-line
     }, [selectedColor, selectedSize]);
 
+    // Xác định variant đúng với màu & size đang chọn
+    let variant = null;
+    if (product && product.variants && selectedColor && selectedSize) {
+        variant = product.variants.find(v =>
+            v.maMau === selectedColor.maMau && v.kichThuoc === selectedSize
+        );
+    }
+
+    let priceDisplay = "";
+    let showDiscount = false;
+    let giaGoc = 0;
+    let giaSale = 0;
+    let discount = "";
+
+    // Khi chưa chọn đủ màu+size: chỉ hiển thị khoảng giá gốc min-max.
+    if (!variant) {
+        priceDisplay = (product && product.priceMin !== product.priceMax)
+            ? `${Number(product.priceMin).toLocaleString("vi-VN")}₫ - ${Number(product.priceMax).toLocaleString("vi-VN")}₫`
+            : product ? `${Number(product.priceMin).toLocaleString("vi-VN")}₫` : "";
+        showDiscount = false;
+    } else {
+        // Khi đã chọn đủ màu+size:
+        giaGoc = variant.gia ?? 0;
+        giaSale = variant.giaSauKhiGiam ?? giaGoc;
+        discount = variant.phanTramGiamGia ? `-${variant.phanTramGiamGia}%` : "";
+        showDiscount = variant.giaSauKhiGiam && variant.giaSauKhiGiam < giaGoc;
+        // Nếu có giảm giá: hiển thị giá giảm, giá gốc gạch chân, chip phần trăm giảm giá
+        // Nếu không giảm giá: chỉ hiển thị giá gốc của variant đó (không min max)
+        priceDisplay = showDiscount
+            ? `${Number(giaSale).toLocaleString("vi-VN")}₫`
+            : `${Number(giaGoc).toLocaleString("vi-VN")}₫`;
+    }
+
+    // Xử lý thêm vào giỏ hàng
+    const handleAddToCart = async () => {
+        // Kiểm tra đã chọn đủ chưa
+        if (!variant) {
+            setAddCartStatus({ loading: false, success: false, error: "Vui lòng chọn đủ màu và size!" });
+            return;
+        }
+        if (quantity < 1) {
+            setAddCartStatus({ loading: false, success: false, error: "Số lượng phải lớn hơn 0!" });
+            return;
+        }
+        setAddCartStatus({ loading: true, success: false, error: "" });
+        try {
+            await axios.post(`http://localhost:8080/api/v1/cart/${cartId}/add`, {
+                chiTietSanPhamId: variant.id,
+                soLuong: quantity,
+                donGia: variant.giaSauKhiGiam && variant.giaSauKhiGiam < variant.gia ? variant.giaSauKhiGiam : variant.gia
+            });
+            setAddCartStatus({ loading: false, success: true, error: "" });
+            // Sau khi thêm vào giỏ hàng thành công, cập nhật badge giỏ hàng trên Header (dispatch custom event)
+            // Lấy lại tổng số lượng sản phẩm trong giỏ từ API và dispatch event
+            const res = await axios.get(`http://localhost:8080/api/v1/cart/${cartId}`);
+            let sum = 0;
+            if (Array.isArray(res.data)) {
+                sum = res.data.reduce((total, item) => total + (item.soLuong || 0), 0);
+            }
+            window.dispatchEvent(new CustomEvent("cart-updated", { detail: { count: sum } }));
+        } catch (err) {
+            setAddCartStatus({
+                loading: false,
+                success: false,
+                error: err?.response?.data?.message || "Thêm vào giỏ thất bại!"
+            });
+        }
+        setTimeout(() => setAddCartStatus({ loading: false, success: false, error: "" }), 2000);
+    };
+
     if (loading) {
         return (
             <Box sx={{ bgcolor: "#f9fbfc", minHeight: "100vh" }}>
@@ -147,39 +225,6 @@ export default function ProductDetail() {
                 <Footer />
             </Box>
         );
-    }
-
-    // Xác định variant đúng với màu & size đang chọn
-    let variant = null;
-    if (product && product.variants && selectedColor && selectedSize) {
-        variant = product.variants.find(v =>
-            v.maMau === selectedColor.maMau && v.kichThuoc === selectedSize
-        );
-    }
-
-    let priceDisplay = "";
-    let showDiscount = false;
-    let giaGoc = 0;
-    let giaSale = 0;
-    let discount = "";
-
-    // Khi chưa chọn đủ màu+size: chỉ hiển thị khoảng giá gốc min-max.
-    if (!variant) {
-        priceDisplay = (product.priceMin !== product.priceMax)
-            ? `${Number(product.priceMin).toLocaleString("vi-VN")}₫ - ${Number(product.priceMax).toLocaleString("vi-VN")}₫`
-            : `${Number(product.priceMin).toLocaleString("vi-VN")}₫`;
-        showDiscount = false;
-    } else {
-        // Khi đã chọn đủ màu+size:
-        giaGoc = variant.gia ?? 0;
-        giaSale = variant.giaSauKhiGiam ?? giaGoc;
-        discount = variant.phanTramGiamGia ? `-${variant.phanTramGiamGia}%` : "";
-        showDiscount = variant.giaSauKhiGiam && variant.giaSauKhiGiam < giaGoc;
-        // Nếu có giảm giá: hiển thị giá giảm, giá gốc gạch chân, chip phần trăm giảm giá
-        // Nếu không giảm giá: chỉ hiển thị giá gốc của variant đó (không min max)
-        priceDisplay = showDiscount
-            ? `${Number(giaSale).toLocaleString("vi-VN")}₫`
-            : `${Number(giaGoc).toLocaleString("vi-VN")}₫`;
     }
 
     return (
@@ -389,8 +434,10 @@ export default function ProductDetail() {
                                     fontSize: 16.5,
                                     boxShadow: "0 2px 10px 0 #e539351a"
                                 }}
+                                onClick={handleAddToCart}
+                                disabled={addCartStatus.loading}
                             >
-                                Thêm vào giỏ hàng
+                                {addCartStatus.loading ? "Đang thêm..." : "Thêm vào giỏ hàng"}
                             </Button>
                             <Tooltip title={favorite ? "Bỏ yêu thích" : "Yêu thích"}>
                                 <IconButton
@@ -413,6 +460,17 @@ export default function ProductDetail() {
                                 </IconButton>
                             </Tooltip>
                         </Stack>
+                        {/* Thông báo trạng thái thêm vào giỏ hàng */}
+                        {addCartStatus.success && (
+                            <Alert severity="success" sx={{ my: 1, fontWeight: 700 }}>
+                                Đã thêm vào giỏ hàng!
+                            </Alert>
+                        )}
+                        {addCartStatus.error && (
+                            <Alert severity="error" sx={{ my: 1, fontWeight: 700 }}>
+                                {addCartStatus.error}
+                            </Alert>
+                        )}
                         {product.voucher && (
                             <Paper
                                 elevation={0}

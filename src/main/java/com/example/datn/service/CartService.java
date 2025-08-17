@@ -9,7 +9,6 @@ import com.example.datn.repository.ChiTietSanPhamRepository;
 import com.example.datn.repository.SanPhamRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +18,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.math.BigDecimal;
 
 @RequiredArgsConstructor
 @Service
@@ -74,7 +74,7 @@ public class CartService {
                 if (newTotalQuantity > availableStock) {
                     return new CartUpdateResponse(
                             false,
-                            "Không thể thêm!  Số lượng thêm vào ("+ itemToAdd.getSoLuong() +") vượt quá tồn kho (" + availableStock + ").",
+                            "Không thể thêm! Số lượng thêm vào ("+ itemToAdd.getSoLuong() +") vượt quá tồn kho (" + availableStock + ").",
                             availableStock
                     );
                 }
@@ -166,7 +166,7 @@ public class CartService {
                 .map(SanPhamTrongGio::getChiTietSanPhamId)
                 .distinct()
                 .collect(Collectors.toList());
-// 3. Query DB lấy thông tin chi tiết sản phẩm
+        // 3. Query DB lấy thông tin chi tiết sản phẩm
         Map<Integer, ChiTietSanPham> chiTietMap = chiTietSanPhamRepository.findAllById(chiTietIds)
                 .stream()
                 .collect(Collectors.toMap(ChiTietSanPham::getId, Function.identity()));
@@ -179,7 +179,7 @@ public class CartService {
         Map<Integer, SanPham> sanPhamMap = sanPhamRepository.findAllById(sanPhamIds)
                 .stream()
                 .collect(Collectors.toMap(SanPham::getId, Function.identity()));
-      return   cartFromRedis.stream().map(item -> {
+        return cartFromRedis.stream().map(item -> {
             // Lấy chi tiết sản phẩm (size, màu, giá...) từ Map
             ChiTietSanPham ct = chiTietMap.get(item.getChiTietSanPhamId());
             // Lấy sản phẩm cha từ Map (tên sản phẩm, hình ảnh...)
@@ -193,6 +193,8 @@ public class CartService {
             if (ct != null) {
                 dto.setTenKichCo(ct.getKichThuoc().getTenKichCo());
                 dto.setTenMauSac(ct.getMauSac().getTenMauSac());
+                // Bổ sung MÃ MÀU HEX cho FE
+                dto.setMaMau(ct.getMauSac().getMaMau()); // <-- Thêm dòng này
                 dto.setTenCoAo(ct.getCoAo().getTenCoAo());
                 dto.setTenTayAo(ct.getTayAo().getTenTayAo());
                 dto.setTenChatLieu(ct.getChatLieu().getTenChatLieu());
@@ -203,6 +205,9 @@ public class CartService {
 
                 dto.setHinhAnh(listAnh);
 
+                // bổ sung: giá gốc và phần trăm giảm giá nếu có
+                dto.setGiaGoc(BigDecimal.valueOf(ct.getGia())); // cần có trường này trong entity
+                //dto.setPhanTramGiamGia(ct.getPhanTramGiamGia()); // cần có trường này trong entity
             }
             // Nếu tìm thấy sản phẩm cha, set thông tin cơ bản
             if (sp != null) {
@@ -213,6 +218,3 @@ public class CartService {
     }
 
 }
-
-
-

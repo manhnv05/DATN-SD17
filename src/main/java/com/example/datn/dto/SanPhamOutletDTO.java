@@ -4,7 +4,8 @@ import lombok.Data;
 
 @Data
 public class SanPhamOutletDTO {
-    private Integer id; // id của ChiTietSanPham
+    private Integer id;
+    private Integer idChiTietSanPham;
     private String tenSanPham;
     private String maSanPham;
     private String tenThuongHieu;
