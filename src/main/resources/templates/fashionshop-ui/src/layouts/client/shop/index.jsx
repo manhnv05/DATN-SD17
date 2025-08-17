@@ -41,7 +41,6 @@ const FilterBlock = styled(Paper)(({ theme }) => ({
 }));
 
 function getPaginationItems(currentPage, totalPages) {
-    // currentPage: 0-based
     if (totalPages <= 5) {
         return Array.from({ length: totalPages }, (_, i) => i);
     }
@@ -171,12 +170,13 @@ export default function ShopPage() {
         );
     };
 
-    const handleAddToCart = (index) => {
-        setCartIndexes((prev) =>
-            prev.includes(index)
-                ? prev
-                : [...prev, index]
-        );
+    // Sửa lại: Mua ngay sẽ chuyển sang trang chi tiết sản phẩm cha
+    const handleAddToCart = (idx) => {
+        // Điều hướng sang trang chi tiết sản phẩm cha với id cha, không phải id biến thể
+        const product = products[idx];
+        if (product && product.id) {
+            navigate(`/shop/detail/${product.id}`);
+        }
     };
 
     const handleChangeRating = (index, value) => {
@@ -261,6 +261,7 @@ export default function ShopPage() {
                     mb: { xs: 2, md: 0 }
                 }}>
                     <FilterBlock>
+                        {/* ... giữ nguyên phần lọc ... */}
                         <Stack direction="row" alignItems="center" gap={1.2} mb={2}>
                             <TuneIcon sx={{ color: "#1976d2", fontSize: 23 }} />
                             <Typography sx={{ fontWeight: 900, fontSize: 20, color: "#205072", letterSpacing: 0.5 }}>
@@ -578,7 +579,7 @@ export default function ShopPage() {
                                                             {favoriteIndexes.includes(idx) ? <FavoriteIcon /> : <FavoriteBorderIcon />}
                                                         </IconButton>
                                                     </Tooltip>
-                                                    <Tooltip title="Thêm vào giỏ hàng">
+                                                    <Tooltip title="Mua ngay">
                                                         <Button
                                                             variant="contained"
                                                             color="primary"
@@ -587,7 +588,7 @@ export default function ShopPage() {
                                                                 fontWeight: 700,
                                                                 borderRadius: 3,
                                                                 px: 2.2,
-                                                                fontSize: 15,
+                                                                fontSize: 12,
                                                                 boxShadow: "0 2px 8px 0 #bde0fe33",
                                                                 background: "#6cacec",
                                                                 "&:hover": { background: "#205072" }
@@ -597,7 +598,7 @@ export default function ShopPage() {
                                                                 handleAddToCart(idx);
                                                             }}
                                                         >
-                                                            Thêm vào giỏ
+                                                            Mua ngay
                                                         </Button>
                                                     </Tooltip>
                                                 </Stack>
