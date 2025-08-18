@@ -5,10 +5,8 @@ import {
     Typography,
     Box,
     IconButton,
-    InputBase,
     Badge,
     Button,
-    Paper,
     Stack,
     useMediaQuery,
     Menu as MuiMenu,
@@ -16,7 +14,7 @@ import {
     Avatar,
     Icon
 } from "@mui/material";
-import { ShoppingCart, Person, Search, Menu as MenuIcon, Favorite as FavoriteIcon } from "@mui/icons-material";
+import { ShoppingCart, Person, Menu as MenuIcon, Favorite as FavoriteIcon } from "@mui/icons-material";
 import { useNavigate, Link as RouterLink } from "react-router-dom";
 import logoImg from "assets/images/logo4.png";
 import { logout } from "../data/logout";
@@ -68,32 +66,50 @@ export default function Header() {
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
 
-    const email = localStorage.getItem("email") || "";
-    const username = localStorage.getItem("username");
-    const role = localStorage.getItem("role");
-    const isLoggedIn = Boolean(role && username);
-    const isAdmin = role === "NHANVIEN" || role === "QUANLY" || role === "QUANTRIVIEN";
-    const user = isLoggedIn
-        ? {
-            email: email || username,
-            role: role === "NHANVIEN" ? "Nhân viên" : role === "QUANLY" ? "Quản lý" : role === "QUANTRIVIEN" ? "Quản trị viên" : "Khách hàng",
-            avatar: ""
-        }
-        : null;
+    // -------------------------- LOGIN USER STATE --------------------------
+    const [user, setUser] = useState(null);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [isAdmin, setIsAdmin] = useState(false);
 
-    // Đếm số sản phẩm trong giỏ hàng (theo user)
+    // Lấy user info qua API /api/auth/me (chuẩn backend gửi về)
+    useEffect(() => {
+        fetch("http://localhost:8080/api/auth/me", { credentials: "include" })
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                if (data && data.id && data.username && data.role) {
+                    setUser(data);
+                    setIsLoggedIn(true);
+                    setIsAdmin(
+                        data.role === "NHANVIEN" ||
+                        data.role === "QUANLY" ||
+                        data.role === "QUANTRIVIEN"
+                    );
+                } else {
+                    setUser(null);
+                    setIsLoggedIn(false);
+                    setIsAdmin(false);
+                }
+            })
+            .catch(() => {
+                setUser(null);
+                setIsLoggedIn(false);
+                setIsAdmin(false);
+            });
+    }, []);
+
+    // -------------------------- CART COUNT STATE --------------------------
     const [cartCount, setCartCount] = useState(0);
 
-    // Hàm fetch số lượng sản phẩm trong giỏ theo user đăng nhập hoặc cartId (anonymous)
+    // Hàm fetch số lượng sản phẩm giỏ hàng theo user hoặc theo cartId guest
     const fetchCartCount = async () => {
         let count = 0;
-        // Nếu user đã đăng nhập, lấy từ API DB
-        if (isLoggedIn && username && role) {
-            // Dùng API DB
+        if (user && user.id && user.role) {
+            // Đăng nhập (cart DB)
             try {
-                const res = await fetch(`http://localhost:8080/api/v1/cart/db?idNguoiDung=${username}&loaiNguoiDung=${role}`, {
-                    credentials: "include"
-                });
+                const res = await fetch(
+                    `http://localhost:8080/api/v1/cart/db?idNguoiDung=${user.id}&loaiNguoiDung=${user.role}`,
+                    { credentials: "include" }
+                );
                 const data = await res.json();
                 if (Array.isArray(data)) {
                     count = data.reduce((total, item) => total + (item.soLuong || 0), 0);
@@ -102,7 +118,7 @@ export default function Header() {
                 count = 0;
             }
         } else {
-            // Chưa đăng nhập, dùng Redis (cartId)
+            // Guest (cartId localStorage)
             const cartId = localStorage.getItem("cartId");
             if (!cartId) {
                 setCartCount(0);
@@ -121,13 +137,13 @@ export default function Header() {
         setCartCount(count);
     };
 
-    // Lấy cart count khi mount và khi user thay đổi
+    // Gọi lại khi user thay đổi (login/logout) hoặc mount lần đầu
     useEffect(() => {
         fetchCartCount();
         // eslint-disable-next-line
-    }, [username, role]);
+    }, [user]);
 
-    // Lắng nghe sự kiện custom 'cart-updated' để cập nhật realtime
+    // Realtime cập nhật khi có sự kiện thêm/xóa giỏ hàng
     useEffect(() => {
         function handleCartUpdated(e) {
             if (e && e.detail && typeof e.detail.count === "number") {
@@ -139,10 +155,9 @@ export default function Header() {
         window.addEventListener("cart-updated", handleCartUpdated);
         return () => window.removeEventListener("cart-updated", handleCartUpdated);
         // eslint-disable-next-line
-    }, [username, role]);
+    }, [user]);
 
-    // ... (giữ nguyên các hàm handleOpenMenu, handleCloseMenu, handleLogout, handleLogin, handleGoAdmin, handleAccount, handleGoFavorites, renderAccountMenu)
-
+    // -------------------------- MENU HANDLERS --------------------------
     function handleOpenMenu(event) {
         setAnchorEl(event.currentTarget);
     }
@@ -164,6 +179,9 @@ export default function Header() {
                 handleCloseMenu();
                 setTimeout(function () {
                     navigate("/home");
+                    setUser(null);
+                    setIsLoggedIn(false);
+                    setIsAdmin(false);
                 }, 150);
             });
     }
@@ -191,6 +209,7 @@ export default function Header() {
         navigate("/favorites");
     }
 
+    // -------------------------- RENDER ACCOUNT MENU --------------------------
     function renderAccountMenu() {
         if (!user) return null;
         return (
@@ -223,11 +242,16 @@ export default function Header() {
                             bgcolor: "#1976d2", width: 46, height: 46, mr: 1.3, fontWeight: 700, fontSize: 22
                         }}
                     >
-                        {user.email && user.email.length > 0 ? user.email[0].toUpperCase() : "A"}
+                        {user.username && user.username.length > 0 ? user.username[0].toUpperCase() : "A"}
                     </Avatar>
                     <Box>
-                        <Box sx={{ fontWeight: 700, fontSize: 15.5, color: "#1a237e" }}>{user.email}</Box>
-                        <Box sx={{ fontSize: 12.5, color: "#1976d2", fontWeight: 600, mt: 0.2 }}>{user.role}</Box>
+                        <Box sx={{ fontWeight: 700, fontSize: 15.5, color: "#1a237e" }}>{user.username}</Box>
+                        <Box sx={{ fontSize: 12.5, color: "#1976d2", fontWeight: 600, mt: 0.2 }}>
+                            {user.role === "NHANVIEN" ? "Nhân viên"
+                                : user.role === "QUANLY" ? "Quản lý"
+                                    : user.role === "QUANTRIVIEN" ? "Quản trị viên"
+                                        : "Khách hàng"}
+                        </Box>
                     </Box>
                 </Box>
                 <Divider sx={{ my: 1.5, bgcolor: "#e3f0fa" }} />
@@ -299,6 +323,7 @@ export default function Header() {
         );
     }
 
+    // -------------------------- RENDER --------------------------
     return (
         <Box>
             <Box
@@ -495,7 +520,7 @@ export default function Header() {
                                     {user.avatar
                                         ? <Avatar src={user.avatar} sx={{ width: 30, height: 30, fontSize: 15 }} />
                                         : <Avatar sx={{ width: 30, height: 30, fontSize: 15, bgcolor: "#1976d2" }}>
-                                            {user.email && user.email.length > 0 ? user.email[0].toUpperCase() : "A"}
+                                            {user.username && user.username.length > 0 ? user.username[0].toUpperCase() : "A"}
                                         </Avatar>
                                     }
                                 </IconButton>
