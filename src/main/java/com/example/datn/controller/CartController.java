@@ -18,6 +18,8 @@ import java.util.List;
 public class CartController {
     private final CartService cartService;
 
+    // ===== REDIS - CHO USER CHƯA ĐĂNG NHẬP =====
+
     @GetMapping("/{cartId}")
     public ResponseEntity<List<CartItemDisplayDTO>> getCart(@PathVariable String cartId) {
         return ResponseEntity.ok(cartService.getCartForDisplay(cartId));
@@ -25,17 +27,10 @@ public class CartController {
 
     @PostMapping("/{cartId}/add")
     public ResponseEntity<CartUpdateResponse> addToCart(@PathVariable String cartId, @RequestBody SanPhamTrongGio itemToAdd) {
-        // --- Validation cơ bản ---
         if (itemToAdd == null || itemToAdd.getChiTietSanPhamId() == null || itemToAdd.getSoLuong() <= 0) {
             return ResponseEntity.badRequest().body(new CartUpdateResponse(false, "Dữ liệu sản phẩm không hợp lệ.", null));
         }
-
-        // --- Gọi service để xử lý nghiệp vụ ---
-        // itemToAdd đã có sẵn từ @RequestBody, chỉ cần truyền thẳng vào service
         CartUpdateResponse response = cartService.addToCart(cartId, itemToAdd);
-
-        // --- Xử lý phản hồi từ service ---
-        // Nếu không thành công (ví dụ: hết hàng), trả về lỗi 400 Bad Request
         if (!response.isSuccess()) {
             return ResponseEntity.badRequest().body(response);
         }
@@ -53,27 +48,93 @@ public class CartController {
         cartService.deleteCart(cartId);
         return ResponseEntity.ok().build();
     }
+
     @PutMapping("/update-quantity")
     public ResponseEntity<CartUpdateResponse> updateQuantity(@RequestBody UpdateCartItemRequest request) {
         if (request.getCartId() == null || request.getChiTietSanPhamId() == null) {
             CartUpdateResponse response = new CartUpdateResponse(false, "Thiếu thông tin cartId hoặc chiTietSanPhamId", null);
             return ResponseEntity.badRequest().body(response);
         }
-
         CartUpdateResponse response = cartService.updateCartItemQuantity(
                 request.getCartId(),
                 request.getChiTietSanPhamId(),
                 request.getSoLuong()
         );
-
-        // Nếu thao tác không thành công (do vượt quá tồn kho), trả về lỗi 400
         if (!response.isSuccess()) {
             return ResponseEntity.badRequest().body(response);
         }
-
-        // Nếu thành công, trả về 200 OK
         return ResponseEntity.ok(response);
     }
 
+    // ===== ĐỒNG BỘ GIỎ HÀNG REDIS -> DB KHI ĐĂNG NHẬP =====
 
+    @PostMapping("/sync-to-db")
+    public ResponseEntity<Void> syncCartRedisToDb(
+            @RequestParam String cartId,
+            @RequestParam Long idNguoiDung,
+            @RequestParam String loaiNguoiDung
+    ) {
+        cartService.syncCartFromRedisToDb(cartId, idNguoiDung, loaiNguoiDung);
+        return ResponseEntity.ok().build();
+    }
+
+    // ===== DB - CHO USER ĐÃ ĐĂNG NHẬP =====
+
+    @GetMapping("/db")
+    public ResponseEntity<List<CartItemDisplayDTO>> getCartFromDb(
+            @RequestParam Long idNguoiDung,
+            @RequestParam String loaiNguoiDung
+    ) {
+        return ResponseEntity.ok(cartService.getCartFromDbForDisplay(idNguoiDung, loaiNguoiDung));
+    }
+
+    @PostMapping("/db/add")
+    public ResponseEntity<CartUpdateResponse> addOrUpdateItemDb(
+            @RequestParam Long idNguoiDung,
+            @RequestParam String loaiNguoiDung,
+            @RequestBody SanPhamTrongGio itemToAdd
+    ) {
+        CartUpdateResponse response = cartService.addOrUpdateItemDb(idNguoiDung, loaiNguoiDung, itemToAdd);
+        if (!response.isSuccess()) {
+            return ResponseEntity.badRequest().body(response);
+        }
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/db/update-quantity")
+    public ResponseEntity<CartUpdateResponse> updateQuantityDb(
+            @RequestParam Long idNguoiDung,
+            @RequestParam String loaiNguoiDung,
+            @RequestBody UpdateCartItemRequest request
+    ) {
+        CartUpdateResponse response = cartService.updateCartItemQuantityDb(
+                idNguoiDung,
+                loaiNguoiDung,
+                request.getChiTietSanPhamId(),
+                request.getSoLuong()
+        );
+        if (!response.isSuccess()) {
+            return ResponseEntity.badRequest().body(response);
+        }
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/db/items/{chiTietSanPhamId}")
+    public ResponseEntity<Void> removeItemDb(
+            @RequestParam Long idNguoiDung,
+            @RequestParam String loaiNguoiDung,
+            @PathVariable Long chiTietSanPhamId
+    ) {
+        cartService.removeItemDb(idNguoiDung, loaiNguoiDung, chiTietSanPhamId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/db")
+    public ResponseEntity<Void> deleteCartDb(
+            @RequestParam Long idNguoiDung,
+            @RequestParam String loaiNguoiDung
+    ) {
+        cartService.deleteCartDb(idNguoiDung, loaiNguoiDung);
+        return ResponseEntity.ok().build();
+    }
 }

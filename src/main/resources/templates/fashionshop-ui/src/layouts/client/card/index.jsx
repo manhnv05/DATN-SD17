@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
     Box,
     Typography,
@@ -39,9 +39,19 @@ const CartBlock = styled(Paper)(({ theme }) => ({
     },
 }));
 
+// Hàm lấy user hiện tại từ BE (API /api/auth/me)
+async function fetchCurrentUser() {
+    try {
+        const res = await axios.get("http://localhost:8080/api/auth/me", { withCredentials: true });
+        return res.data; // { id, username, role }
+    } catch {
+        return null;
+    }
+}
+
 export default function CartPage() {
     // Lấy cartId từ localStorage, nếu chưa có thì tạo mới
-    const cartId = React.useMemo(() => {
+    const cartId = useMemo(() => {
         let cid = localStorage.getItem("cartId");
         if (!cid) {
             cid = "cart-" + Math.random().toString(36).substring(2, 12);
@@ -49,6 +59,7 @@ export default function CartPage() {
         }
         return cid;
     }, []);
+    const [user, setUser] = useState(null);
     const [cart, setCart] = useState([]);
     const [selected, setSelected] = useState([]);
     const [selectAll, setSelectAll] = useState(false);
@@ -60,40 +71,88 @@ export default function CartPage() {
         window.dispatchEvent(new CustomEvent("cart-updated", { detail: { count: sum } }));
     };
 
-    // Fetch cart from API
+    // Lấy user đăng nhập (nếu có)
     useEffect(() => {
+        let ignore = false;
+        async function getUser() {
+            const u = await fetchCurrentUser();
+            if (!ignore) setUser(u);
+        }
+        getUser();
+        return () => { ignore = true; };
+    }, []);
+
+    // Fetch cart from API - KHÔNG setSelected trong useEffect này nếu cart không đổi!
+    useEffect(() => {
+        let ignore = false;
         async function fetchCart() {
             try {
-                const res = await axios.get(`http://localhost:8080/api/v1/cart/${cartId}`);
-                const cartData = (res.data || []).map((item, idx) => ({
-                    id: item.idChiTietSanPham,
-                    name: item.tenSanPham,
-                    img: item.hinhAnh && item.hinhAnh.length > 0 ? item.hinhAnh[0] : logoImg,
-                    price: item.donGia || 0,
-                    oldPrice: item.giaGoc || 0,
+                let cartData = [];
+                if (user && user.id && user.role) {
+                    // Đã đăng nhập, dùng API DB
+                    const res = await axios.get(
+                        `http://localhost:8080/api/v1/cart/db?idNguoiDung=${user.id}&loaiNguoiDung=${user.role}`,
+                        { withCredentials: true }
+                    );
+                    cartData = Array.isArray(res.data) ? res.data : [];
+                } else {
+                    // Chưa đăng nhập, dùng API Redis
+                    const res = await axios.get(`http://localhost:8080/api/v1/cart/${cartId}`);
+                    cartData = Array.isArray(res.data) ? res.data : [];
+                }
+                // Nếu dữ liệu toàn null, set cart rỗng
+                if (cartData.length > 0 && cartData.every(item =>
+                    Object.values(item).every(val => val === null || val === undefined)
+                )) {
+                    cartData = [];
+                }
+                // Chuẩn hóa dữ liệu cho UI
+                const mapped = cartData.map((item, idx) => ({
+                    id: item.idChiTietSanPham || `cartitem-${idx}`,
+                    name: item.tenSanPham || "SWEATER",
+                    img: item.hinhAnh && Array.isArray(item.hinhAnh) && item.hinhAnh.length > 0
+                        ? item.hinhAnh[0]
+                        : logoImg,
+                    price: typeof item.donGia === "number" ? item.donGia : 0,
+                    oldPrice: typeof item.giaGoc === "number" ? item.giaGoc : 0,
                     discount: item.phanTramGiamGia ? `-${item.phanTramGiamGia}%` : "",
-                    qty: item.soLuong,
-                    size: item.tenKichCo,
-                    // code fix: chuẩn hóa mã hex nếu thiếu dấu #
+                    qty: typeof item.soLuong === "number" && item.soLuong > 0 ? item.soLuong : 1,
+                    size: item.tenKichCo || "M",
                     color: item.maMau
                         ? (item.maMau.startsWith("#") ? item.maMau : "#" + item.maMau)
                         : "#000",
-                    tenMauSac: item.tenMauSac,
+                    tenMauSac: item.tenMauSac || "",
                 }));
-                setCart(cartData);
-                setSelected(cartData.map((item) => item.id));
-                setSelectAll(cartData.length > 0);
-                // Cập nhật badge cart ở header
-                updateCartBadge(cartData);
+                if (!ignore) {
+                    setCart(mapped);
+                }
             } catch (err) {
-                setCart([]);
-                setSelected([]);
-                setSelectAll(false);
-                updateCartBadge([]);
+                if (!ignore) {
+                    setCart([]);
+                }
             }
         }
         fetchCart();
-    }, [cartId]);
+        return () => { ignore = true; };
+    }, [cartId, user]);
+
+    // Khi cart thay đổi, chỉ setSelected khi cart thực sự thay đổi (KHÔNG set cả selectAll ở đây)
+    useEffect(() => {
+        setSelected(cart.map((item) => item.id));
+        // Không setSelectAll ở đây!
+        updateCartBadge(cart);
+    }, [cart]);
+
+    // Sync select all state (KHÔNG setSelected ở đây!)
+    useEffect(() => {
+        if (cart.length === 0) {
+            setSelectAll(false);
+        } else if (selected.length === cart.length) {
+            setSelectAll(true);
+        } else {
+            setSelectAll(false);
+        }
+    }, [cart, selected]);
 
     // Select/deselect product
     const handleSelect = (id) => {
@@ -116,7 +175,16 @@ export default function CartPage() {
     // Remove item (API)
     const handleRemove = async (id) => {
         try {
-            await axios.delete(`http://localhost:8080/api/v1/cart/${cartId}/items/${id}`);
+            if (user && user.id && user.role) {
+                // DB API
+                await axios.delete(
+                    `http://localhost:8080/api/v1/cart/db/items/${id}?idNguoiDung=${user.id}&loaiNguoiDung=${user.role}`,
+                    { withCredentials: true }
+                );
+            } else {
+                // Redis API
+                await axios.delete(`http://localhost:8080/api/v1/cart/${cartId}/items/${id}`);
+            }
             setCart((prev) => {
                 const next = prev.filter((item) => item.id !== id);
                 updateCartBadge(next);
@@ -134,12 +202,22 @@ export default function CartPage() {
         if (!item) return;
         const newQty = Math.max(1, item.qty + val);
         try {
-            const res = await axios.put(`http://localhost:8080/api/v1/cart/update-quantity`, {
-                cartId: cartId,
-                chiTietSanPhamId: id,
-                soLuong: newQty,
-            });
-            const actualQty = res.data && res.data.soLuong !== undefined ? res.data.soLuong : newQty;
+            let res;
+            if (user && user.id && user.role) {
+                // DB API
+                res = await axios.put(
+                    `http://localhost:8080/api/v1/cart/db/update-quantity?idNguoiDung=${user.id}&loaiNguoiDung=${user.role}`,
+                    { chiTietSanPhamId: id, soLuong: newQty },
+                    { withCredentials: true }
+                );
+            } else {
+                // Redis API
+                res = await axios.put(
+                    `http://localhost:8080/api/v1/cart/update-quantity`,
+                    { cartId: cartId, chiTietSanPhamId: id, soLuong: newQty }
+                );
+            }
+            const actualQty = res.data && typeof res.data.soLuong === "number" ? res.data.soLuong : newQty;
             setCart((prev) => {
                 const next = prev.map((item) =>
                     item.id === id
@@ -150,7 +228,7 @@ export default function CartPage() {
                 return next;
             });
         } catch (err) {
-            // Handle error nếu hết kho hoặc lỗi khác
+            // Hiển thị lỗi nếu cần
         }
     };
 
@@ -158,18 +236,6 @@ export default function CartPage() {
     const total = cart
         .filter((item) => selected.includes(item.id))
         .reduce((sum, item) => sum + item.price * item.qty, 0);
-
-    // Sync select all state
-    useEffect(() => {
-        if (cart.length === 0) {
-            setSelected([]);
-            setSelectAll(false);
-        } else if (selected.length === cart.length) {
-            setSelectAll(true);
-        } else {
-            setSelectAll(false);
-        }
-    }, [cart, selected]);
 
     return (
         <Box sx={{ bgcolor: "#edf6fb", minHeight: "100vh" }}>
@@ -308,7 +374,7 @@ export default function CartPage() {
                             <FormControlLabel
                                 control={
                                     <Checkbox
-                                        checked={selected.length === cart.length && cart.length > 0}
+                                        checked={selectAll}
                                         indeterminate={selected.length > 0 && selected.length < cart.length}
                                         onChange={handleSelectAll}
                                         sx={{
@@ -323,8 +389,8 @@ export default function CartPage() {
                                 ({selected.length} sản phẩm đã chọn)
                             </Typography>
                         </Stack>
-                        {cart.map((item) => (
-                            <CartBlock key={item.id}>
+                        {cart.map((item, idx) => (
+                            <CartBlock key={item.id || `cartitem-${idx}`}>
                                 <Checkbox
                                     checked={selected.includes(item.id)}
                                     onChange={() => handleSelect(item.id)}
@@ -397,7 +463,6 @@ export default function CartPage() {
                                                     height: 17,
                                                     borderRadius: "50%",
                                                     background: item.color,
-                                                    // Nếu màu là trắng thì thêm border cho dễ nhìn
                                                     border: `2px solid ${item.color && item.color.toLowerCase() === "#fff" ? "#bbb" : "#bde0fe"}`,
                                                     ml: 0.5,
                                                     verticalAlign: "middle",
