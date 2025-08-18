@@ -27,6 +27,16 @@ import sizeGuideImg from "../../../assets/images/size.jpg";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
 
+// Hàm lấy user hiện tại
+async function fetchCurrentUser() {
+    try {
+        const res = await axios.get("http://localhost:8080/api/auth/me", { withCredentials: true });
+        return res.data; // { id, username, role }
+    } catch {
+        return null;
+    }
+}
+
 export default function ProductDetail() {
     const { id } = useParams();
     const navigate = useNavigate();
@@ -41,6 +51,7 @@ export default function ProductDetail() {
     const [relatedProducts, setRelatedProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [addCartStatus, setAddCartStatus] = useState({ loading: false, success: false, error: "" });
+    const [user, setUser] = useState(null);
 
     // Cart ID lấy từ localStorage hoặc tạo mới
     const cartId = localStorage.getItem("cartId") || (() => {
@@ -48,6 +59,15 @@ export default function ProductDetail() {
         localStorage.setItem("cartId", newId);
         return newId;
     })();
+
+    // Lấy user đăng nhập (nếu có)
+    useEffect(() => {
+        async function getUser() {
+            const u = await fetchCurrentUser();
+            setUser(u);
+        }
+        getUser();
+    }, []);
 
     // Fetch product detail
     useEffect(() => {
@@ -157,16 +177,13 @@ export default function ProductDetail() {
         giaSale = variant.giaSauKhiGiam ?? giaGoc;
         discount = variant.phanTramGiamGia ? `-${variant.phanTramGiamGia}%` : "";
         showDiscount = variant.giaSauKhiGiam && variant.giaSauKhiGiam < giaGoc;
-        // Nếu có giảm giá: hiển thị giá giảm, giá gốc gạch chân, chip phần trăm giảm giá
-        // Nếu không giảm giá: chỉ hiển thị giá gốc của variant đó (không min max)
         priceDisplay = showDiscount
             ? `${Number(giaSale).toLocaleString("vi-VN")}₫`
             : `${Number(giaGoc).toLocaleString("vi-VN")}₫`;
     }
 
-    // Xử lý thêm vào giỏ hàng
+    // Thêm vào giỏ hàng (tự động switch Redis/DB)
     const handleAddToCart = async () => {
-        // Kiểm tra đã chọn đủ chưa
         if (!variant) {
             setAddCartStatus({ loading: false, success: false, error: "Vui lòng chọn đủ màu và size!" });
             return;
@@ -177,20 +194,39 @@ export default function ProductDetail() {
         }
         setAddCartStatus({ loading: true, success: false, error: "" });
         try {
-            await axios.post(`http://localhost:8080/api/v1/cart/${cartId}/add`, {
-                chiTietSanPhamId: variant.id,
-                soLuong: quantity,
-                donGia: variant.giaSauKhiGiam && variant.giaSauKhiGiam < variant.gia ? variant.giaSauKhiGiam : variant.gia
-            });
-            setAddCartStatus({ loading: false, success: true, error: "" });
-            // Sau khi thêm vào giỏ hàng thành công, cập nhật badge giỏ hàng trên Header (dispatch custom event)
-            // Lấy lại tổng số lượng sản phẩm trong giỏ từ API và dispatch event
-            const res = await axios.get(`http://localhost:8080/api/v1/cart/${cartId}`);
-            let sum = 0;
-            if (Array.isArray(res.data)) {
-                sum = res.data.reduce((total, item) => total + (item.soLuong || 0), 0);
+            if (user && user.id && user.role) {
+                await axios.post(
+                    `http://localhost:8080/api/v1/cart/db/add?idNguoiDung=${user.id}&loaiNguoiDung=${user.role.toLowerCase()}`,
+                    {
+                        chiTietSanPhamId: variant.id,
+                        soLuong: quantity,
+                        donGia: variant.giaSauKhiGiam && variant.giaSauKhiGiam < variant.gia ? variant.giaSauKhiGiam : variant.gia
+                    },
+                    { withCredentials: true }
+                );
+                const res = await axios.get(
+                    `http://localhost:8080/api/v1/cart/db?idNguoiDung=${user.id}&loaiNguoiDung=${user.role.toLowerCase()}`,
+                    { withCredentials: true }
+                );
+                let sum = 0;
+                if (Array.isArray(res.data)) {
+                    sum = res.data.reduce((total, item) => total + (item.soLuong || 0), 0);
+                }
+                window.dispatchEvent(new CustomEvent("cart-updated", { detail: { count: sum } }));
+            } else {
+                await axios.post(`http://localhost:8080/api/v1/cart/${cartId}/add`, {
+                    chiTietSanPhamId: variant.id,
+                    soLuong: quantity,
+                    donGia: variant.giaSauKhiGiam && variant.giaSauKhiGiam < variant.gia ? variant.giaSauKhiGiam : variant.gia
+                });
+                const res = await axios.get(`http://localhost:8080/api/v1/cart/${cartId}`);
+                let sum = 0;
+                if (Array.isArray(res.data)) {
+                    sum = res.data.reduce((total, item) => total + (item.soLuong || 0), 0);
+                }
+                window.dispatchEvent(new CustomEvent("cart-updated", { detail: { count: sum } }));
             }
-            window.dispatchEvent(new CustomEvent("cart-updated", { detail: { count: sum } }));
+            setAddCartStatus({ loading: false, success: true, error: "" });
         } catch (err) {
             setAddCartStatus({
                 loading: false,
@@ -247,24 +283,26 @@ export default function ProductDetail() {
                         <Stack direction="row" spacing={2}>
                             <Stack spacing={1} sx={{ mt: 0.5 }}>
                                 {product.images && product.images.map((img, idx) => (
-                                    <Box
-                                        key={img + idx}
-                                        component="img"
-                                        src={img}
-                                        alt={`thumb-${idx}`}
-                                        sx={{
-                                            width: 58,
-                                            height: 58,
-                                            objectFit: "cover",
-                                            borderRadius: 2,
-                                            border: selectedImage === idx ? "2.5px solid #1976d2" : "1.5px solid #e3f0fa",
-                                            boxShadow: selectedImage === idx ? "0 2px 8px #1976d233" : "none",
-                                            cursor: "pointer",
-                                            transition: "all .16s",
-                                            bgcolor: "#fafafa"
-                                        }}
-                                        onClick={() => setSelectedImage(idx)}
-                                    />
+                                    img && (
+                                        <Box
+                                            key={img + idx}
+                                            component="img"
+                                            src={img}
+                                            alt={`thumb-${idx}`}
+                                            sx={{
+                                                width: 58,
+                                                height: 58,
+                                                objectFit: "cover",
+                                                borderRadius: 2,
+                                                border: selectedImage === idx ? "2.5px solid #1976d2" : "1.5px solid #e3f0fa",
+                                                boxShadow: selectedImage === idx ? "0 2px 8px #1976d233" : "none",
+                                                cursor: "pointer",
+                                                transition: "all .16s",
+                                                bgcolor: "#fafafa"
+                                            }}
+                                            onClick={() => setSelectedImage(idx)}
+                                        />
+                                    )
                                 ))}
                             </Stack>
                             <Box
@@ -282,19 +320,21 @@ export default function ProductDetail() {
                                     position: "relative"
                                 }}
                             >
-                                <Box
-                                    component="img"
-                                    src={product.images && product.images[selectedImage]}
-                                    alt={product.name}
-                                    sx={{
-                                        width: "100%",
-                                        maxWidth: 400,
-                                        maxHeight: 430,
-                                        objectFit: "contain",
-                                        display: "block",
-                                        mx: "auto"
-                                    }}
-                                />
+                                {product.images && product.images[selectedImage] && (
+                                    <Box
+                                        component="img"
+                                        src={product.images[selectedImage]}
+                                        alt={product.name}
+                                        sx={{
+                                            width: "100%",
+                                            maxWidth: 400,
+                                            maxHeight: 430,
+                                            objectFit: "contain",
+                                            display: "block",
+                                            mx: "auto"
+                                        }}
+                                    />
+                                )}
                             </Box>
                         </Stack>
                     </Grid>
@@ -491,10 +531,13 @@ export default function ProductDetail() {
                                     <Typography sx={{ fontWeight: 900, color: "#e53935", fontSize: 17 }}>
                                         {product.voucher.percent}% GIẢM
                                     </Typography>
-                                    <Typography sx={{ color: "#222", fontSize: 15.5 }}>
-                                        Đơn tối thiểu {product.voucher.min} &nbsp;
+                                    {/* SỬA: KHÔNG để Chip nằm trong Typography với component mặc định là "p" */}
+                                    <Box sx={{ display: "inline-flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                                        <Typography component="span" sx={{ color: "#222", fontSize: 15.5 }}>
+                                            Đơn tối thiểu {product.voucher.min}
+                                        </Typography>
                                         <Chip label={product.voucher.expire} size="small" sx={{ bgcolor: "#ffbebe", color: "#e53935", ml: 1, fontWeight: 700, fontSize: 15 }} />
-                                    </Typography>
+                                    </Box>
                                     <Typography sx={{ color: "#e53935", fontSize: 14, mt: 0.5, fontWeight: 700 }}>Mã: <b>{product.voucher.code}</b></Typography>
                                 </Box>
                                 <Button
@@ -578,18 +621,20 @@ export default function ProductDetail() {
                                 }}
                                 onClick={() => navigate(`/shop/detail/${item.id}`)}
                             >
-                                <Box
-                                    component="img"
-                                    src={item.img}
-                                    alt={item.name}
-                                    sx={{
-                                        width: "100%",
-                                        height: 118,
-                                        objectFit: "cover",
-                                        borderRadius: 3,
-                                        mb: 1.2
-                                    }}
-                                />
+                                {item.img && (
+                                    <Box
+                                        component="img"
+                                        src={item.img}
+                                        alt={item.name}
+                                        sx={{
+                                            width: "100%",
+                                            height: 118,
+                                            objectFit: "cover",
+                                            borderRadius: 3,
+                                            mb: 1.2
+                                        }}
+                                    />
+                                )}
                                 <Typography fontWeight={700} sx={{ fontSize: 15, mb: 0.5, color: "#205072", letterSpacing: 0.2 }}>
                                     {item.name}
                                 </Typography>

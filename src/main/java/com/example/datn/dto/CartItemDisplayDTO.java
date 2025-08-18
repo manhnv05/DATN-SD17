@@ -13,6 +13,9 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CartItemDisplayDTO {
+    private Integer id;
+    private Long idNguoiDung;
+    private String loaiNguoiDung;
     private Integer idChiTietSanPham;
     private String tenSanPham;
     private String tenMauSac;

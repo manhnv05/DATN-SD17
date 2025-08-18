@@ -81,62 +81,67 @@ export default function Header() {
         }
         : null;
 
-    // Đếm số sản phẩm trong giỏ hàng (tăng lên mỗi lần thêm)
+    // Đếm số sản phẩm trong giỏ hàng (theo user)
     const [cartCount, setCartCount] = useState(0);
 
-    // Hàm lấy cartCount từ localStorage hoặc từ API (tuỳ nghiệp vụ)
-    useEffect(() => {
-        // Nếu muốn lấy từ API, gọi API lấy giỏ hàng ở đây và đếm tổng số lượng sản phẩm
-        // Ở đây lấy từ localStorage (giả định lưu cart ở localStorage)
-        const cartId = localStorage.getItem("cartId");
-        if (!cartId) {
-            setCartCount(0);
-            return;
-        }
-        // Nếu bạn lưu cart dưới dạng object trong localStorage, ví dụ: {idChiTietSanPham, soLuong}
-        // hoặc luôn fetch từ API thì dùng API, ví dụ:
-        fetch(`http://localhost:8080/api/v1/cart/${cartId}`)
-            .then(res => res.json())
-            .then(data => {
-                let sum = 0;
+    // Hàm fetch số lượng sản phẩm trong giỏ theo user đăng nhập hoặc cartId (anonymous)
+    const fetchCartCount = async () => {
+        let count = 0;
+        // Nếu user đã đăng nhập, lấy từ API DB
+        if (isLoggedIn && username && role) {
+            // Dùng API DB
+            try {
+                const res = await fetch(`http://localhost:8080/api/v1/cart/db?idNguoiDung=${username}&loaiNguoiDung=${role}`, {
+                    credentials: "include"
+                });
+                const data = await res.json();
                 if (Array.isArray(data)) {
-                    sum = data.reduce((total, item) => total + (item.soLuong || 0), 0);
+                    count = data.reduce((total, item) => total + (item.soLuong || 0), 0);
                 }
-                setCartCount(sum);
-            })
-            .catch(() => setCartCount(0));
-        // Nếu không có cartId thì cartCount = 0
-    }, []); // mount lần đầu
+            } catch {
+                count = 0;
+            }
+        } else {
+            // Chưa đăng nhập, dùng Redis (cartId)
+            const cartId = localStorage.getItem("cartId");
+            if (!cartId) {
+                setCartCount(0);
+                return;
+            }
+            try {
+                const res = await fetch(`http://localhost:8080/api/v1/cart/${cartId}`);
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    count = data.reduce((total, item) => total + (item.soLuong || 0), 0);
+                }
+            } catch {
+                count = 0;
+            }
+        }
+        setCartCount(count);
+    };
 
-    // Để tăng realtime mỗi khi thêm giỏ hàng, bạn có thể dùng window event hoặc context/global state
-    // Ở đây cho ví dụ đơn giản: lắng nghe sự kiện custom 'cart-updated'
+    // Lấy cart count khi mount và khi user thay đổi
+    useEffect(() => {
+        fetchCartCount();
+        // eslint-disable-next-line
+    }, [username, role]);
+
+    // Lắng nghe sự kiện custom 'cart-updated' để cập nhật realtime
     useEffect(() => {
         function handleCartUpdated(e) {
-            // e.detail.count là tổng số lượng mới (FE code thêm vào cart xong phải dispatch sự kiện này)
             if (e && e.detail && typeof e.detail.count === "number") {
                 setCartCount(e.detail.count);
             } else {
-                // fallback: fetch lại như phía trên
-                const cartId = localStorage.getItem("cartId");
-                if (!cartId) {
-                    setCartCount(0);
-                    return;
-                }
-                fetch(`http://localhost:8080/api/v1/cart/${cartId}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        let sum = 0;
-                        if (Array.isArray(data)) {
-                            sum = data.reduce((total, item) => total + (item.soLuong || 0), 0);
-                        }
-                        setCartCount(sum);
-                    })
-                    .catch(() => setCartCount(0));
+                fetchCartCount();
             }
         }
         window.addEventListener("cart-updated", handleCartUpdated);
         return () => window.removeEventListener("cart-updated", handleCartUpdated);
-    }, []);
+        // eslint-disable-next-line
+    }, [username, role]);
+
+    // ... (giữ nguyên các hàm handleOpenMenu, handleCloseMenu, handleLogout, handleLogin, handleGoAdmin, handleAccount, handleGoFavorites, renderAccountMenu)
 
     function handleOpenMenu(event) {
         setAnchorEl(event.currentTarget);
@@ -149,7 +154,6 @@ export default function Header() {
     function handleLogout() {
         logout()
             .catch((err) => {
-                // Có thể show thông báo nếu muốn
                 console.error("Đăng xuất thất bại:", err.message);
             })
             .finally(() => {
@@ -183,7 +187,6 @@ export default function Header() {
         handleCloseMenu();
     }
 
-    // Xem danh sách sản phẩm yêu thích
     function handleGoFavorites() {
         navigate("/favorites");
     }
@@ -393,7 +396,6 @@ export default function Header() {
                         </Stack>
                     )}
                     <Stack direction="row" spacing={1.1} alignItems="center" minWidth={isMobile ? 0 : 180}>
-                        {/* Nút trái tim - đẹp đều với các icon khác */}
                         <IconButton
                             sx={{
                                 bgcolor: "#fff",
@@ -501,7 +503,7 @@ export default function Header() {
                             </React.Fragment>
                         )}
                         <IconButton
-                            component={RouterLink} // use RouterLink for client-side routing
+                            component={RouterLink}
                             to="/card"
                             sx={{
                                 bgcolor: "#fff",
