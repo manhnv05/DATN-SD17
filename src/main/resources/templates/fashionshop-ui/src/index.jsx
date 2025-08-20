@@ -7,6 +7,7 @@ import { ToastContainer } from "react-toastify";
 
 // Soft UI Dashboard React Context Provider
 import { SoftUIControllerProvider } from "context";
+import ChatlingWidget from "./ChatlingWidget";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
@@ -14,6 +15,7 @@ root.render(
     <SoftUIControllerProvider>
       <App />
       <ToastContainer/>
+      <ChatlingWidget />
     </SoftUIControllerProvider>
   </BrowserRouter>
 );
