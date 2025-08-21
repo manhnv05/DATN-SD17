@@ -6,6 +6,7 @@ import com.example.datn.dto.*;
 import com.example.datn.mapper.HoaDonChiTietMapper;
 import com.example.datn.mapper.HoaDonUpdateMapper;
 import com.example.datn.mapper.PhieuGiamGiaMapper;
+import com.example.datn.service.EmailThongBaoHoaDonService;
 import com.example.datn.vo.hoaDonVO.*;
 import com.example.datn.vo.khachHangVO.CapNhatKhachRequestVO;
 import com.example.datn.vo.phieuGiamGiaVO.CapNhatPGG;
@@ -82,6 +83,7 @@ public class HoaDonServiceImpl implements HoaDonService {
     PhieuGiamGiaRepository phieuGiamGiaRepository;
     EmailService emailService;
     ChiTietPhieuGiamGiaRepository chiTietPhieuGiamGiaRepository;
+    EmailThongBaoHoaDonService emailThongBaoHoaDonService;
     @Override
     @Transactional
     public List<HoaDonChiTietDTO> updateDanhSachSanPhamChiTiet(Integer idHoaDon, List<CapNhatSanPhamChiTietDonHangVO> danhSachCapNhatSanPham) {
@@ -537,20 +539,7 @@ public class HoaDonServiceImpl implements HoaDonService {
             throw new AppException(ErrorCode.NO_STATUS_CHANGE);
         }
 
-//
-//        if (!trangThaiMoi.canTransitionTo(trangThaiCu)) {
-//            throw new AppException(ErrorCode.INVALID_STATUS_TRANSITION);
-//        }
-//        if (trangThaiMoi == TrangThai.CHO_GIAO_HANG && trangThaiCu == TrangThai.CHO_XAC_NHAN) {
-//            // Khi xác nhận đơn và chuẩn bị giao -> TRỪ KHO
-//            capNhatSoLuongSanPhamTrongKho(hoaDon, true);
-//        } else if (trangThaiMoi == TrangThai.HUY) {
-//            // Khi hủy đơn -> CỘNG TRẢ KHO
-//            // Chỉ cộng trả lại nếu trạng thái trước đó là đã trừ kho (ví dụ: đang chờ giao)
-//            if (trangThaiCu == TrangThai.CHO_XAC_NHAN || trangThaiCu == TrangThai.CHO_GIAO_HANG || trangThaiCu == TrangThai.DANG_VAN_CHUYEN) {
-//                capNhatSoLuongSanPhamTrongKho(hoaDon, false); // false = cộng lại
-//            }
-//        }
+
 
         // Nên lấy người thực hiện từ ngữ cảnh bảo mật (ví dụ: Spring Security) thay vì giả lập
         String nguoiThucHienThayDoi = nguoiThucHien != null ? nguoiThucHien : hoaDon.getNhanVien().getHoVaTen();
@@ -563,7 +552,7 @@ public class HoaDonServiceImpl implements HoaDonService {
 
 
         lichSuHoaDonService.ghiNhanLichSuHoaDon(updatedHoaDon, noiDungThayDoi, nguoiThucHienThayDoi, ghiChu, trangThaiMoi);
-
+        emailThongBaoHoaDonService.guiThongBaoCapNhatTrangThai(updatedHoaDon.getId(),trangThaiMoi);
         return new CapNhatTrangThaiDTO(
                 updatedHoaDon.getId(),
                 updatedHoaDon.getTrangThai().name(),
@@ -635,7 +624,23 @@ public class HoaDonServiceImpl implements HoaDonService {
                                 chiTietResponse.setTenSanPham(hoaDonChiTiet.getSanPhamChiTiet().getSanPham().getTenSanPham());
                                 chiTietResponse.setTenKichThuoc(hoaDonChiTiet.getSanPhamChiTiet().getKichThuoc().getTenKichCo());
                                 chiTietResponse.setTenMauSac(hoaDonChiTiet.getSanPhamChiTiet().getMauSac().getTenMauSac());
-                                chiTietResponse.setDuongDanAnh(String.valueOf(hoaDonChiTiet.getSanPhamChiTiet().getSpctHinhAnhs().getFirst().getHinhAnh().getDuongDanAnh()));
+                                if (hoaDonChiTiet.getSanPhamChiTiet() != null
+                                        && hoaDonChiTiet.getSanPhamChiTiet().getSpctHinhAnhs() != null
+                                        && !hoaDonChiTiet.getSanPhamChiTiet().getSpctHinhAnhs().isEmpty()
+                                        && hoaDonChiTiet.getSanPhamChiTiet().getSpctHinhAnhs().getFirst().getHinhAnh() != null) {
+
+                                    chiTietResponse.setDuongDanAnh(
+                                            String.valueOf(
+                                                    hoaDonChiTiet.getSanPhamChiTiet()
+                                                            .getSpctHinhAnhs()
+                                                            .getFirst()
+                                                            .getHinhAnh()
+                                                            .getDuongDanAnh()
+                                            )
+                                    );
+                                } else {
+                                    chiTietResponse.setDuongDanAnh("no-image.png"); // ảnh mặc định khi không có
+                                }
                             }
                             chiTietResponse.setSoLuong(hoaDonChiTiet.getSoLuong());
                             chiTietResponse.setGia(hoaDonChiTiet.getGia());
@@ -1134,6 +1139,7 @@ public class HoaDonServiceImpl implements HoaDonService {
             if (tongTienDaTra >= hoaDon.getTongTien()) {
                 hoaDon.setTrangThai(TrangThai.HOAN_THANH);
             } else {
+
                 hoaDon.setTrangThai(TrangThai.DA_XAC_NHAN); // hoặc trạng thái phù hợp khác
             }
             hoaDon.setNgayGiaoDuKien(LocalDate.now().plusDays(3).atStartOfDay());
@@ -1141,9 +1147,14 @@ public class HoaDonServiceImpl implements HoaDonService {
 
         // 8. Lưu hóa đơn vào DB
         HoaDon hoaDonDaLuu = hoaDonRepository.save(hoaDon);
-
+        if (laDonGiaoHang && hoaDonDaLuu.getTrangThai() == TrangThai.DA_XAC_NHAN) {
+            emailThongBaoHoaDonService.guiThongBaoCapNhatTrangThai(
+                    hoaDonDaLuu.getId(),
+                    hoaDonDaLuu.getTrangThai()
+            );
+        }
         // 9. Ghi nhận lịch sử hoạt động
-        String nguoiThucHienCapNhat = "Hệ thống"; // Hoặc lấy từ security context
+        String nguoiThucHienCapNhat = hoaDonDaLuu.getNhanVien().getHoVaTen();
         String noiDungLichSu;
         switch (hoaDonDaLuu.getTrangThai()) {
             case HOAN_THANH:
