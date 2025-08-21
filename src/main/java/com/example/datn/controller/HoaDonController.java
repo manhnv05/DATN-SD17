@@ -3,6 +3,7 @@ package com.example.datn.controller;
 import com.example.datn.config.ResponseHelper;
 import com.example.datn.dto.*;
 import com.example.datn.entity.HoaDon;
+import com.example.datn.service.TraCuuHoaDonService;
 import com.example.datn.vo.hoaDonVO.*;
 import com.example.datn.vo.khachHangVO.CapNhatKhachRequestVO;
 import com.example.datn.vo.lichSuHoaDonVO.LichSuVO;
@@ -36,6 +37,7 @@ import com.example.datn.dto.HoaDonPdfResult;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class HoaDonController {
     HoaDonService hoaDonService;
+    TraCuuHoaDonService traCuuHoaDonService;
 
     @GetMapping("/{id}/pdf")
     public ResponseEntity<byte[]> exportPdf(@PathVariable String id) {
@@ -256,5 +258,9 @@ public class HoaDonController {
                 .data(soLuongTonKhoList)
                 .build();
         return ResponseEntity.ok(response);
+    }
+    @GetMapping("/tra-cuu-hoa-don/{maHoaDon}")
+    public TraCuuHoaDonDTO traCuuHoaDon(@PathVariable String maHoaDon) {
+        return traCuuHoaDonService.traCuuHoaDon(maHoaDon);
     }
 }

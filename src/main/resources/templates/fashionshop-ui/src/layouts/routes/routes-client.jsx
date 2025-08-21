@@ -10,7 +10,7 @@ import CartPage from "layouts/client/card";
 import Order from "layouts/client/order";
 import CheckoutPage from "layouts/client/card/CheckoutPage"; // chỉnh lại path cho đúng nếu cần
 import OutletSales from "layouts/client/outlet-sales"; // chỉnh lại path cho đúng nếu cần
-
+import OrderLookup from "../admin/OrderLookup/OrderLookup"; 
 const routesClient = [
     {
         name: "Trang chủ",
@@ -83,6 +83,14 @@ const routesClient = [
         component: <OutletSales />,
         noCollapse: true,
         hidden: false,
+    },
+     {
+        name: "Tra Cứu Đơn Hàng",
+        key: "order-lookup",
+        route: "/tra-cuu-don-hang",
+        component: <OrderLookup />,
+        noCollapse: true,
+        hidden: false, // Để `false` nếu bạn muốn hiển thị trên thanh điều hướng
     },
     {
         name: "Chi tiết sản phẩm",

@@ -31,6 +31,19 @@ public class HoaDonChiTietDTO {
       String tenMauSac;
       String tenKichThuoc;
       String duongDanAnh;
-
+      public HoaDonChiTietDTO(Integer id, Integer idSanPhamChiTiet, String maSanPhamChiTiet,
+                              Integer soLuong, Integer gia, Integer thanhTien,
+                              String tenSanPham, String tenMauSac, String tenKichThuoc, String duongDanAnh) {
+            this.id = id;
+            this.idSanPhamChiTiet = idSanPhamChiTiet;
+            this.maSanPhamChiTiet = maSanPhamChiTiet;
+            this.soLuong = soLuong;
+            this.gia = gia;
+            this.thanhTien = thanhTien;
+            this.tenSanPham = tenSanPham;
+            this.tenMauSac = tenMauSac;
+            this.tenKichThuoc = tenKichThuoc;
+            this.duongDanAnh = duongDanAnh;
+      }
 
 }

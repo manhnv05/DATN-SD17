@@ -89,7 +89,7 @@ const OrderSummary = ({ orderId }) => {
                 <p>Phí vận chuyển:</p>
                 <input
                     type="text"
-                    value= {(orderData.tongTien || 0).toLocaleString('vi-VN')}
+                    value= {(orderData.shippingFee || 0).toLocaleString('vi-VN')}
                     className={styles['shipping-input']}
                     readOnly
                 />

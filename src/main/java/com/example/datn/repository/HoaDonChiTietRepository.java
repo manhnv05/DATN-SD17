@@ -18,7 +18,7 @@ public interface HoaDonChiTietRepository extends JpaRepository<HoaDonChiTiet, In
     List<HoaDonChiTiet> findByHoaDon(HoaDon hoaDon);
 
     List<HoaDonChiTiet> findAllByHoaDon_Id(Integer hoaDonId);
-
+    List<HoaDonChiTiet> findByHoaDonMaHoaDon(String maHoaDon);
     @Query("""
     SELECT hdct
     FROM HoaDonChiTiet hdct
@@ -53,4 +53,7 @@ ORDER BY SUM(hdct.so_luong) DESC, MAX(hd.ngay_tao) DESC
     @Query("SELECT COALESCE(SUM(hdct.soLuong),0) FROM HoaDonChiTiet hdct " +
             "WHERE hdct.sanPhamChiTiet.sanPham.id = :sanPhamId AND hdct.trangThai = true")
     Integer countSoldBySanPhamId(Integer sanPhamId);
+
+
+
 }
