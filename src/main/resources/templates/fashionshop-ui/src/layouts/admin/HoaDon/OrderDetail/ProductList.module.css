@@ -110,3 +110,52 @@
     margin-bottom: 10px;
     width: 100%;
 }
+.product-quantity-control {
+  display: flex;
+  align-items: center;
+  border: 1px solid #dee2e6; /* Một đường viền duy nhất cho cả cụm */
+  border-radius: 8px;       /* Bo tròn 4 góc bên ngoài */
+  overflow: hidden;         /* QUAN TRỌNG: Cắt bỏ các góc vuông bên trong */
+  flex-shrink: 0;
+}
+
+/* Style chung cho nút cộng và trừ */
+.product-quantity-control button {
+  background-color: #f8f9fa; /* Màu nền xám rất nhạt */
+  border: none;             /* Bỏ hết viền của nút */
+  width: 38px;
+  height: 38px;
+  cursor: pointer;
+  font-size: 18px;
+  color: #495057;
+  transition: background-color 0.2s ease;
+}
+
+.product-quantity-control button:hover {
+  background-color: #e9ecef; /* Hiệu ứng khi di chuột */
+}
+
+/* Ô nhập số lượng ở giữa */
+.quantity-input {
+  width: 50px;
+  height: 38px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 500;
+  border: none; /* Bỏ viền xung quanh */
+  border-left: 1px solid #dee2e6;  /* Thêm đường kẻ trái */
+  border-right: 1px solid #dee2e6; /* Thêm đường kẻ phải */
+  color: #333;
+  -moz-appearance: textfield;
+}
+
+/* Bỏ viền xanh khi focus vào ô input */
+.quantity-input:focus {
+  outline: none;
+}
+
+.quantity-input::-webkit-outer-spin-button,
+.quantity-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}

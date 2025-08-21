@@ -175,8 +175,6 @@ public class HoaDonController {
     public ResponseEntity<ApiResponse<Void>> updateHoaDonInfo(
             @PathVariable Integer id,
             @RequestBody @Valid HoaDonUpdateVO request) {
-
-
         String successMessage = hoaDonService.capNhatThongTinHoaDon(id, request);
 
 
@@ -194,6 +192,10 @@ public class HoaDonController {
     @PutMapping("/update_hoadon")
     public ResponseEntity<ApiResponse<HoaDonDTO>> updateHoadon(@RequestBody HoaDonRequestUpdateVO hoaDonRequestUpdateVO) {
         return ResponseHelper.success("", hoaDonService.updateHoaDon(hoaDonRequestUpdateVO));
+    }
+    @PutMapping("/update-hoa-don-da-luu")
+    public ResponseEntity<ApiResponse<HoaDonDTO>> updateHoadonDetail(@RequestBody HoaDonRequestUpdateVO hoaDonRequestUpdateVO) {
+        return ResponseHelper.success("", hoaDonService.updateHoaDonDetail(hoaDonRequestUpdateVO));
     }
 
     @PostMapping("/luu-hoa-don-online-chua-dang-nhap")
@@ -244,5 +246,15 @@ public class HoaDonController {
     @GetMapping("/luu-hoa-don-online-chua-dang-nhap")
     public void guimail(@RequestParam Integer idHoaDon, @RequestParam String email){
         hoaDonService.sendMailHoaDonToKhachHang(idHoaDon, email);
+    }
+    @GetMapping("/get-all-so-luong-ton-kho")
+    public ResponseEntity<ApiResponse<List<SanPhamTonKhoDTO>>> getAllSoLuongTonKho() {
+        List<SanPhamTonKhoDTO> soLuongTonKhoList = hoaDonService.GetAllSanPhamTonKho();
+        ApiResponse<List<SanPhamTonKhoDTO>> response = ApiResponse.<List<SanPhamTonKhoDTO>>builder()
+                .code(1000)
+                .message("Lấy danh sách số lượng tồn kho thành công")
+                .data(soLuongTonKhoList)
+                .build();
+        return ResponseEntity.ok(response);
     }
 }

@@ -262,6 +262,8 @@ public class AuthController {
             Map<String, Object> res = new HashMap<>();
             res.put("id", nv.getId()); // id nhân viên
             res.put("username", nv.getEmail());
+            res.put("maNhanVien", nv.getMaNhanVien());
+            res.put("tenNhanVien", nv.getHoVaTen());
             res.put("role", "NHANVIEN");
             return ResponseEntity.ok(res);
         }

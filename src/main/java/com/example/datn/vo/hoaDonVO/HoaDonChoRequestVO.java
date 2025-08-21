@@ -11,4 +11,5 @@ import lombok.Setter;
 @NoArgsConstructor
 public class HoaDonChoRequestVO {
     private String loaiHoaDon;
+    private Integer idNhanVien;
 }

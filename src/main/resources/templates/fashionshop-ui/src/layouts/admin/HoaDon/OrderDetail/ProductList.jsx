@@ -1,108 +1,418 @@
 import React from "react";
-import { Box } from "@mui/material";
+import { Box, CircularProgress, Typography } from "@mui/material";
 import styles from "./ProductList.module.css";
 import PropTypes from "prop-types";
 import { useState, useEffect, useCallback } from "react";
 import ProductSlideshow from "../../BanHangTaiQuay/component/ProductSlideshow.jsx";
-import ProductSelectionModal from "../../BanHangTaiQuay/component/ProductSelectionModal.jsx"
+import ProductSelectionModalOrderDetail from "./ProductSelectionModalOrderDetail";
+import axios from "axios";
+import { toast } from "react-toastify";
+
 const BASE_SERVER_URL = "http://localhost:8080/";
-const ProductList = ({ orderId, orderStatus }) => {
+
+const ProductList = ({ orderId, orderStatus, onProductChange }) => {
   const [orderData, setOrderData] = useState(null);
   const [productsInOrder, setProductsInOrder] = useState([]);
-    // 1. Thêm state để quản lý việc hiển thị modal
   const [isModalOpen, setIsModalOpen] = useState(false);
-  useEffect(() => {
+  const [loading, setLoading] = useState(false);
+  const [quantityInput, setQuantityInput] = useState({});
+  const [stockData, setStockData] = useState({});
+  const fetchAllStock = useCallback(async () => {
+    try {
+      const response = await axios.get(`${BASE_SERVER_URL}api/hoa-don/get-all-so-luong-ton-kho`);
+      const stockList = response.data?.data || [];
+      // Chuyển đổi mảng thành một object để tra cứu nhanh hơn (dạng {id: soLuong})
+      const stockMap = stockList.reduce((map, item) => {
+        map[item.idChitietSanPham] = item.soLuongTonKho;
+        return map;
+      }, {});
+      setStockData(stockMap);
+    } catch (error) {
+      console.error("Lỗi khi tải danh sách tồn kho:", error);
+      toast.error("Không thể tải dữ liệu tồn kho.");
+    }
+  }, []);
+  // Hàm tải dữ liệu gốc của hóa đơn
+  const fetchListProductOrder = useCallback(async () => {
     if (!orderId) {
-      setProducts([]);
+      console.log("DEBUG: fetchListProductOrder dừng vì không có orderId.");
+      setProductsInOrder([]);
+      setOrderData(null);
       return;
     }
-    const fetchListProductOrder = async () => {
-      try {
-        // Gọi API bằng fetch, 'await' sẽ đợi cho đến khi có phản hồi
-        const response = await fetch(
-          `http://localhost:8080/api/hoa-don/${orderId}/san-pham`,
-          { credentials: "include" } // <-- SỬA ở đây
-        );
+    setLoading(true);
+    console.log(`DEBUG: Bắt đầu fetchListProductOrder cho orderId: ${orderId}`);
+    try {
+      // API này cần trả về đầy đủ thông tin hóa đơn, bao gồm cả list sản phẩm
+      const response = await axios.get(`${BASE_SERVER_URL}api/hoa-don/${orderId}`, {
+        withCredentials: true,
+      });
+      console.log("DEBUG: Response đầy đủ từ API:", response);
+      const fetchedOrder = response.data || {};
+      console.log("%c--- DEBUG DỮ LIỆU KHÁCH HÀNG ---", "color: green; font-weight: bold;");
+      console.log("Toàn bộ dữ liệu hóa đơn (orderData) đã fetch về:", fetchedOrder);
+      console.log("Thông tin khách hàng cụ thể (orderData.khachHang):", fetchedOrder.khachHang);
+      console.log("---------------------------------");
+      const fetchedProducts = fetchedOrder.danhSachChiTiet || [];
 
-        if (!response.ok) {
-          throw new Error(`Lỗi HTTP! Trạng thái: ${response.status}`);
-        }
+      setOrderData(fetchedOrder);
+      setProductsInOrder(fetchedProducts);
+      console.log(`DEBUG: ĐÃ SET STATE productsInOrder với ${fetchedProducts.length} sản phẩm.`);
 
-        // Chuyển đổi phản hồi sang định dạng JSON, 'await' cũng sẽ đợi quá trình này
-        const data = await response.json();
+      const initialQuantities = {};
+      fetchedProducts.forEach((product) => {
+        initialQuantities[product.idSanPhamChiTiet] = product.soLuong;
+      });
+      setQuantityInput(initialQuantities);
 
-        setOrderData(data);
-        if (data && Array.isArray(data.data)) {
-          setProductsInOrder(data.data); // LƯU MẢNG NÀY VÀO state riêng
-        } else {
-          setProductsInOrder([]); // Đảm bảo luôn là mảng rỗng
-        }
-      } catch (error) {
-        console.error("Không thể fetch dữ liệu:", error);
-
-        return null;
+      if (onProductChange) {
+        onProductChange(fetchedOrder); // Gửi toàn bộ dữ liệu hóa đơn mới về component cha
       }
-    };
+    } catch (error) {
+      console.error("Không thể fetch dữ liệu:", error);
+      toast.error("Không thể tải dữ liệu hóa đơn.");
+    } finally {
+      setLoading(false);
+    }
+  }, [orderId, onProductChange]);
+
+  useEffect(() => {
     fetchListProductOrder();
-  }, [orderId]);
+  }, [fetchListProductOrder]);
+
+  // HÀM TRUNG TÂM XỬ LÝ MỌI THAY ĐỔI CỦA ĐƠN HÀNG
+  const handleOrderChange = async (updatedProducts) => {
+    setLoading(true);
+    // Cập nhật giao diện tạm thời để người dùng thấy thay đổi ngay lập tức
+    setProductsInOrder(updatedProducts);
+
+    try {
+      // 1. Tính tổng tiền tạm thời từ danh sách sản phẩm mới
+      const tongTienHoaDon = updatedProducts.reduce((total, product) => {
+        return total + product.gia * product.soLuong;
+      }, 0);
+
+      // 2. Tự động tìm phiếu giảm giá tốt nhất
+      let bestCouponId = null;
+      if (tongTienHoaDon > 0) {
+        try {
+          const couponResponse = await axios.post(
+            `${BASE_SERVER_URL}/PhieuGiamGiaKhachHang/query`,
+            {
+              khachHang: orderData?.khachHang?.id || null,
+              tongTienHoaDon: tongTienHoaDon,
+            }
+          );
+          if (couponResponse.data?.data?.content?.length > 0) {
+            bestCouponId = couponResponse.data.data.content[0].id;
+          }
+        } catch (couponError) {
+          console.error("Lỗi khi tìm phiếu giảm giá:", couponError);
+        }
+      }
+
+      // 3. Chuẩn bị payload cho API update_hoadon
+      const payload = {
+        idHoaDon: orderId,
+        phieuGiamGia: bestCouponId ? String(bestCouponId) : null,
+        danhSachSanPham: updatedProducts.map((p) => ({
+          id: p.idSanPhamChiTiet,
+          soLuong: p.soLuong,
+          donGia: p.gia,
+        })),
+        // Giữ lại các thông tin khác của hóa đơn nếu có
+        ghiChu: orderData?.ghiChu,
+        tenKhachHang: orderData?.tenKhachHang,
+        sdt: orderData?.sdt,
+        diaChi: orderData?.diaChi,
+        khachHang: orderData?.idKhachHang ? String(orderData.idKhachHang) : null,
+        nhanVien: orderData?.nhanVien?.id ? String(orderData.nhanVien.id) : null,
+      };
+
+      // 4. Gọi API cập nhật hóa đơn tổng thể
+      await axios.put(`${BASE_SERVER_URL}api/hoa-don/update-hoa-don-da-luu`, payload, {
+        withCredentials: true,
+      });
+
+      toast.success("Cập nhật đơn hàng thành công!");
+    } catch (error) {
+      console.error("Lỗi khi cập nhật hóa đơn:", error);
+      const errorMessage = error.response?.data?.message || "Có lỗi xảy ra, vui lòng thử lại.";
+      toast.error(`Cập nhật thất bại: ${errorMessage}`);
+    } finally {
+      // 5. Tải lại toàn bộ dữ liệu hóa đơn từ server để đảm bảo đồng bộ
+      await fetchListProductOrder();
+      // setLoading(false) đã có trong fetchListProductOrder
+    }
+  };
+  useEffect(() => {
+    fetchListProductOrder();
+    fetchAllStock();
+  }, [fetchListProductOrder, fetchAllStock]);
+  // Hàm xử lý khi người dùng thay đổi số lượng
+  const handleUpdateQuantity = async (productId, newQuantity) => {
+    const parsedQuantity = parseInt(newQuantity, 10);
+    const productToUpdate = productsInOrder.find((p) => p.idSanPhamChiTiet === productId);
+    if (!productToUpdate) return;
+    const currentQuantity = productToUpdate.soLuong;
+
+    if (isNaN(parsedQuantity) || parsedQuantity < 0 || parsedQuantity === currentQuantity) return;
+
+    const soLuongTonKho = stockData[productId] || 0;
+    const effectiveStock = soLuongTonKho + currentQuantity;
+    if (parsedQuantity > effectiveStock) {
+      toast.warn(`Số lượng sản phẩm không đủ.`);
+      return;
+    }
+    if (productsInOrder.length <= 1 && parsedQuantity === 0) {
+      toast.warn("Không thể xóa sản phẩm cuối cùng.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // BƯỚC 1: CẬP NHẬT TỒN KHO
+      const chenhLech = parsedQuantity - currentQuantity;
+      if (chenhLech > 0) {
+        await axios.put(
+          `${BASE_SERVER_URL}api/hoa-don/giam-so-luong-san-pham/${productId}?soLuong=${chenhLech}`
+        );
+      } else {
+        await axios.put(
+          `${BASE_SERVER_URL}api/hoa-don/tang-so-luong-san-pham/${productId}?soLuong=${Math.abs(
+            chenhLech
+          )}`
+        );
+      }
+
+      // BƯỚC 2: CẬP NHẬT HÓA ĐƠN
+      let updatedProducts;
+      if (parsedQuantity === 0) {
+        updatedProducts = productsInOrder.filter((p) => p.idSanPhamChiTiet !== productId);
+      } else {
+        updatedProducts = productsInOrder.map((p) =>
+          p.idSanPhamChiTiet === productId ? { ...p, soLuong: parsedQuantity } : p
+        );
+      }
+      await updateOrderDetails(updatedProducts); // Gọi hàm helper
+      toast.success("Cập nhật đơn hàng thành công!");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Cập nhật số lượng thất bại.");
+    } finally {
+      await fetchListProductOrder();
+      await fetchAllStock();
+    }
+  };
+  const updateOrderDetails = async (updatedProducts) => {
+    const subTotal = updatedProducts.reduce(
+      (total, product) => total + product.gia * product.soLuong,
+      0
+    );
+    const phiVanChuyen = orderData?.phiVanChuyen || 0;
+    const tongTienHoaDon = subTotal;
+
+    let bestCouponId = null;
+    if (tongTienHoaDon > 0) {
+      try {
+        const couponResponse = await axios.post(`${BASE_SERVER_URL}PhieuGiamGiaKhachHang/query`, {
+          khachHang: orderData?.khachHang?.id || null,
+          tongTienHoaDon: tongTienHoaDon,
+        });
+        if (couponResponse.data?.data?.content?.length > 0) {
+          bestCouponId = couponResponse.data.data.content[0].id;
+        }
+      } catch (couponError) {
+        console.error("Lỗi khi tìm phiếu giảm giá:", couponError);
+      }
+    }
+
+    const payload = {
+      idHoaDon: orderId,
+      phieuGiamGia: bestCouponId ? String(bestCouponId) : null,
+      danhSachSanPham: updatedProducts.map((p) => ({
+        id: p.idSanPhamChiTiet,
+        soLuong: p.soLuong,
+        donGia: p.gia,
+      })),
+      phiVanChuyen: orderData.phiVanChuyen,
+      ghiChu: orderData?.ghiChu,
+      tenKhachHang: orderData?.tenKhachHang,
+      sdt: orderData?.sdt,
+      diaChi: orderData?.diaChi,
+      khachHang: orderData?.idKhachHang ? String(orderData.idKhachHang) : null,
+      nhanVien: orderData?.idNhanVien ? String(orderData.idNhanVien) : null,
+    };
+
+    await axios.put(`${BASE_SERVER_URL}api/hoa-don/update-hoa-don-da-luu`, payload, {
+      withCredentials: true,
+    });
+  };
+
+  // Hàm xử lý khi thêm sản phẩm từ modal
+  const handleAddProduct = async (productToAdd) => {
+    setLoading(true);
+    try {
+      const { idChiTietSanPham, quantity, soLuongTonKho } = productToAdd;
+      if (quantity > soLuongTonKho) {
+        toast.warn(`Số lượng tồn kho chỉ còn ${soLuongTonKho}.`);
+        return;
+      }
+
+      // BƯỚC 1: CẬP NHẬT TỒN KHO
+      await axios.put(
+        `${BASE_SERVER_URL}api/hoa-don/giam-so-luong-san-pham/${idChiTietSanPham}?soLuong=${quantity}`
+      );
+
+      // BƯỚC 2: CẬP NHẬT HÓA ĐƠN
+      const existingProduct = productsInOrder.find((p) => p.idSanPhamChiTiet === idChiTietSanPham);
+      let updatedProducts;
+
+      if (existingProduct) {
+        const newQuantity = existingProduct.soLuong + quantity;
+        updatedProducts = productsInOrder.map((p) =>
+          p.idSanPhamChiTiet === idChiTietSanPham ? { ...p, soLuong: newQuantity } : p
+        );
+      } else {
+        const price =
+          productToAdd.giaTienSauKhiGiam !== null &&
+          productToAdd.giaTienSauKhiGiam < productToAdd.gia
+            ? productToAdd.giaTienSauKhiGiam
+            : productToAdd.gia;
+        const newProduct = {
+          ...productToAdd,
+          id: null,
+          idSanPhamChiTiet: idChiTietSanPham,
+          soLuong: quantity,
+          gia: price,
+        };
+        updatedProducts = [...productsInOrder, newProduct];
+      }
+
+      await updateOrderDetails(updatedProducts); // Gọi hàm helper
+      toast.success("Thêm sản phẩm thành công!");
+    } catch (error) {
+      console.error("Lỗi khi thêm sản phẩm:", error);
+      toast.error(error.response?.data?.message || "Thêm sản phẩm thất bại.");
+    } finally {
+      await fetchListProductOrder();
+      await fetchAllStock();
+    }
+  };
+
+  const handleQuantityInputChange = (productId, value) => {
+    setQuantityInput((prev) => ({ ...prev, [productId]: value }));
+  };
+
+  const handleConfirmQuantityChange = (e, productId) => {
+    if ((e.type === "keydown" && e.key === "Enter") || e.type === "blur") {
+      handleUpdateQuantity(productId, e.target.value);
+    }
+  };
 
   return (
     <div className={styles["product-list"]}>
-      {orderStatus === "CHO_XAC_NHAN" && (
+      {(orderStatus === "CHO_XAC_NHAN" || orderStatus === "DA_XAC_NHAN") && (
         <div className={styles["product-list-header"]}>
-          <button className={`${styles.btn} ${styles.btnConfirm}`}>Thêm sản phẩm</button>
+          <button
+            className={`${styles.btn} ${styles.btnConfirm}`}
+            onClick={() => setIsModalOpen(true)}
+            disabled={loading}
+          >
+            Thêm sản phẩm
+          </button>
         </div>
       )}
 
-      {/* Kiểm tra nếu không có sản phẩm nào */}
-      {productsInOrder.length === 0 ? (
-        <div>Không có sản phẩm nào trong đơn hàng này.</div>
+      {loading && (
+        <Box display="flex" justifyContent="center" alignItems="center" height="200px">
+          <CircularProgress color="info" />
+          <Typography variant="body2" ml={2}>
+            Đang xử lý...
+          </Typography>
+        </Box>
+      )}
+
+      {!loading && productsInOrder.length === 0 ? (
+        <div className={styles.emptyMessage}>Không có sản phẩm nào trong đơn hàng này.</div>
       ) : (
-        // Map dữ liệu từ state 'products' đã được fetch ở trên
+        !loading &&
         productsInOrder.map((product) => (
-          <div key={product.id || product.maSanPhamChiTiet} className={styles["product-item"]}>
+          <div key={product.maSanPhamChiTiet} className={styles["product-item"]}>
             <Box sx={{ position: "relative", width: 150, height: 150, ml: 2 }}>
-            <ProductSlideshow product={{
-    ...product,
-    listUrlImage: product.hinhAnhctsp
-}} />
+              <ProductSlideshow
+                product={{
+                  ...product,
+                  listUrlImage: product.duongDanAnh ? [product.duongDanAnh] : [],
+                }}
+              />
             </Box>
             <div className={styles["product-details"]}>
               <p className={styles["product-name"]}>
-                {product.tenSanPham} ({product.maSanPhamChiTiet}) 
+                {product.tenSanPham} ({product.maSanPhamChiTiet})
               </p>
               <p className={styles["product-price"]}>
-                {(product.thanhTien || 0).toLocaleString("vi-VN")} VND
+                {(product.gia || 0).toLocaleString("vi-VN")} VND
               </p>
-               <p className={styles["product-info"]}>{product.tenMauSac}</p>
+              <p className={styles["product-info"]}>{product.tenMauSac}</p>
               <p className={styles["product-info"]}>Size: {product.tenKichThuoc}</p>
               <p className={styles["product-info"]}>x{product.soLuong}</p>
             </div>
-            <div className={styles["product-quantity-control"]}>
-              <button>-</button>
-              <span>{product.soLuong}</span>
-              <button>+</button>
-            </div>
+
+            {(orderStatus === "CHO_XAC_NHAN" || orderStatus === "DA_XAC_NHAN") && (
+              <div className={styles["product-quantity-control"]}>
+                <button
+                  onClick={() =>
+                    handleUpdateQuantity(
+                      product.idSanPhamChiTiet,
+                      (parseInt(quantityInput[product.idSanPhamChiTiet], 10) || 0) - 1
+                    )
+                  }
+                >
+                  -
+                </button>
+                <input
+                  type="number"
+                  value={quantityInput[product.idSanPhamChiTiet] || ""}
+                  onChange={(e) =>
+                    handleQuantityInputChange(product.idSanPhamChiTiet, e.target.value)
+                  }
+                  onBlur={(e) => handleConfirmQuantityChange(e, product.idSanPhamChiTiet)}
+                  onKeyDown={(e) => handleConfirmQuantityChange(e, product.idSanPhamChiTiet)}
+                  className={styles["quantity-input"]}
+                  min="0"
+                />
+                <button
+                  onClick={() =>
+                    handleUpdateQuantity(
+                      product.idSanPhamChiTiet,
+                      (parseInt(quantityInput[product.idSanPhamChiTiet], 10) || 0) + 1
+                    )
+                  }
+                >
+                  +
+                </button>
+              </div>
+            )}
             <div className={styles["product-total-price"]}>
               {((product.gia || 0) * (product.soLuong || 0)).toLocaleString("vi-VN")} VND
             </div>
           </div>
         ))
       )}
+
+      <ProductSelectionModalOrderDetail
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSelectProduct={handleAddProduct}
+      />
     </div>
   );
 };
+
 ProductList.propTypes = {
   orderId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
   orderStatus: PropTypes.string.isRequired,
-  products: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-      name: PropTypes.string.isRequired,
-      price: PropTypes.number.isRequired,
-      quantity: PropTypes.number.isRequired,
-    })
-  ).isRequired,
+  onProductChange: PropTypes.func,
 };
 
 export default ProductList;

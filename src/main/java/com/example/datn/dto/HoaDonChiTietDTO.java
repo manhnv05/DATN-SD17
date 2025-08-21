@@ -17,10 +17,12 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class HoaDonChiTietDTO {
       Integer id; // ID của bản ghi HoaDonChiTiet
+      Integer idSanPhamChiTiet;
       String maSanPhamChiTiet;
       Integer soLuong;
       Integer gia;
       Integer thanhTien;
+      Integer idKhachHang;
       @JsonIgnore
       String ghiChu;
       @JsonIgnore
