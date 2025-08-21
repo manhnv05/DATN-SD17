@@ -73,7 +73,7 @@ function Pay({
 
   const finalTotal = totalAmount + (isDelivery ? shippingFee : 0) - discountValue;
   const amountOwed = finalTotal - Number(customer || 0);
-
+  
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [addressList, setAddressList] = useState([]);
   const [isAddAddressModalOpen, setIsAddAddressModalOpen] = useState(false);
@@ -423,6 +423,8 @@ function Pay({
     }
   }, [customer, isDelivery, shippingFee, shippingFormData, onDataChange, paymentDetails]);
 
+  
+
   const handleSelectCustomer = async (selectedCustomer, addresses) => {
     setCustomer(selectedCustomer);
 
@@ -456,6 +458,8 @@ function Pay({
 
     setIsCustomerModalOpen(false);
   };
+
+  
 
   const handleConfirmPayment = async (newPaymentsFromModal) => {
     if (!newPaymentsFromModal || newPaymentsFromModal.length === 0) {

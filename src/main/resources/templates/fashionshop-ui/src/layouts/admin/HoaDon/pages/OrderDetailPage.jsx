@@ -23,7 +23,7 @@ import OrderHistoryModal from "../OrderHistoryModal/OrderHistoryModal";
 import CancelOrderDialog from "../OrderDetail/CancelOrderDialog/CancelOrderDialog";
 import UpdateOrderInfo from "../UpdateOrderInfo/UpdateOrderInfo";
 import { useReactToPrint } from "react-to-print";
-
+import { useAuth } from "../../BanHangTaiQuay/AuthProvider.jsx"; 
 import { toast } from "react-toastify";
 import InHoaDon from "../InHoaDon/InHoaDon.jsx";
 import PropTypes from "prop-types";
@@ -48,6 +48,7 @@ const mapPaymentStatus = (apiStatus) => paymentStatusMap[apiStatus] || apiStatus
 const mapOrderType = (apiType) => orderTypeMap[apiType] || apiType;
 
 const OrderDetailPage = () => {
+   const { user } = useAuth();
   // === HOOKS VÀ STATE ===
   const { orderId } = useParams();
   const [orderData, setOrderData] = useState(null);
@@ -157,7 +158,7 @@ const OrderDetailPage = () => {
     try {
       const payload = {
         ghiChu: ghiChuFromDialog,
-        nguoiThucHien: "Admin",
+        nguoiThucHien: user.tenNhanVien,
       };
       const response = await fetch(
         `http://localhost:8080/api/hoa-don/chuyen-trang-thai-huy/${orderId}`,
@@ -213,7 +214,7 @@ const OrderDetailPage = () => {
     try {
       const payload = {
         ghiChu: "Chuyển trạng thái tự động",
-        nguoiThucHien: nguoiThucHienAction,
+        nguoiThucHien: user.tenNhanVien,
       };
       const response = await fetch(
         `http://localhost:8080/api/hoa-don/chuyen-trang-thai-tiep-theo/${orderId}`,
@@ -480,7 +481,7 @@ const OrderDetailPage = () => {
               <SoftTypography variant="h5" fontWeight="medium" mb={3} sx={{ color: "#6ea8fe" }}>
                 Lịch sử thanh toán
               </SoftTypography>
-              <PaymentHistory orderId={orderData.id} />
+              <PaymentHistory orderData={orderData} />
             </SoftBox>
           </Card>
         </SoftBox>

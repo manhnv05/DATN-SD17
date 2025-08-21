@@ -136,6 +136,21 @@ public class HoaDonServiceImpl implements HoaDonService {
 
         return hoaDonChiTietMapper.toDtoList(chiTietCuoiCung);
     }
+
+    @Override
+    public List<SanPhamTonKhoDTO> GetAllSanPhamTonKho() {
+        List<ChiTietSanPham> chiTietSanPhamList = chiTietSanPhamRepository.findAll();
+        if (chiTietSanPhamList.isEmpty()) {
+            throw new AppException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
+        return chiTietSanPhamList.stream()
+                .map(chiTiet -> new SanPhamTonKhoDTO(
+                        chiTiet.getId(),
+                        chiTiet.getSoLuong()
+                ))
+                .collect(Collectors.toList());
+    }
+
     private void recalculateHoaDonTotals(HoaDon hoaDon, List<HoaDonChiTiet> chiTietList) {
         int tongTien = chiTietList.stream()
                 .mapToInt(HoaDonChiTiet::getThanhTien)
@@ -149,7 +164,8 @@ public class HoaDonServiceImpl implements HoaDonService {
     }
     @Override
     public HoaDonChoDTO taoHoaDonCho(HoaDonChoRequestVO request) {
-        NhanVien nhanVienDuocGanVaoHoaDon = null;
+        NhanVien nhanVienDuocGanVaoHoaDon = nhanVienRepository.findById(request.getIdNhanVien())
+                .orElseThrow(() -> new AppException(ErrorCode.EMPLOYEE_NOT_FOUND));
         HoaDon hoaDon = new HoaDon();
         hoaDon.setNhanVien(nhanVienDuocGanVaoHoaDon);
         hoaDon.setNgayTao(LocalDateTime.now());
@@ -169,7 +185,7 @@ public class HoaDonServiceImpl implements HoaDonService {
         lichSuHoaDonService.ghiNhanLichSuHoaDon(
                 hoaDon,
                 "Hóa đơn được tạo với trạng thái: " + hoaDon.getTrangThai().getDisplayName(),
-                "admin", // Người thực hiện được xác định ở trên
+                nhanVienDuocGanVaoHoaDon.getHoVaTen(), // Người thực hiện được xác định ở trên
                 "Tạo hóa đơn ban đầu",
                 hoaDon.getTrangThai()
         );
@@ -602,7 +618,12 @@ public class HoaDonServiceImpl implements HoaDonService {
                 .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
 
         HoaDonDTO hoaDonResponse = hoaDonMapper.toHoaDonResponse(hoaDon);
-
+        if (hoaDon.getKhachHang() != null) {
+            hoaDonResponse.setIdKhachHang(hoaDon.getKhachHang().getId());
+        }
+        if (hoaDon.getNhanVien() != null) {
+            hoaDonResponse.setIdNhanVien(hoaDon.getNhanVien().getId());
+        }
         hoaDonResponse.setDanhSachChiTiet(
                 hoaDonChiTietRepository.findAllByHoaDon_Id(hoaDon.getId()).stream()
                         .map(hoaDonChiTiet -> {
@@ -610,9 +631,11 @@ public class HoaDonServiceImpl implements HoaDonService {
                             chiTietResponse.setId(hoaDonChiTiet.getId());
                             if (hoaDonChiTiet.getSanPhamChiTiet() != null) {
                                 chiTietResponse.setMaSanPhamChiTiet(hoaDonChiTiet.getSanPhamChiTiet().getMaSanPhamChiTiet());
+                                chiTietResponse.setIdSanPhamChiTiet(hoaDonChiTiet.getSanPhamChiTiet().getId());
                                 chiTietResponse.setTenSanPham(hoaDonChiTiet.getSanPhamChiTiet().getSanPham().getTenSanPham());
                                 chiTietResponse.setTenKichThuoc(hoaDonChiTiet.getSanPhamChiTiet().getKichThuoc().getTenKichCo());
                                 chiTietResponse.setTenMauSac(hoaDonChiTiet.getSanPhamChiTiet().getMauSac().getTenMauSac());
+                                chiTietResponse.setDuongDanAnh(String.valueOf(hoaDonChiTiet.getSanPhamChiTiet().getSpctHinhAnhs().getFirst().getHinhAnh().getDuongDanAnh()));
                             }
                             chiTietResponse.setSoLuong(hoaDonChiTiet.getSoLuong());
                             chiTietResponse.setGia(hoaDonChiTiet.getGia());
@@ -822,6 +845,7 @@ public class HoaDonServiceImpl implements HoaDonService {
     }
 
     @Override
+    @Transactional
     public String tangSoLuongSanPhamChiTiet(Integer idSanPhamChiTiet, Integer soLuong) {
         if (idSanPhamChiTiet == null || idSanPhamChiTiet <= 0) {
             throw new AppException(ErrorCode.PRODUCT_NOT_FOUND);
@@ -841,6 +865,7 @@ public class HoaDonServiceImpl implements HoaDonService {
     }
 
     @Override
+    @Transactional
     public String giamSoLuongSanPhamChiTiet(Integer idSanPhamChiTiet, Integer soLuong) {
         if (idSanPhamChiTiet == null || idSanPhamChiTiet <= 0) {
             throw new AppException(ErrorCode.PRODUCT_NOT_FOUND);
@@ -1034,10 +1059,6 @@ public class HoaDonServiceImpl implements HoaDonService {
             NhanVien nhanVien = nhanVienRepository.findById(Integer.parseInt(request.getNhanVien()))
                     .orElseThrow(() -> new AppException(ErrorCode.EMPLOYEE_NOT_FOUND));
             hoaDon.setNhanVien(nhanVien);
-        } else {
-            // Mặc định cho một nhân viên nào đó nếu cần
-            NhanVien nhanVien = nhanVienRepository.findById(1).orElseThrow(() -> new AppException(ErrorCode.EMPLOYEE_NOT_FOUND));
-            hoaDon.setNhanVien(nhanVien);
         }
 
         // Cập nhật Khách hàng (xử lý an toàn cho khách lẻ)
@@ -1146,6 +1167,140 @@ public class HoaDonServiceImpl implements HoaDonService {
                 hoaDonDaLuu.getTrangThai()
         );
 
+        // 10. Trả về DTO cho client
+        return HoaDonUpdateMapper.INSTANCE.toResponseDTO(hoaDonDaLuu);
+    }
+
+    @Override
+    public HoaDonDTO updateHoaDonDetail(HoaDonRequestUpdateVO request) {
+        // 1. Tìm hóa đơn trong DB hoặc ném lỗi nếu không tìm thấy
+        HoaDon hoaDon = hoaDonRepository.findById(request.getIdHoaDon())
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+
+        // 2. [LOGIC MỚI] Xóa và tạo lại danh sách chi tiết hóa đơn từ request
+        if (request.getDanhSachSanPham() != null) {
+            // Xóa toàn bộ chi tiết hóa đơn cũ để đảm bảo không bị trùng lặp hay sai giá
+            hoaDon.getHoaDonChiTietList().clear();
+
+            // Lặp qua danh sách sản phẩm từ request để tạo lại chi tiết hóa đơn
+            for (HoaDonRequestUpdateVO.SanPhamCapNhatVO sanPhamMoi : request.getDanhSachSanPham()) {
+                ChiTietSanPham spct = chiTietSanPhamRepository.findById(sanPhamMoi.getId())
+                        .orElseThrow(() -> new AppException(ErrorCode.PRODUCT_NOT_FOUND));
+
+                HoaDonChiTiet chiTietMoi = new HoaDonChiTiet();
+                chiTietMoi.setHoaDon(hoaDon);
+                chiTietMoi.setSanPhamChiTiet(spct);
+                chiTietMoi.setSoLuong(sanPhamMoi.getSoLuong());
+
+                // Quan trọng: Set giá từ request, KHÔNG tính toán lại!
+                chiTietMoi.setGia(sanPhamMoi.getDonGia().intValue());
+
+                // Tính thành tiền dựa trên giá từ request
+                BigDecimal thanhTien = BigDecimal.valueOf(sanPhamMoi.getDonGia())
+                        .multiply(BigDecimal.valueOf(sanPhamMoi.getSoLuong()));
+                int tienInt = thanhTien.intValue();
+                chiTietMoi.setThanhTien(tienInt);
+
+                // Thêm chi tiết mới vào hóa đơn
+                hoaDon.getHoaDonChiTietList().add(chiTietMoi);
+            }
+            int tongTienBanDau = hoaDon.getHoaDonChiTietList().stream()
+                    .mapToInt(HoaDonChiTiet::getThanhTien)
+                    .sum();
+            hoaDon.setTongTienBanDau(tongTienBanDau);
+            hoaDon.setTongTien(tongTienBanDau);
+        }
+
+        // 3. Cập nhật các thông tin chung của hóa đơn từ request
+        HoaDonUpdateMapper.INSTANCE.updateHoaDon(hoaDon, request);
+
+        // Cập nhật Nhân viên
+        if (request.getNhanVien() != null && !request.getNhanVien().isEmpty()) {
+            NhanVien nhanVien = nhanVienRepository.findById(Integer.parseInt(request.getNhanVien()))
+                    .orElseThrow(() -> new AppException(ErrorCode.EMPLOYEE_NOT_FOUND));
+            hoaDon.setNhanVien(nhanVien);
+        }
+
+        // Cập nhật Khách hàng (xử lý an toàn cho khách lẻ)
+        if (request.getKhachHang() != null && !request.getKhachHang().trim().isEmpty()) {
+            try {
+                Integer idKhachHang = Integer.parseInt(request.getKhachHang());
+                KhachHang khachHang = khachHangRepository.findById(idKhachHang).orElse(null);
+                hoaDon.setKhachHang(khachHang);
+            } catch (NumberFormatException e) {
+                hoaDon.setKhachHang(null); // Gán là khách lẻ nếu ID không hợp lệ
+            }
+        } else {
+            hoaDon.setKhachHang(null); // Khách lẻ
+        }
+
+        // 4. Tính toán lại giá trị hóa đơn
+        int tongTienBanDau = hoaDon.getHoaDonChiTietList().stream()
+                .mapToInt(HoaDonChiTiet::getThanhTien)
+                .sum();
+        hoaDon.setTongTienBanDau(tongTienBanDau);
+        hoaDon.setTongTien(tongTienBanDau); // Gán tạm, sẽ cập nhật lại sau khi có giảm giá
+
+        // 5. Áp dụng phiếu giảm giá (sử dụng BigDecimal để chính xác)
+        if (StringUtils.isNotEmpty(request.getPhieuGiamGia())) {
+            PhieuGiamGia pgg = phieuGiamGiaRepository.findById(Integer.valueOf(request.getPhieuGiamGia())).orElse(null);
+            hoaDon.setPhieuGiamGia(pgg);
+            if (pgg != null) {
+                if (pgg.getTrangThai() != 1){
+                    throw new AppException(ErrorCode.PHIEU_GIAM_GIA_DA_HET_HAN);
+                }
+                BigDecimal tongTienGocBD = BigDecimal.valueOf(tongTienBanDau);
+                BigDecimal soTienDuocGiam = BigDecimal.ZERO;
+
+                if (pgg.getPhamTramGiamGia() != null && pgg.getPhamTramGiamGia().compareTo(BigDecimal.ZERO) > 0) {
+                    // Giảm theo phần trăm
+                    soTienDuocGiam = tongTienGocBD.multiply(pgg.getPhamTramGiamGia()).divide(BigDecimal.valueOf(100));
+                    if (pgg.getGiamToiDa() != null && soTienDuocGiam.compareTo(pgg.getGiamToiDa()) > 0) {
+                        soTienDuocGiam = pgg.getGiamToiDa();
+                    }
+                } else if (pgg.getSoTienGiam() != null) {
+                    // Giảm theo số tiền cố định
+                    soTienDuocGiam = pgg.getGiamToiDa();
+                }
+
+                BigDecimal tongTienCuoiCung = tongTienGocBD.subtract(soTienDuocGiam);
+                hoaDon.setTongTien(tongTienCuoiCung.intValue());
+            }
+        } else {
+            hoaDon.setPhieuGiamGia(null);
+        }
+
+        // 6. Tính tổng hóa đơn cuối cùng (bao gồm phí vận chuyển)
+        // Giả sử mapper đã set `phiVanChuyen` vào `hoaDon`
+        Integer phiVanChuyen = (hoaDon.getPhiVanChuyen() != null) ? hoaDon.getPhiVanChuyen() : 0;
+        hoaDon.setTongHoaDon(hoaDon.getTongTien() + phiVanChuyen);
+
+        // 7. Cập nhật trạng thái hóa đơn dựa trên thanh toán và loại đơn
+        Integer tongTienDaTraRaw = chiTietThanhToanRepository.sumSoTienThanhToanByIdHoaDon(hoaDon.getId());
+        int tongTienDaTra = (tongTienDaTraRaw != null) ? tongTienDaTraRaw : 0;
+
+        boolean laDonGiaoHang = StringUtils.isNotEmpty(request.getDiaChi());
+
+        if (!laDonGiaoHang) { // Đơn tại quầy
+            if (tongTienDaTra >= hoaDon.getTongTien()) {
+                hoaDon.setTrangThai(TrangThai.HOAN_THANH);
+            } else {
+                // Với đơn tại quầy, nếu bấm lưu/thanh toán thì phải trả đủ tiền
+                // Bạn có thể giữ hoặc bỏ Exception này tùy nghiệp vụ
+                throw new AppException(ErrorCode.NOT_YET_PAID);
+            }
+        } else { // Đơn giao hàng
+            // Với đơn giao hàng, có thể chưa thanh toán hết (COD)
+            if (tongTienDaTra >= hoaDon.getTongTien()) {
+                hoaDon.setTrangThai(TrangThai.HOAN_THANH);
+            } else {
+                hoaDon.setTrangThai(TrangThai.DA_XAC_NHAN); // hoặc trạng thái phù hợp khác
+            }
+            hoaDon.setNgayGiaoDuKien(LocalDate.now().plusDays(3).atStartOfDay());
+        }
+
+        // 8. Lưu hóa đơn vào DB
+        HoaDon hoaDonDaLuu = hoaDonRepository.save(hoaDon);
         // 10. Trả về DTO cho client
         return HoaDonUpdateMapper.INSTANCE.toResponseDTO(hoaDonDaLuu);
     }
