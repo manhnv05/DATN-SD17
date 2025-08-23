@@ -15,6 +15,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -246,7 +247,10 @@ public class CartService {
         List<GioHang> gioHangs = gioHangRepository.findByIdNguoiDungAndLoaiNguoiDung(idNguoiDung, userType);
         if (gioHangs.isEmpty()) return new ArrayList<>();
 
-        List<Integer> chiTietIds = gioHangs.stream().map(g -> g.getChiTietSanPham().getId().intValue()).collect(Collectors.toList());
+        List<Integer> chiTietIds = gioHangs.stream()
+                .map(g -> g.getChiTietSanPham().getId().intValue())
+                .distinct()
+                .collect(Collectors.toList());
         Map<Integer, ChiTietSanPham> chiTietMap = chiTietSanPhamRepository.findAllById(chiTietIds)
                 .stream().collect(Collectors.toMap(ct -> ct.getId().intValue(), Function.identity()));
 
@@ -257,11 +261,19 @@ public class CartService {
         Map<Integer, SanPham> sanPhamMap = sanPhamRepository.findAllById(sanPhamIds)
                 .stream().collect(Collectors.toMap(SanPham::getId, Function.identity()));
 
-        List<ChiTietDotGiamGia> allGiamGias = chiTietDotGiamGiaRepository.findByChiTietSanPhamIdInAndTrangThai(
-                chiTietIds.stream().map(Integer::intValue).collect(Collectors.toList()), 1);
+        // Lọc giảm giá còn hiệu lực: trạng thái = 1, nằm trong khoảng ngày
+        LocalDateTime now = LocalDateTime.now();
+        List<ChiTietDotGiamGia> allGiamGias = chiTietDotGiamGiaRepository.findByChiTietSanPhamIdInAndTrangThai(chiTietIds, 1);
         Map<Integer, ChiTietDotGiamGia> giamGiaMap = new HashMap<>();
         for (ChiTietDotGiamGia ctdgg : allGiamGias) {
-            giamGiaMap.putIfAbsent(ctdgg.getChiTietSanPham().getId().intValue(), ctdgg);
+            DotGiamGia dot = ctdgg.getDotGiamGia();
+            if (dot != null && dot.getNgayBatDau() != null && dot.getNgayKetThuc() != null
+                    && !now.isBefore(dot.getNgayBatDau()) && !now.isAfter(dot.getNgayKetThuc())) {
+                ChiTietDotGiamGia old = giamGiaMap.get(ctdgg.getChiTietSanPham().getId().intValue());
+                if (old == null || dot.getNgayBatDau().isAfter(old.getDotGiamGia().getNgayBatDau())) {
+                    giamGiaMap.put(ctdgg.getChiTietSanPham().getId().intValue(), ctdgg);
+                }
+            }
         }
 
         return gioHangs.stream().map(gh -> {
@@ -273,7 +285,7 @@ public class CartService {
             dto.setLoaiNguoiDung(gh.getLoaiNguoiDung() != null ? gh.getLoaiNguoiDung().name() : null);
             dto.setSoLuong(gh.getSoLuong());
             dto.setIdChiTietSanPham(ct != null ? ct.getId() : null);
-            dto.setDonGia(ct != null ? BigDecimal.valueOf(ct.getGia()) : null);
+
             if (ct != null) {
                 dto.setTenKichCo(ct.getKichThuoc() != null ? ct.getKichThuoc().getTenKichCo() : null);
                 dto.setTenMauSac(ct.getMauSac() != null ? ct.getMauSac().getTenMauSac() : null);
@@ -285,12 +297,27 @@ public class CartService {
                         .map(h -> h.getHinhAnh().getDuongDanAnh())
                         .collect(Collectors.toList()) : new ArrayList<>();
                 dto.setHinhAnh(listAnh);
-                dto.setGiaGoc(BigDecimal.valueOf(ct.getGia()));
+                BigDecimal giaGoc = BigDecimal.valueOf(ct.getGia());
+                dto.setGiaGoc(giaGoc);
+
                 ChiTietDotGiamGia giamGia = giamGiaMap.get(ct.getId().intValue());
                 if (giamGia != null && giamGia.getDotGiamGia() != null) {
-                    dto.setPhanTramGiamGia(giamGia.getDotGiamGia().getPhanTramGiamGia());
+                    int phanTram = giamGia.getDotGiamGia().getPhanTramGiamGia();
+                    dto.setPhanTramGiamGia(phanTram);
+                    BigDecimal giaSauGiam;
+                    if (giamGia.getGiaSauKhiGiam() != null && giamGia.getGiaSauKhiGiam() > 0) {
+                        giaSauGiam = BigDecimal.valueOf(giamGia.getGiaSauKhiGiam());
+                    } else {
+                        giaSauGiam = giaGoc.multiply(BigDecimal.valueOf(100 - phanTram))
+                                .divide(BigDecimal.valueOf(100));
+                    }
+                    dto.setDonGia(giaSauGiam);
+                } else {
+                    dto.setPhanTramGiamGia(null);
+                    dto.setDonGia(giaGoc);
                 }
             }
+
             if (sp != null) {
                 dto.setTenSanPham(sp.getTenSanPham());
             }

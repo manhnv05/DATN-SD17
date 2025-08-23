@@ -92,6 +92,21 @@ public class AuthController {
 
         logger.info("Đăng nhập thành công cho user: {}, role: {}", username, role);
 
+        // --- Thêm đoạn này để lấy id từ DB ---
+        Integer id = null;
+        if (role.equals("NHANVIEN") || role.equals("QUANLY") || role.equals("QUANTRIVIEN")) {
+            Optional<NhanVien> nvOpt = nhanVienRepository.findByEmail(username);
+            if (nvOpt.isPresent()) {
+                id = nvOpt.get().getId();
+            }
+        } else {
+            Optional<KhachHang> khOpt = khachHangRepository.findByEmail(username);
+            if (khOpt.isPresent()) {
+                id = khOpt.get().getId();
+            }
+        }
+        // -----------------------------------
+
         // Sinh access token và refresh token (ví dụ dùng JWT)
         String accessToken = "fake-access-token-for-" + username; // TODO: sinh JWT thực tế ở đây
         String refreshToken = "fake-refresh-token-for-" + username; // TODO: sinh JWT thực tế ở đây
@@ -107,6 +122,7 @@ public class AuthController {
         response.addHeader("Set-Cookie", refreshCookie.toString());
 
         Map<String, Object> res = new HashMap<>();
+        res.put("id", id); // <-- Thêm dòng này!
         res.put("role", role);
         res.put("username", username);
         res.put("accessToken", accessToken); // FE sẽ dùng token này cho gọi API các chức năng
@@ -262,6 +278,8 @@ public class AuthController {
             Map<String, Object> res = new HashMap<>();
             res.put("id", nv.getId()); // id nhân viên
             res.put("username", nv.getEmail());
+            res.put("maNhanVien", nv.getMaNhanVien());
+            res.put("tenNhanVien", nv.getHoVaTen());
             res.put("role", "NHANVIEN");
             return ResponseEntity.ok(res);
         }

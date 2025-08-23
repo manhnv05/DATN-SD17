@@ -293,14 +293,6 @@ function SignIn() {
     const [openForgot, setOpenForgot] = useState(false);
     const navigate = useNavigate();
 
-    // Nếu đã đăng nhập thì chuyển hướng về home/dashboard (bảo vệ trang đăng nhập)
-    // Nếu muốn cho phép vào trang đăng nhập dù đã có role thì bỏ đoạn này.
-    // const userRole = localStorage.getItem("role");
-    // if (userRole) {
-    //     navigate("/");
-    //     return null;
-    // }
-
     // Hàm xử lý đăng nhập Google
     const handleLoginGoogle = () => {
         window.location.href = "http://localhost:8080/oauth2/authorization/google";
@@ -359,6 +351,20 @@ function SignIn() {
                 localStorage.setItem("email", data.email);
             } else {
                 localStorage.removeItem("email");
+            }
+
+            // Lưu id user (dùng cho giỏ hàng, phân quyền, v.v)
+            if (data.id) {
+                localStorage.setItem("userId", data.id);
+            } else {
+                localStorage.removeItem("userId");
+            }
+
+            // Lưu avatar nếu có
+            if (data.avatar) {
+                localStorage.setItem("avatar", data.avatar);
+            } else {
+                localStorage.removeItem("avatar");
             }
 
             // Redirect hoặc navigate

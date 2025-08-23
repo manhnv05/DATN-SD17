@@ -19,7 +19,6 @@ import { useNavigate, Link as RouterLink } from "react-router-dom";
 import logoImg from "assets/images/logo4.png";
 import { logout } from "../data/logout";
 
-// Fake number of favorite products for demo
 const demoFavoriteCount = 4;
 
 function Logo() {
@@ -47,7 +46,8 @@ const navItems = [
     { label: "Cửa hàng", route: "/shop" },
     { label: "Giới thiệu", route: "/about" },
     { label: "Bài viết", route: "/blog" },
-    { label: "Liên hệ", route: "/contact" }
+    { label: "Liên hệ", route: "/contact" },
+     { label: "Theo Dõi Đơn Hàng", route: "/tra-cuu-don-hang" },
 ];
 
 const subNavItems = [
@@ -66,80 +66,76 @@ export default function Header() {
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
 
-    // -------------------------- LOGIN USER STATE --------------------------
+    // LOGIN USER STATE
     const [user, setUser] = useState(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [isAdmin, setIsAdmin] = useState(false);
 
-    // Lấy user info qua API /api/auth/me (chuẩn backend gửi về)
-    useEffect(() => {
-        fetch("http://localhost:8080/api/auth/me", { credentials: "include" })
-            .then(res => res.ok ? res.json() : null)
-            .then(data => {
-                if (data && data.id && data.username && data.role) {
-                    setUser(data);
-                    setIsLoggedIn(true);
-                    setIsAdmin(
-                        data.role === "NHANVIEN" ||
-                        data.role === "QUANLY" ||
-                        data.role === "QUANTRIVIEN"
-                    );
-                } else {
-                    setUser(null);
-                    setIsLoggedIn(false);
-                    setIsAdmin(false);
-                }
-            })
-            .catch(() => {
-                setUser(null);
-                setIsLoggedIn(false);
-                setIsAdmin(false);
-            });
-    }, []);
-
-    // -------------------------- CART COUNT STATE --------------------------
+    // CART COUNT STATE
     const [cartCount, setCartCount] = useState(0);
 
-    // Hàm fetch số lượng sản phẩm giỏ hàng theo user hoặc theo cartId guest
-    const fetchCartCount = async () => {
+    // Lấy user info qua localStorage (KHÔNG dùng API /me)
+    useEffect(() => {
+        const role = localStorage.getItem("role");
+        const username = localStorage.getItem("username");
+        const email = localStorage.getItem("email");
+        const avatar = localStorage.getItem("avatar") || "";
+        const userId = localStorage.getItem("userId") || localStorage.getItem("id");
+        let loadedUser = null;
+        let isLogged = false;
+        let isAdm = false;
+        if (role && username) {
+            loadedUser = {
+                id: userId,
+                username,
+                role,
+                email,
+                avatar
+            };
+            isLogged = true;
+            isAdm = role === "NHANVIEN" || role === "QUANLY" || role === "QUANTRIVIEN";
+        }
+        setUser(loadedUser);
+        setIsLoggedIn(isLogged);
+        setIsAdmin(isAdm);
+    }, []);
+
+    // Hàm fetch số lượng sản phẩm giỏ hàng theo user hoặc guest
+    const fetchCartCount = async (userObj = user) => {
         let count = 0;
-        if (user && user.id && user.role) {
-            // Đăng nhập (cart DB)
-            try {
+        try {
+            if (userObj && userObj.id && userObj.role) {
+                // Đã đăng nhập
                 const res = await fetch(
-                    `http://localhost:8080/api/v1/cart/db?idNguoiDung=${user.id}&loaiNguoiDung=${user.role}`,
+                    `http://localhost:8080/api/v1/cart/db?idNguoiDung=${userObj.id}&loaiNguoiDung=${userObj.role}`,
                     { credentials: "include" }
                 );
                 const data = await res.json();
                 if (Array.isArray(data)) {
-                    count = data.reduce((total, item) => total + (item.soLuong || 0), 0);
+                    count = data.reduce((total, item) => total + (item.soLuong || item.quantity || 0), 0);
                 }
-            } catch {
-                count = 0;
-            }
-        } else {
-            // Guest (cartId localStorage)
-            const cartId = localStorage.getItem("cartId");
-            if (!cartId) {
-                setCartCount(0);
-                return;
-            }
-            try {
+            } else {
+                // Guest
+                const cartId = localStorage.getItem("cartId");
+                if (!cartId) {
+                    setCartCount(0);
+                    return;
+                }
                 const res = await fetch(`http://localhost:8080/api/v1/cart/${cartId}`);
                 const data = await res.json();
                 if (Array.isArray(data)) {
-                    count = data.reduce((total, item) => total + (item.soLuong || 0), 0);
+                    count = data.reduce((total, item) => total + (item.soLuong || item.quantity || 0), 0);
                 }
-            } catch {
-                count = 0;
             }
+        } catch (err) {
+            count = 0;
         }
         setCartCount(count);
     };
 
-    // Gọi lại khi user thay đổi (login/logout) hoặc mount lần đầu
+    // Khi user thay đổi, fetch lại cartCount
     useEffect(() => {
-        fetchCartCount();
+        fetchCartCount(user);
         // eslint-disable-next-line
     }, [user]);
 
@@ -149,7 +145,7 @@ export default function Header() {
             if (e && e.detail && typeof e.detail.count === "number") {
                 setCartCount(e.detail.count);
             } else {
-                fetchCartCount();
+                fetchCartCount(user);
             }
         }
         window.addEventListener("cart-updated", handleCartUpdated);
@@ -157,7 +153,7 @@ export default function Header() {
         // eslint-disable-next-line
     }, [user]);
 
-    // -------------------------- MENU HANDLERS --------------------------
+    // MENU HANDLERS
     function handleOpenMenu(event) {
         setAnchorEl(event.currentTarget);
     }
@@ -169,6 +165,7 @@ export default function Header() {
     function handleLogout() {
         logout()
             .catch((err) => {
+                // eslint-disable-next-line
                 console.error("Đăng xuất thất bại:", err.message);
             })
             .finally(() => {
@@ -176,12 +173,16 @@ export default function Header() {
                 localStorage.removeItem("username");
                 localStorage.removeItem("name");
                 localStorage.removeItem("email");
+                localStorage.removeItem("userId");
+                localStorage.removeItem("id");
+                localStorage.removeItem("avatar");
                 handleCloseMenu();
                 setTimeout(function () {
                     navigate("/home");
                     setUser(null);
                     setIsLoggedIn(false);
                     setIsAdmin(false);
+                    setCartCount(0);
                 }, 150);
             });
     }
@@ -209,7 +210,7 @@ export default function Header() {
         navigate("/favorites");
     }
 
-    // -------------------------- RENDER ACCOUNT MENU --------------------------
+    // RENDER ACCOUNT MENU
     function renderAccountMenu() {
         if (!user) return null;
         return (
@@ -323,7 +324,7 @@ export default function Header() {
         );
     }
 
-    // -------------------------- RENDER --------------------------
+    // RENDER
     return (
         <Box>
             <Box
@@ -453,7 +454,7 @@ export default function Header() {
                             </Badge>
                         </IconButton>
                         {!isLoggedIn ? (
-                            <React.Fragment>
+                            <>
                                 <IconButton
                                     sx={{
                                         bgcolor: "#fff",
@@ -500,9 +501,9 @@ export default function Header() {
                                         Đăng nhập
                                     </Box>
                                 </MuiMenu>
-                            </React.Fragment>
+                            </>
                         ) : (
-                            <React.Fragment>
+                            <>
                                 <IconButton
                                     sx={{
                                         bgcolor: "#fff",
@@ -525,7 +526,7 @@ export default function Header() {
                                     }
                                 </IconButton>
                                 {renderAccountMenu()}
-                            </React.Fragment>
+                            </>
                         )}
                         <IconButton
                             component={RouterLink}
@@ -542,7 +543,7 @@ export default function Header() {
                                 justifyContent: "center",
                                 "&:hover": { bgcolor: "#e3f0fa", borderColor: "#1976d2" }
                             }}>
-                            <Badge badgeContent={cartCount} color="error" sx={{
+                            <Badge badgeContent={cartCount} color="error" showZero sx={{
                                 "& .MuiBadge-badge": {
                                     background: "#e53935",
                                     color: "#fff",

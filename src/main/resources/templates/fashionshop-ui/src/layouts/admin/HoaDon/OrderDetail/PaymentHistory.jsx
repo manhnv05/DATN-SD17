@@ -16,7 +16,7 @@ const formatDateTime = (isoString) => {
   return new Date(isoString).toLocaleString("vi-VN");
 };
 
-const PaymentHistory = ({ orderId }) => {
+const PaymentHistory = ({ orderData }) => {
   const [payments, setPayments] = useState([]);
   const [orderInfo, setOrderInfo] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -24,16 +24,17 @@ const PaymentHistory = ({ orderId }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchData = async () => {
-    if (!orderId) {
+    if (!orderData.id) {
       setLoading(false);
       return;
     }
+
     setLoading(true);
     setError(null);
     try {
       // Fetch lịch sử thanh toán
       const paymentResponse = await fetch(
-          `http://localhost:8080/chiTietThanhToan/lich-su-thanh-toan/${orderId}`,
+          `http://localhost:8080/chiTietThanhToan/lich-su-thanh-toan/${orderData.id}`,
           { credentials: "include" } // <-- SỬA ở đây
       );
       if (paymentResponse.ok) {
@@ -45,7 +46,7 @@ const PaymentHistory = ({ orderId }) => {
 
       // Fetch thông tin hóa đơn
       const orderResponse = await fetch(
-          `http://localhost:8080/api/hoa-don/${orderId}`,
+          `http://localhost:8080/api/hoa-don/${orderData.id}`,
           { credentials: "include" } // <-- SỬA ở đây
       );
       if (!orderResponse.ok) throw new Error('Không thể tải thông tin hóa đơn.');
@@ -62,7 +63,7 @@ const PaymentHistory = ({ orderId }) => {
 
   useEffect(() => {
     fetchData();
-  }, [orderId]);
+  }, [orderData.id]);
 
   const handlePaymentSuccess = () => {
     fetchData();
@@ -119,7 +120,7 @@ const PaymentHistory = ({ orderId }) => {
                         <strong>Mã giao dịch:</strong> {payment.maGiaoDich || "—"}
                       </div>
                       <div className="col-md-6 mb-2">
-                        <strong>Nhân viên xác nhận:</strong> {"Nhan vien he thong authen" || "—"}
+                        <strong>Nhân viên xác nhận:</strong> {orderData.StaffName || "—"}
                       </div>
                       <div className="col-md-6 mb-2">
                         <strong>Ghi chú:</strong> {payment.ghiChu || "—"}
@@ -137,7 +138,7 @@ const PaymentHistory = ({ orderId }) => {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSubmit={handlePaymentSuccess}
-                orderId={orderId}
+                orderId={orderData.id}
                 totalAmount={amountToPay}
             />
         )}
@@ -147,7 +148,13 @@ const PaymentHistory = ({ orderId }) => {
 };
 
 PaymentHistory.propTypes = {
-  orderId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+
+  orderData: PropTypes.shape({
+    
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+ 
+    StaffName: PropTypes.string,
+  }).isRequired,
 };
 
 export default PaymentHistory;

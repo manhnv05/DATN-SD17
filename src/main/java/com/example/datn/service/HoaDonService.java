@@ -20,7 +20,7 @@ import java.util.Map;
 
 @Service
 public interface HoaDonService {
-    //    HoaDonDTO taoHoaDon(HoaDonCreateVO request);
+    HoaDonDTO saveHoaDonOnline(HoaDonOnlineRequest hoaDonOnlineRequest);
     HoaDonChoDTO taoHoaDonCho(HoaDonChoRequestVO request);
     HoaDonPdfResult hoadonToPDF(String idHoaDon);
     CapNhatTrangThaiDTO capNhatTrangThaiHoaDon(Integer idHoaDon, TrangThai trangThaiMoi, String ghiChu, String nguoiThucHien);
@@ -41,12 +41,13 @@ public interface HoaDonService {
     public CapNhatTrangThaiDTO quayLaiTrangThaiTruoc(Integer idHoaDon, String ghiChu, String nguoiThucHien);
     String  capNhatThongTinHoaDon(Integer idHoaDon, HoaDonUpdateVO request);
     List<HoaDonChiTietDTO> updateDanhSachSanPhamChiTiet(Integer idHoaDon, List<CapNhatSanPhamChiTietDonHangVO> danhSachCapNhatSanPham);
-
+    List<SanPhamTonKhoDTO> GetAllSanPhamTonKho();
 
     List<HoaDonChiTietSanPhamDTO> findChiTietHoaDon(@Param("idHoaDon") Integer idHoaDon);
     String tangSoLuongSanPhamChiTiet(Integer idSanPhamChiTiet, Integer soLuong);
     String giamSoLuongSanPhamChiTiet(Integer idSanPhamChiTiet, Integer soLuong);
     HoaDonDTO updateHoaDon(HoaDonRequestUpdateVO hoaDonRequestUpdateVO);
+    HoaDonDTO updateHoaDonDetail(HoaDonRequestUpdateVO hoaDonRequestUpdateVO);
     void capNhatSoLuongSanPhamTrongKho(HoaDon hoaDon, boolean isDeducting);
     TongTienHoaDonDto getThongTinGiamGiaByHoaDonId(Integer idHoaDon);
     int tinhGiaCuoiCung(ChiTietSanPham spct);
