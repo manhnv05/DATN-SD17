@@ -15,6 +15,7 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class HoaDonDTO {
     private Integer id;
+    private Integer idKhachHang;
     private LocalDateTime ngayTao;
     private LocalDateTime ngayGiaoDuKien;
     private TrangThai trangThai;

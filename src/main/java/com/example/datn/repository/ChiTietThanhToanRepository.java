@@ -4,6 +4,7 @@ import com.example.datn.dto.LichSuThanhToanDTO;
 import com.example.datn.dto.LichSuThanhToanProjection;
 import com.example.datn.entity.ChiTietThanhToan;
 import com.example.datn.vo.chiTietThanhToanVO.ChiTietThanhToanResponseVO;
+import com.example.datn.vo.chiTietThanhToanVO.ChiTietThanhToanVO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -38,4 +39,5 @@ WHERE ctt.id_hoa_don = :idHoaDon
             nativeQuery = true
     )
     List<LichSuThanhToanProjection> findLichSuThanhToanByIdHoaDon(@Param("idHoaDon") Integer idHoaDon);
-}
+
+    ChiTietThanhToan findByHoaDon_IdAndHinhThucThanhToan_Id(Integer hoaDonId, Integer hinhThucThanhToanId);}

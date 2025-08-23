@@ -198,8 +198,26 @@ public class HoaDonController {
 
     @PostMapping("/luu-hoa-don-online-chua-dang-nhap")
     public ResponseEntity<ApiResponse<HoaDonDTO>> saveHoaDonOnlineChuaDangNhap(@RequestBody HoaDonOnlineRequest hoaDonOnlineRequest) {
-        return ResponseHelper.success("", hoaDonService.saveHoaDonOnlineChuaDangNhap(hoaDonOnlineRequest));
+        HoaDonDTO hoaDonDTO = hoaDonService.saveHoaDonOnlineChuaDangNhap(hoaDonOnlineRequest);
+        ApiResponse<HoaDonDTO> apiResponse = ApiResponse.<HoaDonDTO>builder()
+                .code(1000)
+                .message("Lưu hóa đơn thành công")
+                .data(hoaDonDTO)
+                .build();
+        return ResponseEntity.ok(apiResponse);
     }
+
+    @PostMapping("/luu-hoa-don-online")
+    public ResponseEntity<ApiResponse<HoaDonDTO>> saveHoaDonOnline(@RequestBody HoaDonOnlineRequest hoaDonOnlineRequest) {
+        HoaDonDTO hoaDonDTO = hoaDonService.saveHoaDonOnline(hoaDonOnlineRequest);
+        ApiResponse<HoaDonDTO> apiResponse = ApiResponse.<HoaDonDTO>builder()
+                .code(1000)
+                .message("Lưu hóa đơn thành công")
+                .data(hoaDonDTO)
+                .build();
+        return ResponseEntity.ok(apiResponse);
+    }
+
     @PutMapping("/tang-so-luong-san-pham/{idSanPhamChiTiet}")
     public ResponseEntity<ApiResponse<String>> tangSoLuongSanPhamChiTiet(
             @PathVariable Integer idSanPhamChiTiet,

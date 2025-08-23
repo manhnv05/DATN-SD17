@@ -8,8 +8,9 @@ import SignIn from "layouts/admin/authentication/sign-in"; // chỉnh lại path
 import SignUp from "layouts/admin/authentication/sign-up";
 import CartPage from "layouts/client/card";
 import Order from "layouts/client/order";
-import CheckoutPage from "layouts/client/card/CheckoutPage"; // chỉnh lại path cho đúng nếu cần
 import OutletSales from "layouts/client/outlet-sales"; // chỉnh lại path cho đúng nếu cần
+import PaymentResultPage from "layouts/client/order/PaymentResultPage"; // THÊM DÒNG NÀY
+
 
 const routesClient = [
     {
@@ -25,14 +26,6 @@ const routesClient = [
         key: "card",
         route: "/card",
         component: <CartPage/>,
-        noCollapse: true,
-        hidden: false,
-    },
-     {
-        name: "Thanh toán",
-        key: "pay",
-        route: "/pay",
-        component: <CheckoutPage/>,
         noCollapse: true,
         hidden: false,
     },
@@ -89,6 +82,14 @@ const routesClient = [
         key: "product-detail",
         route: "/shop/detail/:id",
         component: <ProductDetail />,
+        noCollapse: true,
+        hidden: true,
+    },
+    {
+        name: "Kết quả thanh toán",
+        key: "payment-result",
+        route: "/payment-result",
+        component: <PaymentResultPage />, // THÊM DÒNG NÀY
         noCollapse: true,
         hidden: true,
     },

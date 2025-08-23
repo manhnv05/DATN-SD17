@@ -10,12 +10,14 @@ import java.util.List;
 @Getter
 @Setter
 public class HoaDonOnlineRequest {
+    private Integer idKhachHang;
     private String tenKhachHang;
+    private Integer idNhanVien;
     private String sdt;
     private String diaChi;
     private String ghiChu;
     private Integer phiVanChuyen;
-    private String phieuGiamGia;
+    private Integer phieuGiamGia;
     private List<SanPhamCapNhatVO> danhSachSanPham;
     private String loaiHoaDon;
     private String email;
