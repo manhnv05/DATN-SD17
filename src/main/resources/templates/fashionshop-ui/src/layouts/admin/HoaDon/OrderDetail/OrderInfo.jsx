@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react'; // Chỉ cần useCallback nếu không dùng useState/useEffect
 import styles from './OrderInfo.module.css';
 import PropTypes from 'prop-types';
-
+import { useAuth } from "../../BanHangTaiQuay/AuthProvider.jsx"; 
 // Hàm helper để định nghĩa màu cho trạng thái (sử dụng Bootstrap badge classes)
 // Nếu bạn muốn màu tùy chỉnh, hãy định nghĩa chúng trong OrderInfo.module.css và trả về styles[className]
 const getStatusBadgeClassName = (status) => {
@@ -31,7 +31,7 @@ const getOrderTypeBadgeClassName = (type) => {
 };
 
 const OrderInfo = ({ order }) => {
-   
+   const { user } = useAuth();
     console.log("OrderInfo order:", order.status);
     const formatDateTime = useCallback((isoString) => {
         if (!isoString) return 'Chưa cập nhật';
@@ -63,7 +63,10 @@ const OrderInfo = ({ order }) => {
                         <strong>Ngày tạo:</strong> {formatDateTime(order.ngayTao)}
                     </div>
                       <div className="col-md-6 col-12 mb-2">
-                        <strong>Nhân viên tạo đơn hàng:</strong> {order.StaffName}
+                        <strong>Tên nhân viên tạo đơn hàng:</strong> {user.tenNhanVien}
+                    </div>
+                     <div className="col-md-6 col-12 mb-2">
+                        <strong>Mã nhân viên tạo đơn hàng:</strong> {user.maNhanVien}
                     </div>
                     <div className="col-md-6 col-12 mb-2">
                         <strong>Trạng thái:</strong>

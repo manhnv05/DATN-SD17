@@ -12,6 +12,7 @@ import OutletSales from "layouts/client/outlet-sales"; // chỉnh lại path cho
 import PaymentResultPage from "layouts/client/order/PaymentResultPage"; // THÊM DÒNG NÀY
 
 
+import OrderLookup from "../admin/OrderLookup/OrderLookup"; 
 const routesClient = [
     {
         name: "Trang chủ",
@@ -76,6 +77,14 @@ const routesClient = [
         component: <OutletSales />,
         noCollapse: true,
         hidden: false,
+    },
+     {
+        name: "Tra Cứu Đơn Hàng",
+        key: "order-lookup",
+        route: "/tra-cuu-don-hang",
+        component: <OrderLookup />,
+        noCollapse: true,
+        hidden: false, // Để `false` nếu bạn muốn hiển thị trên thanh điều hướng
     },
     {
         name: "Chi tiết sản phẩm",

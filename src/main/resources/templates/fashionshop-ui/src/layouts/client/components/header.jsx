@@ -46,7 +46,8 @@ const navItems = [
     { label: "Cửa hàng", route: "/shop" },
     { label: "Giới thiệu", route: "/about" },
     { label: "Bài viết", route: "/blog" },
-    { label: "Liên hệ", route: "/contact" }
+    { label: "Liên hệ", route: "/contact" },
+     { label: "Theo Dõi Đơn Hàng", route: "/tra-cuu-don-hang" },
 ];
 
 const subNavItems = [

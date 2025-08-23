@@ -23,6 +23,8 @@ public class HoaDonDTO {
     private String ghiChu;
     private String maHoaDon;
     private String tenKhachHang;
+    private Integer idKhachHang;
+    private Integer idNhanVien;
     private String sdt;
     private String diaChi;
     private String tenSanPham;
