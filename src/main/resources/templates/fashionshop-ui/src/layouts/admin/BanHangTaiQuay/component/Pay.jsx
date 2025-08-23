@@ -678,7 +678,7 @@ function Pay({
         while (!isCancelled) {
           try {
             fetchBestVoucherForCustomer(customer.id);
-            await sleep(5000);
+            await sleep(1000);
 
             if (isCancelled) {
               break;
