@@ -1014,7 +1014,12 @@ public class HoaDonServiceImpl implements HoaDonService {
 
         // Save hóa đơn
         HoaDon hoaDonDaLuu = hoaDonRepository.save(hoaDon);
-
+        if (hoaDonDaLuu.getTrangThai() == TrangThai.CHO_XAC_NHAN) {
+            emailThongBaoHoaDonService.guiThongBaoCapNhatTrangThai(
+                    hoaDonDaLuu.getId(),
+                    hoaDonDaLuu.getTrangThai()
+            );
+        }
         // Gửi mail (nếu cần - nên enable lại nếu đã config mail)
         // sendMailHoaDonToKhachHang(hoaDonDaLuu.getId(), hoaDonOnlineRequest.getEmail());
 
