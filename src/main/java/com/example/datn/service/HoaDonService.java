@@ -20,7 +20,7 @@ import java.util.Map;
 
 @Service
 public interface HoaDonService {
-    //    HoaDonDTO taoHoaDon(HoaDonCreateVO request);
+    HoaDonDTO saveHoaDonOnline(HoaDonOnlineRequest hoaDonOnlineRequest);
     HoaDonChoDTO taoHoaDonCho(HoaDonChoRequestVO request);
     HoaDonPdfResult hoadonToPDF(String idHoaDon);
     CapNhatTrangThaiDTO capNhatTrangThaiHoaDon(Integer idHoaDon, TrangThai trangThaiMoi, String ghiChu, String nguoiThucHien);

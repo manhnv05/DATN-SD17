@@ -17,11 +17,12 @@ public interface HoaDonRepository  extends JpaRepository<HoaDon, Integer>,JpaSpe
     @Query("SELECT h.trangThai AS trangThai, COUNT(*) AS soLuong FROM HoaDon h GROUP BY h.trangThai")
     List<CountTrangThaiHoaDon> getCoutnTrangThaiHoaDon();
 
+    HoaDon findByMaHoaDon(String maHoaDon);
+
     @Query("SELECT hd FROM HoaDon hd " +
             "LEFT JOIN FETCH hd.khachHang " +
             "LEFT JOIN FETCH hd.nhanVien " +
             "LEFT JOIN FETCH hd.phieuGiamGia " +
             "WHERE hd.maHoaDon = :maHoaDon")
     Optional<HoaDon> findHoaDonChiTiet(@Param("maHoaDon") String maHoaDon);
-
 }

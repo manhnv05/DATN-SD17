@@ -1,21 +1,60 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { Box, Typography, Button, IconButton } from "@mui/material";
 import ConfirmationNumberOutlinedIcon from "@mui/icons-material/ConfirmationNumberOutlined";
 import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
 import CloseIcon from "@mui/icons-material/Close";
 import {
-    AVAILABLE_COUPONS,
     PRIMARY_BLUE,
     WHITE,
     LIGHT_BLUE_BG,
     BORDER_COLOR,
     MAIN_TEXT_COLOR
 } from "./constants";
+import axios from "axios";
 
+// Dùng API động, không lấy AVAILABLE_COUPONS cứng nữa
 export default function ModalCouponContent({ onClose, handleQuickCouponSelect }) {
-    const bestCoupon = AVAILABLE_COUPONS.find(coupon => coupon.best);
-    const otherCoupons = AVAILABLE_COUPONS.filter(coupon => !coupon.best);
+    const [coupons, setCoupons] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        // Gọi API lấy danh sách mã giảm giá động, có thể truyền thêm props để fetch đúng tổng tiền
+        // Ở đây demo: lấy tất cả mã, bạn có thể truyền prop "subtotal" để lọc phù hợp
+        const fetchCoupons = async () => {
+            setLoading(true);
+            try {
+                // Thay thế bằng API thực tế của bạn, ví dụ /PhieuGiamGiaKhachHang/query
+                const response = await axios.post(
+                    "http://localhost:8080/PhieuGiamGiaKhachHang/query",
+                    { tongTienHoaDon: 1000000, khachHang: null }
+                );
+                setCoupons(response.data?.data?.content || []);
+            } catch {
+                setCoupons([]);
+            }
+            setLoading(false);
+        };
+        fetchCoupons();
+    }, []);
+
+    // Tìm coupon tốt nhất (ví dụ: giảm nhiều nhất)
+    let bestCoupon = null;
+    let otherCoupons = [];
+    if (coupons && coupons.length > 0) {
+        bestCoupon = coupons[0];
+        for (let i = 1; i < coupons.length; ++i) {
+            // So sánh giảm giá thực tế
+            const bestValue = bestCoupon.loaiPhieu === 0
+                ? bestCoupon.giamToiDa
+                : (bestCoupon.soTienGiam || 0);
+            const thisValue = coupons[i].loaiPhieu === 0
+                ? coupons[i].giamToiDa
+                : (coupons[i].soTienGiam || 0);
+            if (thisValue > bestValue) bestCoupon = coupons[i];
+        }
+        otherCoupons = coupons.filter(c => c !== bestCoupon);
+    }
 
     return (
         <Box
@@ -42,7 +81,11 @@ export default function ModalCouponContent({ onClose, handleQuickCouponSelect })
                 <Box width={32} />
             </Box>
             <Box sx={{ p: 3, pt: 1.5, textAlign: "center" }}>
-                {AVAILABLE_COUPONS.length === 0 ? (
+                {loading ? (
+                    <Typography color="#888" fontWeight={500}>
+                        Đang tải mã khuyến mãi...
+                    </Typography>
+                ) : coupons.length === 0 ? (
                     <Box>
                         <LocalOfferOutlinedIcon sx={{ color: "#bbb", fontSize: 56, mb: 2 }} />
                         <Typography color="#888" fontWeight={500}>
@@ -73,9 +116,9 @@ export default function ModalCouponContent({ onClose, handleQuickCouponSelect })
                                 onClick={() => handleQuickCouponSelect(bestCoupon)}
                                 startIcon={<ConfirmationNumberOutlinedIcon sx={{ color: PRIMARY_BLUE }} />}
                             >
-                                {bestCoupon.label}
+                                {bestCoupon.maPhieuGiamGia}
                                 <Typography variant="caption" sx={{ color: "#888", ml: 1 }}>
-                                    ({bestCoupon.code})
+                                    ({bestCoupon.tenPhieu})
                                 </Typography>
                                 <Box sx={{
                                     ml: 1.5,
@@ -93,7 +136,7 @@ export default function ModalCouponContent({ onClose, handleQuickCouponSelect })
                         )}
                         {otherCoupons.map((coupon) => (
                             <Button
-                                key={coupon.code}
+                                key={coupon.id}
                                 variant="outlined"
                                 fullWidth
                                 sx={{
@@ -111,9 +154,9 @@ export default function ModalCouponContent({ onClose, handleQuickCouponSelect })
                                 onClick={() => handleQuickCouponSelect(coupon)}
                                 startIcon={<ConfirmationNumberOutlinedIcon sx={{ color: "#bdbdbd" }} />}
                             >
-                                {coupon.label}
+                                {coupon.maPhieuGiamGia}
                                 <Typography variant="caption" sx={{ color: "#888", ml: 1 }}>
-                                    ({coupon.code})
+                                    ({coupon.tenPhieu})
                                 </Typography>
                             </Button>
                         ))}
