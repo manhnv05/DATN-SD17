@@ -1,6 +1,6 @@
 // src/layouts/sales/components/SalesCounter.jsx
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import axios from "axios";
 import {
   Box,
@@ -34,7 +34,9 @@ import ProductSlideshow from "./ProductSlideshow.jsx";
 import ProductSelectionModal from "./ProductSelectionModal";
 import PropTypes from "prop-types";
 import { toast } from "react-toastify";
-import { useAuth } from "../AuthProvider.jsx"; 
+import { useAuth } from "../AuthProvider.jsx";
+import { Client } from "@stomp/stompjs"; // <-- THÊM MỚI
+import SockJS from "sockjs-client";
 const formatCurrency = (amount) => {
   if (typeof amount !== "number" || isNaN(amount)) {
     return "N/A";
@@ -64,8 +66,36 @@ const CustomTab = styled(Tab)(({ theme }) => ({
 const MAX_ORDERS = 10;
 
 function SalesCounter({ onTotalChange, onInvoiceIdChange, onProductsChange, completedOrderId }) {
+  const stompClientRef = useRef(null);
+  const isInitialMount = useRef(true);
   const { user, loading } = useAuth();
   const [userInfor, setUserInfor] = useState(null);
+  const [orders, setOrders] = useState(() => {
+    try {
+      const savedOrders = localStorage.getItem("salesOrders");
+      return savedOrders ? JSON.parse(savedOrders) : [];
+    } catch (error) {
+      console.error("Lỗi khi đọc orders từ sessionStorage:", error);
+      return [];
+    }
+  });
+  const [selectedTab, setSelectedTab] = useState(orders.length > 0 ? orders[0].id : null);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const currentOrder = useMemo(
+    () => orders.find((o) => o.id === selectedTab),
+    [orders, selectedTab]
+  );
+
+  const totalAmount = useMemo(() => {
+    if (!currentOrder) return 0;
+    return currentOrder.products
+      .filter((product) => product.isSelected)
+      .reduce((total, product) => {
+        const finalPrice = product.giaTienSauKhiGiam > 0 ? product.giaTienSauKhiGiam : product.gia;
+        return total + finalPrice * product.quantity;
+      }, 0);
+  }, [currentOrder]);
   useEffect(() => {
     // Nếu có tín hiệu (completedOrderId có giá trị và khác null)
     if (completedOrderId) {
@@ -80,19 +110,121 @@ function SalesCounter({ onTotalChange, onInvoiceIdChange, onProductsChange, comp
     // useEffect này sẽ chạy mỗi khi `completedOrderId` thay đổi
   }, [completedOrderId]);
 
-  
-  const [orders, setOrders] = useState(() => {
-    try {
-      const savedOrders = localStorage.getItem("salesOrders");
-      return savedOrders ? JSON.parse(savedOrders) : [];
-    } catch (error) {
-      console.error("Lỗi khi đọc orders từ sessionStorage:", error);
-      return [];
+  const currentInvoiceId = currentOrder?.idHoaDonBackend;
+  const [clientId] = useState(() => `pos-${Math.random()}`);
+  useEffect(() => {
+    // Nếu không có hóa đơn được chọn, đảm bảo ngắt kết nối và thoát
+    if (!currentInvoiceId) {
+      if (stompClientRef.current) {
+        stompClientRef.current.deactivate();
+        stompClientRef.current = null;
+      }
+      return;
     }
-  });
-  const [selectedTab, setSelectedTab] = useState(orders.length > 0 ? orders[0].id : null);
-  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [isScannerOpen, setIsScannerOpen] = useState(false);
+
+    // Nếu đã có kết nối cho hóa đơn hiện tại, không làm gì cả
+    if (stompClientRef.current && stompClientRef.current.connectedInvoiceId === currentInvoiceId) {
+      // Chỉ cần đồng bộ hóa giỏ hàng khi sản phẩm thay đổi
+      if (stompClientRef.current.active) {
+        const payload = { products: currentOrder.products, totalAmount, clientId: clientId };
+        console.log(`🚀 Syncing existing connection for invoice ${currentInvoiceId}`, payload);
+        stompClientRef.current.publish({
+          destination: `/app/cart/sync/${currentInvoiceId}`,
+          body: JSON.stringify(payload),
+        });
+      }
+      return;
+    }
+
+    // Nếu đang kết nối với một hóa đơn khác, ngắt kết nối cũ trước
+    if (stompClientRef.current) {
+      stompClientRef.current.deactivate();
+    }
+
+    const client = new Client({
+      webSocketFactory: () => new SockJS("http://localhost:8080/ws"),
+      onConnect: () => {
+        console.log(`✅ WS Connected! Subscribing to /topic/cart/${currentInvoiceId}`);
+        // Lưu lại ID hóa đơn đã kết nối thành công
+        client.connectedInvoiceId = currentInvoiceId;
+
+        // 1. Lắng nghe cập nhật từ các client khác
+        client.subscribe(`/topic/cart/${currentInvoiceId}`, (message) => {
+          // 1. Phân tích tin nhắn nhận được
+          const remoteCartState = JSON.parse(message.body);
+
+          // 2. Bỏ qua tin nhắn do chính mình gửi
+          if (remoteCartState.clientId === clientId) {
+            return;
+          }
+          if (remoteCartState.action === "UPDATE_QUANTITY") {
+            console.log(
+              `ACTION: Nhận yêu cầu cập nhật số lượng cho sản phẩm ${remoteCartState.productId} thành ${remoteCartState.quantity}`
+            );
+
+            // GỌI HÀM "handleUpdateQuantity" ĐÃ CÓ SẴN ĐỂ GỌI API
+            handleUpdateQuantity(remoteCartState.productId, remoteCartState.quantity);
+            return; // Dừng lại sau khi xử lý
+          }
+          // 3. SỬA LỖI Ở ĐÂY: Dùng đúng tên biến remoteCartState
+          if (remoteCartState.action === "REQUEST_STATE") {
+            console.log(
+              `🙋‍♂️ Nhận được yêu cầu trạng thái từ client: ${remoteCartState.clientId}. Đang gửi phản hồi...`
+            );
+
+            // Lập tức gửi lại trạng thái giỏ hàng hiện tại của POS
+            if (currentOrder) {
+              const payload = {
+                products: currentOrder.products,
+                totalAmount,
+                clientId: clientId, // Gửi với ID của POS
+              };
+              stompClientRef.current.publish({
+                destination: `/app/cart/sync/${currentInvoiceId}`,
+                body: JSON.stringify(payload),
+              });
+            }
+            return; // Dừng lại sau khi đã phản hồi
+          }
+
+          console.log("📬 Received remote cart update:", remoteCartState);
+          setOrders((prevOrders) =>
+            prevOrders.map((order) =>
+              order.idHoaDonBackend === currentInvoiceId
+                ? { ...order, products: remoteCartState.products }
+                : order
+            )
+          );
+        });
+
+        // 2. Gửi đi trạng thái hiện tại của giỏ hàng ngay sau khi kết nối thành công
+        if (currentOrder) {
+          const payload = { products: currentOrder.products, totalAmount, clientId: clientId };
+          console.log(`🚀 Sending initial state for invoice ${currentInvoiceId}`, payload);
+          client.publish({
+            destination: `/app/cart/sync/${currentInvoiceId}`,
+            body: JSON.stringify(payload),
+          });
+        }
+      },
+      onDisconnect: () => {
+        console.log(`❌ WS Disconnected from invoice ${currentInvoiceId}`);
+      },
+    });
+
+    client.activate();
+    stompClientRef.current = client;
+
+    // Hàm dọn dẹp khi component unmount
+    return () => {
+      if (stompClientRef.current) {
+        stompClientRef.current.deactivate();
+        stompClientRef.current = null;
+      }
+    };
+    // Dependency array bây giờ sẽ theo dõi cả ID hóa đơn và nội dung giỏ hàng
+  }, [currentInvoiceId, currentOrder, totalAmount]);
+
   const handleScanSuccess = async (decodedText) => {
     // 1. Đóng modal quét QR
     setIsScannerOpen(false);
@@ -143,20 +275,6 @@ function SalesCounter({ onTotalChange, onInvoiceIdChange, onProductsChange, comp
   });
   const [notes, setNotes] = useState("Khách thanh toán tiền mặt");
 
-  const currentOrder = useMemo(
-    () => orders.find((o) => o.id === selectedTab),
-    [orders, selectedTab]
-  );
-
-  const totalAmount = useMemo(() => {
-    if (!currentOrder) return 0;
-    return currentOrder.products
-      .filter((product) => product.isSelected)
-      .reduce((total, product) => {
-        const finalPrice = product.giaTienSauKhiGiam > 0 ? product.giaTienSauKhiGiam : product.gia;
-        return total + finalPrice * product.quantity;
-      }, 0);
-  }, [currentOrder]);
   // <<< THÊM useEffect ĐỂ GỬI totalAmount LÊN COMPONENT CHA
   useEffect(() => {
     // Mỗi khi totalAmount thay đổi, gọi hàm callback đã được truyền xuống
@@ -194,7 +312,7 @@ function SalesCounter({ onTotalChange, onInvoiceIdChange, onProductsChange, comp
         "http://localhost:8080/api/hoa-don/tao-hoa-don-cho",
         {
           loaiHoaDon: "Tại quầy",
-          idNhanVien: user.id 
+          idNhanVien: user.id,
         },
         { withCredentials: true } // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
       );
@@ -270,6 +388,10 @@ function SalesCounter({ onTotalChange, onInvoiceIdChange, onProductsChange, comp
         : null,
       quantity: parseInt(productToAdd.quantity, 10) || 1,
       isSelected: true,
+      hinhAnh:
+        productToAdd.listUrlImage && productToAdd.listUrlImage.length > 0
+          ? productToAdd.listUrlImage[0]
+          : null,
     };
 
     setOrders((prevOrders) =>
@@ -763,7 +885,12 @@ function SalesCounter({ onTotalChange, onInvoiceIdChange, onProductsChange, comp
                           <Box sx={{ flex: 1, display: "flex", alignItems: "center", gap: 2 }}>
                             {/* ===== CONTAINER MỚI CHO ẢNH VÀ NHÃN ===== */}
                             <Box sx={{ position: "relative", width: 100, height: 100 }}>
-                              <ProductSlideshow product={product} />
+                              <ProductSlideshow
+                                product={{
+                                  ...product,
+                                  listUrlImage: [product.hinhAnh],
+                                }}
+                              />
                               {/* Nhãn giảm giá */}
                               {product.phanTramGiam > 0 && (
                                 <Typography
