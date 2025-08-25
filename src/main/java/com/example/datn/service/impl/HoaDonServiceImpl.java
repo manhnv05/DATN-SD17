@@ -1114,7 +1114,32 @@ public class HoaDonServiceImpl implements HoaDonService {
                 hoaDonOnlineRequest.getGhiChu(),
                 hoaDonDaLuu.getTrangThai()
         );
+// === BẮT ĐẦU GỬI WEBSOCKET ===
+        System.out.println("\n[DEBUG] --- BẮT ĐẦU GỬI WEBSOCKET ---");
+        Map<String, Object> notificationPayload = new HashMap<>();
+        notificationPayload.put("type", "NEW_ORDER");
+        notificationPayload.put("idHoaDon", hoaDonDaLuu.getId());
+        notificationPayload.put("maHoaDon", hoaDonDaLuu.getMaHoaDon());
+        notificationPayload.put("tenKhachHang", hoaDonDaLuu.getKhachHang().getTenKhachHang());
+        notificationPayload.put("tongHoaDon", hoaDonDaLuu.getTongHoaDon());
+        notificationPayload.put("thoiGian", LocalDateTime.now().toString());
 
+        System.out.println("[DEBUG] Payload: " + notificationPayload.toString());
+
+        String adminTopic = "/topic/admin/order-updates";
+        System.out.println("[DEBUG] Topic: " + adminTopic);
+
+        try {
+            System.out.println("[DEBUG] Đang gọi messagingTemplate.convertAndSend...");
+            messagingTemplate.convertAndSend(adminTopic, notificationPayload);
+            System.out.println("[DEBUG] ĐÃ GỬI WEBSOCKET THÀNH CÔNG.");
+        } catch (Exception e) {
+            System.out.println("[DEBUG] LỖI KHI GỬI WEBSOCKET: " + e.getMessage());
+            // In ra stack trace để xem chi tiết lỗi
+            e.printStackTrace();
+        }
+        System.out.println("[DEBUG] --- KẾT THÚC GỬI WEBSOCKET ---\n");
+        // === KẾT THÚC PHẦN THÊM MỚI ===
         return HoaDonUpdateMapper.INSTANCE.toResponseDTO(hoaDonDaLuu);
     }
 
