@@ -81,8 +81,9 @@ public class SecurityConfig {
                                 "/mauSac/all",
                                 "/thuongHieu/all",
                                 "/danhMuc/all",
-                                "/api/shop",
-                                "/api/shop/products"
+                                "/api/shop/**",
+                                "/api/v1/**",
+                                "/api/outlet/**"
 
                         ).permitAll()
                         // CHẶN QUYỀN TRUY CẬP API QUẢN TRỊ: chỉ cho phép các role quản trị
