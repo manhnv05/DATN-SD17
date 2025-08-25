@@ -23,7 +23,7 @@ import OrderHistoryModal from "../OrderHistoryModal/OrderHistoryModal";
 import CancelOrderDialog from "../OrderDetail/CancelOrderDialog/CancelOrderDialog";
 import UpdateOrderInfo from "../UpdateOrderInfo/UpdateOrderInfo";
 import { useReactToPrint } from "react-to-print";
-import { useAuth } from "../../BanHangTaiQuay/AuthProvider.jsx"; 
+import { useAuth } from "../../BanHangTaiQuay/AuthProvider.jsx";
 import { toast } from "react-toastify";
 import InHoaDon from "../InHoaDon/InHoaDon.jsx";
 import PropTypes from "prop-types";
@@ -48,7 +48,7 @@ const mapPaymentStatus = (apiStatus) => paymentStatusMap[apiStatus] || apiStatus
 const mapOrderType = (apiType) => orderTypeMap[apiType] || apiType;
 
 const OrderDetailPage = () => {
-   const { user } = useAuth();
+  const { user } = useAuth();
   // === HOOKS VÀ STATE ===
   const { orderId } = useParams();
   const [orderData, setOrderData] = useState(null);
@@ -341,7 +341,7 @@ const OrderDetailPage = () => {
                 Lịch sử đơn hàng / {orderData.maHoaDon}
               </SoftTypography>
 
-              <OrderHistory orderId={orderData.maHoaDon} />
+              <OrderHistory orderId={orderData.maHoaDon} onOrderUpdate={fetchOrderDetail} />
               <SoftBox display="flex" justifyContent="flex-end" mt={3} gap={1.5}>
                 {!isConfirmButtonDisabled && (
                   <SoftButton
@@ -512,8 +512,11 @@ const OrderDetailPage = () => {
 
         {/* Modals và Dialogs */}
         {showHistoryModal && orderData && (
-          <OrderHistoryModal maHoaDon={orderData.maHoaDon} onClose={handleCloseHistoryModal}
-          onOrderUpdate={fetchOrderDetail} />
+          <OrderHistoryModal
+            maHoaDon={orderData.maHoaDon}
+            onClose={handleCloseHistoryModal}
+            onOrderUpdate={fetchOrderDetail}
+          />
         )}
 
         <CancelOrderDialog

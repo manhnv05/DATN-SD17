@@ -3,8 +3,8 @@ import PropTypes from "prop-types";
 import OrderDetailModal from "./OrderDetailModal";
 import axios from "axios"; // Import axios để gọi API
 import { Client } from "@stomp/stompjs"; // <-- THÊM MỚI
- import SockJS from "sockjs-client";
- import { toast } from "react-toastify";
+import SockJS from "sockjs-client";
+import { toast } from "react-toastify";
 import {
   Box,
   Typography,
@@ -28,19 +28,19 @@ const formatOrderStatus = (status) => {
     case "TAO_DON_HANG":
       return { text: "Tạo đơn hàng", color: "success" };
     // Thêm các trạng thái đang xử lý khác nếu có
-     case "CHO_XAC_NHAN":
+    case "CHO_XAC_NHAN":
       return { text: "Chờ xác nhận", color: "success" };
     // Thêm các trạng thái đang xử lý khác nếu có
-     case "DA_XAC_NHAN":
+    case "DA_XAC_NHAN":
       return { text: "Đã xác nhận", color: "success" };
     // Thêm các trạng thái đang xử lý khác nếu có
-     case "CHO_GIAO_HANG":
+    case "CHO_GIAO_HANG":
       return { text: "Chờ giao hàng", color: "success" };
-       case "HUY":
+    case "HUY":
       return { text: "Hủy", color: "error" };
-       case "DANG_VAN_CHUYEN":
+    case "DANG_VAN_CHUYEN":
       return { text: "Đang vận chuyển", color: "info" };
-       case "HOAN_THANH":
+    case "HOAN_THANH":
       return { text: "Hoàn thành", color: "success" };
     // Thêm các trạng thái đang xử lý khác nếu có
     default:
@@ -59,7 +59,7 @@ const formatDate = (dateString) => {
 };
 
 export default function OrderListTab({ user }) {
-     const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedOrderCode, setSelectedOrderCode] = useState(null);
   const [allOrders, setAllOrders] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -90,10 +90,8 @@ export default function OrderListTab({ user }) {
       );
 
       // Cập nhật UI ngay lập tức
-      setAllOrders((prevOrders) =>
-        prevOrders.filter((order) => order.id !== orderToCancel.id)
-      );
-      
+      setAllOrders((prevOrders) => prevOrders.filter((order) => order.id !== orderToCancel.id));
+
       // Đóng modal sau khi thành công
       handleCloseCancelModal();
 
@@ -103,7 +101,7 @@ export default function OrderListTab({ user }) {
       console.error("Lỗi khi hủy đơn hàng:", error);
       toast.error("Có lỗi xảy ra khi hủy đơn hàng. Vui lòng thử lại.");
     }
-};
+  };
   // === BƯỚC 2.2: Tạo hàm để mở/đóng Modal ===
   const handleOpenModal = (orderCode) => {
     setSelectedOrderCode(orderCode);
@@ -117,7 +115,7 @@ export default function OrderListTab({ user }) {
   const handlePageChange = (event, value) => {
     setPage(value);
   };
-   // <-- BẮT ĐẦU PHẦN THÊM MỚI (HÀM HỦY ĐƠN) -->
+  // <-- BẮT ĐẦU PHẦN THÊM MỚI (HÀM HỦY ĐƠN) -->
   const handleCancelOrder = async (orderId) => {
     // Hỏi người dùng để xác nhận
     if (window.confirm("Bạn có chắc chắn muốn hủy đơn hàng này không?")) {
@@ -143,21 +141,22 @@ export default function OrderListTab({ user }) {
       const fetchOrders = async () => {
         setLoading(true);
         try {
-                    const response = await axios.get(
-                        `http://localhost:8080/api/lich-su-hoa-don/lay-lich-su/khach-hang/${user.id}`,
-                        {
-                            headers: { // <-- THÊM VÀO ĐỂ CHỐNG CACHE
-                                'Cache-Control': 'no-cache',
-                                'Pragma': 'no-cache',
-                                'Expires': '0',
-                            },
-                        }
-                    );
+          const response = await axios.get(
+            `http://localhost:8080/api/lich-su-hoa-don/lay-lich-su/khach-hang/${user.id}`,
+            {
+              headers: {
+                // <-- THÊM VÀO ĐỂ CHỐNG CACHE
+                "Cache-Control": "no-cache",
+                Pragma: "no-cache",
+                Expires: "0",
+              },
+            }
+          );
 
           if (response.data && response.data.data) {
             // Lọc ra các đơn hàng đang xử lý (không phải HOAN_THANH hoặc DA_HUY)
             const pendingOrders = response.data.data
-              .filter((order) => order.trangThai !== "HOAN_THANH" && order.trangThai !== "DA_HUY")
+              .filter((order) => order.trangThai !== "HOAN_THANH" && order.trangThai !== "HUY")
               .map((order) => ({
                 id: order.idHoaDon,
                 maHoaDon: order.maHoaDon,
@@ -182,70 +181,76 @@ export default function OrderListTab({ user }) {
       setLoading(false);
     }
   }, [user]);
- 
-    useEffect(() => {
-        if (user && user.id) {
-            const client = new Client({
-                webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
-                debug: () => {},
-                reconnectDelay: 5000,
-                onConnect: () => {
-                    console.log('WebSocket đã kết nối!');
-                    client.subscribe(`/topic/orders/${user.id}`, (message) => {
-                        const updatedOrderDTO = JSON.parse(message.body);
-                        
-                        setAllOrders(prevOrders => {
-                            const newStatus = updatedOrderDTO.trangThaiMoi;
-                            const isStillPending = newStatus !== "HOAN_THANH" && newStatus !== "HUY";
-                            
-                            const newOrderList = [...prevOrders];
-                            const existingOrderIndex = newOrderList.findIndex(o => o.idHoaDon == updatedOrderDTO.idHoaDon);
 
-                            // Trường hợp 1: Đơn hàng đã có trong danh sách
-                            if (existingOrderIndex > -1) {
-                                if (isStillPending) {
-                                    // 1a: Cập nhật trạng thái mới
-                                    const updatedOrder = { ...newOrderList[existingOrderIndex], trangThai: newStatus };
-                                    newOrderList[existingOrderIndex] = updatedOrder;
-                                } else {
-                                    // 1b: Xóa khỏi danh sách vì đã hoàn thành/hủy
-                                    newOrderList.splice(existingOrderIndex, 1);
-                                }
-                            } 
-                            // Trường hợp 2: Đơn hàng mới xuất hiện
-                            else {
-                                if (isStillPending) {
-                                    // 2a: Thêm vào danh sách nếu là đơn hàng mới đang xử lý
-                                    const newOrderForState = {
-                                        id: updatedOrderDTO.idHoaDon,
-                                        idHoaDon: updatedOrderDTO.idHoaDon,
-                                        maHoaDon: updatedOrderDTO.maHoaDon,
-                                        trangThai: updatedOrderDTO.trangThaiMoi,
-                                        ngayTao: updatedOrderDTO.ngayTao,
-                                        tongTien: updatedOrderDTO.tongTien,
-                                        soLuongSanPham: updatedOrderDTO.soLuongSanPham,
-                                        diaChi: updatedOrderDTO.diaChi,
-                                    };
-                                    newOrderList.unshift(newOrderForState); // Thêm vào đầu
-                                }
-                                // 2b: Bỏ qua nếu là đơn hàng mới nhưng đã hoàn thành/hủy
-                            }
-                            return newOrderList;
-                        });
-                    });
-                },
-                onStompError: (frame) => {
-                    console.error('Lỗi Stomp: ' + frame.headers['message']);
-                },
-            });
+  useEffect(() => {
+    if (user && user.id) {
+      const client = new Client({
+        webSocketFactory: () => new SockJS("http://localhost:8080/ws"),
+        debug: () => {},
+        reconnectDelay: 5000,
+        onConnect: () => {
+          console.log("WebSocket đã kết nối!");
+          client.subscribe(`/topic/orders/${user.id}`, (message) => {
+            const updatedOrderDTO = JSON.parse(message.body);
 
-            client.activate();
+           setAllOrders((prevOrders) => {
+  const newStatus = updatedOrderDTO.trangThaiMoi;
+  const isStillPending = newStatus !== "HOAN_THANH" && newStatus !== "HUY";
 
-            return () => {
-                client.deactivate();
-            };
-        }
-    }, [user]);
+  const orderExists = prevOrders.some((o) => o.id == updatedOrderDTO.idHoaDon);
+
+  // Trường hợp 1: Đơn hàng đã có trong danh sách
+  if (orderExists) {
+    if (isStillPending) {
+      // 1a: Cập nhật trạng thái mới
+      // Dùng .map() để TẠO RA MẢNG MỚI
+      return prevOrders.map((order) =>
+        order.id == updatedOrderDTO.idHoaDon
+          ? { ...order, trangThai: newStatus }
+          // Dấu hai chấm ":" biểu thị else. Nghĩa là: nếu id không khớp thì giữ nguyên.
+          : order
+      );
+    } else {
+      // 1b: Xóa khỏi danh sách vì đã hoàn thành/hủy
+      // Dùng .filter() để TẠO RA MẢNG MỚI không chứa đơn hàng cần xóa
+      return prevOrders.filter((order) => order.id != updatedOrderDTO.idHoaDon);
+    }
+  }
+  // Trường hợp 2: Đơn hàng mới xuất hiện
+  else {
+    if (isStillPending) {
+      // 2a: Thêm vào danh sách nếu là đơn hàng mới đang xử lý
+      const newOrderForState = {
+        id: updatedOrderDTO.idHoaDon,
+        // Giữ các thuộc tính khác khớp với cấu trúc state của bạn
+        maHoaDon: updatedOrderDTO.maHoaDon,
+        trangThai: updatedOrderDTO.trangThaiMoi,
+        ngayTao: formatDate(updatedOrderDTO.ngayTao), // Nên format lại
+        tongTien: updatedOrderDTO.tongTien,
+        soLuongSanPham: updatedOrderDTO.soLuongSanPham,
+        diaChi: updatedOrderDTO.diaChi,
+      };
+      // Dùng spread operator (...) để TẠO RA MẢNG MỚI có chứa đơn hàng mới ở đầu
+      return [newOrderForState, ...prevOrders];
+    }
+    // 2b: Bỏ qua nếu là đơn hàng mới nhưng đã hoàn thành/hủy
+    return prevOrders; // Trả về mảng cũ không thay đổi
+  }
+});
+          });
+        },
+        onStompError: (frame) => {
+          console.error("Lỗi Stomp: " + frame.headers["message"]);
+        },
+      });
+
+      client.activate();
+
+      return () => {
+        client.deactivate();
+      };
+    }
+  }, [user]);
 
   if (!user || !user.id) {
     return (
@@ -328,23 +333,23 @@ export default function OrderListTab({ user }) {
                 >
                   Xem chi tiết
                 </Button>
-                 {order.trangThai === "CHO_XAC_NHAN" && (
+                {order.trangThai === "CHO_XAC_NHAN" && (
                   <Button
-                     variant="outlined"
-                  size="medium"
-                  sx={{
-    borderRadius: 2,
-    textTransform: "none",
-    fontWeight: 400,
-    color: "#f44336", // Màu đỏ (Material Red 500)
-    borderColor: "#f44336",
-    boxShadow: "none",
-    "&:hover": {
-      borderColor: "#d32f2f", // Màu đỏ đậm hơn
-      background: "#fdecea",  // Màu nền nhạt đỏ khi hover
-      color: "#d32f2f",
-    },
-  }}
+                    variant="outlined"
+                    size="medium"
+                    sx={{
+                      borderRadius: 2,
+                      textTransform: "none",
+                      fontWeight: 400,
+                      color: "#f44336", // Màu đỏ (Material Red 500)
+                      borderColor: "#f44336",
+                      boxShadow: "none",
+                      "&:hover": {
+                        borderColor: "#d32f2f", // Màu đỏ đậm hơn
+                        background: "#fdecea", // Màu nền nhạt đỏ khi hover
+                        color: "#d32f2f",
+                      },
+                    }}
                     onClick={() => handleOpenCancelModal(order)}
                   >
                     Hủy đơn hàng
@@ -373,15 +378,13 @@ export default function OrderListTab({ user }) {
           orderCode={selectedOrderCode}
         />
       )}
-     <Dialog
+      <Dialog
         open={cancelModalOpen}
         onClose={handleCloseCancelModal}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="alert-dialog-title">
-          {"Xác nhận hủy đơn hàng"}
-        </DialogTitle>
+        <DialogTitle id="alert-dialog-title">{"Xác nhận hủy đơn hàng"}</DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
             Bạn có chắc chắn muốn hủy đơn hàng mã

@@ -166,16 +166,17 @@ const OrderHistory = ({ orderId ,onOrderUpdate}) => {
           console.log(`Current Order ID: ${orderId} (type: ${typeof orderId})`);
 
           // 2. So sánh ID (đảm bảo so sánh cùng kiểu dữ liệu)
-          if (updatedOrder.idHoaDon === parseInt(orderId, 10)) {
+          if (updatedOrder.maHoaDon === orderId) {
             console.log(`MATCH FOUND! Refetching history for order ${orderId}...`);
             toast.info(`Đơn hàng #${updatedOrder.maHoaDon} vừa có cập nhật.`);
 
             // 3. Gọi hàm fetch
             fetchOrderHistory();
-             if (onOrderUpdate) { // <--- THÊM KHỐI LỆNH IF NÀY
-                console.log("Notifying parent component to refetch...");
-                onOrderUpdate();
-            }
+               console.log("CHECK WEBSOCKET: About to call onOrderUpdate. Is it a function?", typeof onOrderUpdate);
+             if (onOrderUpdate) {
+        console.log("Calling onOrderUpdate now!");
+        onOrderUpdate();
+    }
           } else {
             console.log("Message is for a different order, ignoring.");
           }
