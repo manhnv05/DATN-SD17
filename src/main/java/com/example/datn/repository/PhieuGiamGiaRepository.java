@@ -42,7 +42,7 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
     @Query("""
     SELECT p FROM PhieuGiamGia p
     WHERE
-    (p.loaiPhieu = 0 AND p.trangThai = 1)
+    (p.loaiPhieu = 0 AND p.trangThai = 1 AND p.soLuong > 0)
     """)
     List<PhieuGiamGia> getPhieuGiamGiaByTrangThai();
 

@@ -21,6 +21,7 @@ public interface ChiTietPhieuGiamGiaRepository extends JpaRepository<ChiTietPhie
         (:khachHang IS NULL OR :khachHang = pddkh.khachHang.id)
         AND (:phieuGiamGia IS NULL OR :phieuGiamGia = pddkh.phieuGiamGia.id)
         AND (pddkh.phieuGiamGia.trangThai = 1)
+        AND pddkh.phieuGiamGia.soLuong > 0
     """)
     Page<PhieuGiamGia> queryPhieuGiamGiaKhachHang(
             @Param("khachHang") String khachHang,
