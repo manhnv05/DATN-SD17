@@ -739,6 +739,19 @@ public class HoaDonServiceImpl implements HoaDonService {
             System.out.println("CHUẨN BỊ GỬI WEBSOCKET ĐẾN TOPIC: " + adminTopic);
             messagingTemplate.convertAndSend(adminTopic, orderUpdatePayload);
             System.out.println("ĐÃ GỌI HÀM convertAndSend.");
+
+            if (hoaDon.getKhachHang() != null && hoaDon.getKhachHang().getId() != null) {
+                // Lấy ID của khách hàng từ đơn hàng
+                Integer userId = hoaDon.getKhachHang().getId();
+                String userTopic = "/topic/orders/" + userId;
+
+                // Cập nhật lại thông báo cho phù hợp với client
+                orderUpdatePayload.put("thongBao", "Đơn hàng #" + hoaDon.getMaHoaDon() + " của bạn đã bị hủy.");
+
+                System.out.println("CHUẨN BỊ GỬI WEBSOCKET ĐẾN CLIENT: " + userTopic);
+                messagingTemplate.convertAndSend(userTopic, orderUpdatePayload);
+            }
+
         }
         // --- KẾT THÚC PHẦN THÊM MỚI ---
 

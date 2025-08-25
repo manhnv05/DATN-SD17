@@ -1,5 +1,5 @@
 package com.example.datn.security;
-
+import org.springframework.security.config.Customizer;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,15 +64,18 @@ public class SecurityConfig {
         logger.info("Cấu hình SecurityFilterChain: cho phép đăng nhập truyền thống và OAuth2");
 
         http
+                .cors(Customizer.withDefaults())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+
                         .requestMatchers(
                                 "/api/public/**",
                                 "/oauth2/**",
                                 "/login/**",
                                 "/api/auth/login",
-                                "/api/auth/register"
+                                "/api/auth/register",
+                                "/ws/**"
                         ).permitAll()
                         // CHẶN QUYỀN TRUY CẬP API QUẢN TRỊ: chỉ cho phép các role quản trị
                         .requestMatchers("/thong_ke/**", "/dashboard/**").hasAnyRole("NHANVIEN", "QUANLY", "QUANTRIVIEN")
