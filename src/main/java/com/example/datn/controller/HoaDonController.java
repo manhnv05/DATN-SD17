@@ -227,8 +227,8 @@ public class HoaDonController {
     }
 
     @PostMapping("/luu-hoa-don-online-chua-dang-nhap")
-    public ResponseEntity<ApiResponse<HoaDonDTO>> saveHoaDonOnlineChuaDangNhap(@RequestBody HoaDonOnlineRequest hoaDonOnlineRequest) {
-        HoaDonDTO hoaDonDTO = hoaDonService.saveHoaDonOnlineChuaDangNhap(hoaDonOnlineRequest);
+    public ResponseEntity<ApiResponse<HoaDonDTO>> saveHoaDonOnlineChuaDangNhap(@RequestBody HoaDonOnlineRequest hoaDonOnlineRequest ,@RequestParam String email) {
+        HoaDonDTO hoaDonDTO = hoaDonService.saveHoaDonOnlineChuaDangNhap(hoaDonOnlineRequest,email);
         ApiResponse<HoaDonDTO> apiResponse = ApiResponse.<HoaDonDTO>builder()
                 .code(1000)
                 .message("Lưu hóa đơn thành công")

@@ -20,6 +20,28 @@ public class EmailThongBaoHoaDonService {
     @Autowired
     private HoaDonRepository hoaDonRepository;
 
+
+    public void guiThongBaoCapNhatTrangThaiVoiEmail(Integer idHoaDon, TrangThai trangThai, String emailKhachHang) {
+        // Bước 1: Tìm hóa đơn trong CSDL
+        HoaDon hoaDon = hoaDonRepository.findById(idHoaDon)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+
+        // Bước 2: Kiểm tra xem email được cung cấp có hợp lệ không
+        if (emailKhachHang != null && !emailKhachHang.trim().isEmpty()) {
+            try {
+                // Bước 3: Gọi hàm gửi mail với email đã được truyền vào
+                sendOrderStatusUpdateEmail(hoaDon, emailKhachHang, trangThai);
+                System.out.println("Đã gửi email thông báo cho đơn #" + idHoaDon + " tới " + emailKhachHang);
+            } catch (MessagingException e) {
+                // Ghi log lỗi để theo dõi mà không làm dừng chương trình
+                System.err.println("Lỗi gửi mail cho hóa đơn #" + idHoaDon + " tới email " + emailKhachHang + ": " + e.getMessage());
+            }
+        } else {
+            // Ghi log cảnh báo nếu email không hợp lệ để dễ dàng gỡ lỗi
+            System.err.println("Không thể gửi mail cho hóa đơn #" + idHoaDon + " vì địa chỉ email cung cấp không hợp lệ (null hoặc rỗng).");
+        }
+    }
+
     public void guiThongBaoCapNhatTrangThai(Integer idHoaDon, TrangThai trangThai) {
 
         HoaDon hoaDon = hoaDonRepository.findById(idHoaDon)

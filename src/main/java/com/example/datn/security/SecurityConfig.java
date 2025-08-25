@@ -83,7 +83,9 @@ public class SecurityConfig {
                                 "/danhMuc/all",
                                 "/api/shop/**",
                                 "/api/v1/**",
-                                "/api/outlet/**"
+                                "/api/outlet/**",
+                                "/api/hoa-don/luu-hoa-don-online-chua-dang-nhap",
+                                "/chiTietThanhToan"
 
                         ).permitAll()
                         // CHẶN QUYỀN TRUY CẬP API QUẢN TRỊ: chỉ cho phép các role quản trị

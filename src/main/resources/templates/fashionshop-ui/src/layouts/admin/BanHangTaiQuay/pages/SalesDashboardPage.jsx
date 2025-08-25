@@ -1,6 +1,6 @@
 // src/layouts/sales/SalesDashboardPage.jsx
 
-import React, { useState, useCallback, useMemo ,useEffect,useRef  } from "react";
+import React, { useState, useCallback, useMemo, useEffect, useRef } from "react";
 // Import các component layout chuẩn
 import DashboardLayout from "../../../../examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "../../../../examples/Navbars/DashboardNavbar";
@@ -13,13 +13,12 @@ import { toast } from "react-toastify";
 import SalesCounter from "../component/SalesCounter";
 
 function SalesDashboardPage() {
-
   const [completedOrderId, setCompletedOrderId] = useState(null);
   const [currentProducts, setCurrentProducts] = useState([]);
   const [paymentData, setPaymentData] = useState(null);
   const [cartTotal, setCartTotal] = useState(0);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(null);
-const [ordersData, setOrdersData] = useState(() => {
+  const [ordersData, setOrdersData] = useState(() => {
     try {
       const savedOrdersData = localStorage.getItem("allInvoicesData");
       return savedOrdersData ? JSON.parse(savedOrdersData) : {}; // Nếu có thì dùng, không thì là object rỗng
@@ -28,17 +27,16 @@ const [ordersData, setOrdersData] = useState(() => {
       return {};
     }
   });
-    // THAY ĐỔI 2: Thêm useEffect để TỰ ĐỘNG LƯU DỮ LIỆU vào localStorage mỗi khi `ordersData` thay đổi.
+  // THAY ĐỔI 2: Thêm useEffect để TỰ ĐỘNG LƯU DỮ LIỆU vào localStorage mỗi khi `ordersData` thay đổi.
   useEffect(() => {
     try {
       localStorage.setItem("allInvoicesData", JSON.stringify(ordersData));
     } catch (error) {
       console.error("Lỗi khi lưu dữ liệu hóa đơn vào localStorage:", error);
     }
-  }, [ordersData])
+  }, [ordersData]);
   const handleInvoiceIdChange = useCallback((invoiceId) => {
     setSelectedInvoiceId((prevId) => (prevId !== invoiceId ? invoiceId : prevId));
-    
   }, []);
 
   const handleProductsChange = useCallback((products) => {
@@ -116,8 +114,35 @@ const [ordersData, setOrdersData] = useState(() => {
         console.log("Gửi payload cuối cùng lên backend:", JSON.stringify(finalPayload, null, 2));
 
         await axios.put("http://localhost:8080/api/hoa-don/update_hoadon", finalPayload, {
-          withCredentials: true // <-- SỬA ở đây, thêm option này để gửi cookie/session khi gọi API
+          withCredentials: true, // <-- SỬA ở đây, thêm option này để gửi cookie/session khi gọi API
         });
+        if (phieuGiamGiaId) {
+          try {
+            const idKhachHang = latestPaymentData.customer?.id;
+            const soLuongGiam = 1; // Mặc định là 1 như bạn yêu cầu
+
+            console.log(`Thực hiện giảm số lượng cho PGG ID: ${phieuGiamGiaId}`);
+
+            await axios.post(
+              `http://localhost:8080/phieu_giam_gia/giam-so_luong-pgg/${phieuGiamGiaId}`,
+              null, // Không có body cho request này
+              {
+                params: {
+                  soLuong: soLuongGiam,
+                  idKhachHang: idKhachHang, // Nếu idKhachHang là undefined, axios sẽ không gửi param này
+                },
+                withCredentials: true,
+              }
+            );
+
+            console.log("Giảm số lượng phiếu giảm giá thành công.");
+          } catch (voucherError) {
+            // Ghi lại lỗi nếu việc giảm số lượng phiếu thất bại, nhưng không cần dừng lại
+            // vì hóa đơn đã tạo thành công. Có thể thêm logic thông báo cho admin ở đây.
+            console.error("Lỗi khi giảm số lượng phiếu giảm giá:", voucherError);
+            toast.warn("Lưu đơn hàng thành công nhưng có lỗi khi cập nhật phiếu giảm giá.");
+          }
+        }
         toast.success("Xác nhận thành công");
         setCompletedOrderId(selectedInvoiceId);
       } catch (error) {
@@ -127,7 +152,7 @@ const [ordersData, setOrdersData] = useState(() => {
     },
     [selectedInvoiceId, currentProducts]
   );
-   
+
   return (
     <DashboardLayout>
       <DashboardNavbar />
@@ -149,9 +174,8 @@ const [ordersData, setOrdersData] = useState(() => {
               hoaDonId={selectedInvoiceId}
               onSaveOrder={handleSaveOrder}
               onDataChange={handlePaymentDataChange}
-             ordersData={ordersData} 
+              ordersData={ordersData}
               setOrdersData={setOrdersData}
-
             />
           </Grid>
         </Grid>
