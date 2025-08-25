@@ -17,8 +17,9 @@ public interface HoaDonRepository  extends JpaRepository<HoaDon, Integer>,JpaSpe
     @Query("SELECT h.trangThai AS trangThai, COUNT(*) AS soLuong FROM HoaDon h GROUP BY h.trangThai")
     List<CountTrangThaiHoaDon> getCoutnTrangThaiHoaDon();
 
-    HoaDon findByMaHoaDon(String maHoaDon);
 
+    HoaDon findByMaHoaDon(String maHoaDon);
+    List<HoaDon> findHoaDonByKhachHang_Id(Integer idKhachHang);
     @Query("SELECT hd FROM HoaDon hd " +
             "LEFT JOIN FETCH hd.khachHang " +
             "LEFT JOIN FETCH hd.nhanVien " +

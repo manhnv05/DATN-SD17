@@ -155,9 +155,9 @@ function OrderTable({ filterValues, currentPage, pageSize, setCurrentPage, setPa
           case "CHO_GIAO_HANG":
             text = "Chờ giao hàng";
             colorStyles = {
-              color: "#198754",
-              backgroundColor: "#d1e7dd",
-              borderColor: "#198754",
+              color: "#ffc107",
+              backgroundColor: "#fff3cd",
+              borderColor: "#ffc107",
             };
             break;
           case "DA_XAC_NHAN":

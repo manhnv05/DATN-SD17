@@ -8,6 +8,7 @@ import com.example.datn.dto.LichSuHoaDonDTO;
 import com.example.datn.dto.TraCuuHoaDonDTO;
 import com.example.datn.dto.TraCuuHoaDonDTO.NhanVienTraCuuDTO;
 import com.example.datn.entity.HoaDon;
+import com.example.datn.entity.NhanVien;
 import com.example.datn.exception.AppException;
 import com.example.datn.exception.ErrorCode;
 import com.example.datn.repository.HoaDonRepository;
@@ -48,10 +49,20 @@ public class TraCuuHoaDonServiceImpl implements TraCuuHoaDonService {
         traCuuHoaDonDTO.setTongTien(Double.valueOf(hoaDon.getTongTien()));
         traCuuHoaDonDTO.setTongHoaDon(Double.valueOf(hoaDon.getTongHoaDon()));
 
-        traCuuHoaDonDTO.setNhanVien(new NhanVienTraCuuDTO(
-                hoaDon.getNhanVien().getMaNhanVien(),
-                hoaDon.getNhanVien().getHoVaTen()
-        ));
+        NhanVienTraCuuDTO nhanVienDTO = null;
+// Lấy đối tượng nhân viên từ hóa đơn
+        NhanVien nhanVien = hoaDon.getNhanVien();
+
+// Nếu nhân viên không null, thì mới tạo DTO
+        if (nhanVien != null) {
+            nhanVienDTO = new NhanVienTraCuuDTO(
+                    nhanVien.getMaNhanVien(),
+                    nhanVien.getHoVaTen()
+            );
+        }
+
+// Set DTO cho hóa đơn (sẽ là null nếu không có nhân viên)
+        traCuuHoaDonDTO.setNhanVien(nhanVienDTO);
         String maPhieuGiamGia = hoaDon.getPhieuGiamGia() != null ? hoaDon.getPhieuGiamGia().getMaPhieuGiamGia() : null;
         Double tienGiamGia = Double.parseDouble(String.valueOf(hoaDon.getTongTienBanDau()- hoaDon.getTongTien()));
         traCuuHoaDonDTO.setPhieuGiamGia(new TraCuuHoaDonDTO.PhieuGiamGiaTraCuuDTO(

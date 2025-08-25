@@ -13,7 +13,7 @@ const getStatusBadgeClassName = (status) => {
     case 'Chờ xác nhận': return 'bg-warning';
     case 'Tạo đơn hàng': return 'bg-success';
     case 'Hủy': return 'bg-danger';
-    default: return 'bg-success';
+    default: return 'bg-danger';
   }
 };
 
@@ -49,7 +49,7 @@ const OrderInfo = ({ order }) => {
         
         return `${pad(formattedHours)}:${pad(minutes)}:${pad(seconds)}  ${pad(day)}/${pad(month)}/${year}`;
     }, []); 
-
+ console.log("Dữ liệu 'order' nhận được:", order); 
 
     const pad = useCallback((num) => num.toString().padStart(2, '0'), []);
     return (
@@ -63,11 +63,9 @@ const OrderInfo = ({ order }) => {
                         <strong>Ngày tạo:</strong> {formatDateTime(order.ngayTao)}
                     </div>
                       <div className="col-md-6 col-12 mb-2">
-                        <strong>Tên nhân viên tạo đơn hàng:</strong> {user.tenNhanVien}
+                        <strong>Tên nhân viên tạo đơn hàng:</strong> {order.StaffName}
                     </div>
-                     <div className="col-md-6 col-12 mb-2">
-                        <strong>Mã nhân viên tạo đơn hàng:</strong> {user.maNhanVien}
-                    </div>
+                   
                     <div className="col-md-6 col-12 mb-2">
                         <strong>Trạng thái:</strong>
                        <span className={`${styles.softBadge} ${styles[getStatusBadgeClassName(order.status)]}`}>

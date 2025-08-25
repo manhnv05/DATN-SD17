@@ -1,6 +1,7 @@
 package com.example.datn.repository;
 
 import com.example.datn.dto.HoaDonHistoryDTO;
+import com.example.datn.dto.LichSuDonHangKhachHangDTO;
 import com.example.datn.entity.LichSuHoaDon;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -29,6 +30,9 @@ ORDER BY
 LIMIT 1 OFFSET 1
     """, nativeQuery = true)
     HoaDonHistoryDTO findTrangThaiGanNhatCuaHoaDon( Integer idHoaDon);
+
+
+
 
 
     List<LichSuHoaDon> findByHoaDon_MaHoaDonOrderByThoiGianThayDoiDesc(String maHoaDon);

@@ -46,7 +46,9 @@ public enum ErrorCode {
     PHIEU_GIAM_GIA_DA_HET_HAN(400, "Phiếu giảm giá đã hết hạn", HttpStatus.BAD_REQUEST),
     ERROR_SEND_MAIL(400,"Lỗi gửi mail", HttpStatus.BAD_REQUEST),
 
-    INVALID_QUANTITY_PGG(1015, "Số lượng PGG hết", HttpStatus.BAD_REQUEST);
+    INVALID_QUANTITY_PGG(1015, "Số lượng PGG hết", HttpStatus.BAD_REQUEST),
+    THERE_ARE_NO_ORDERS_YET(1018, "Chưa có đơn hàng nào", HttpStatus.BAD_REQUEST); //
+
 
     private final int errorCode;
     private final String errorMessage;
