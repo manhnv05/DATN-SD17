@@ -75,11 +75,19 @@ public class SecurityConfig {
                                 "/login/**",
                                 "/api/auth/login",
                                 "/api/auth/register",
-                                "/ws/**"
+                                "/ws/**",
+                                "/PhieuGiamGiaKhachHang/query",
+                                "/kichThuoc/all",
+                                "/mauSac/all",
+                                "/thuongHieu/all",
+                                "/danhMuc/all",
+                                "/api/shop",
+                                "/api/shop/products"
+
                         ).permitAll()
                         // CHẶN QUYỀN TRUY CẬP API QUẢN TRỊ: chỉ cho phép các role quản trị
                         .requestMatchers("/thong_ke/**", "/dashboard/**").hasAnyRole("NHANVIEN", "QUANLY", "QUANTRIVIEN")
-                        .anyRequest().permitAll()
+                        .anyRequest().authenticated()
                 )
                 .formLogin(formLogin -> formLogin
                         .loginPage("/api/auth/login")
