@@ -20,6 +20,7 @@ import Footer from "../components/footer";
 import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
+import AddressDialogClient from "../components/AddressDialog";
 
 // --- GHN CONFIG ---
 const GHN_API_BASE_URL = "https://online-gateway.ghn.vn/shiip/public-api";
@@ -102,6 +103,118 @@ export default function OrderForm() {
 
     const [shippingFee, setShippingFee] = useState(0);
     const [isCalculatingFee, setIsCalculatingFee] = useState(false);
+
+    const [addressDialogOpen, setAddressDialogOpen] = useState(false);
+    const [selectedCustomerId, setSelectedCustomerId] = useState(null);
+
+    const [hasSelectedAddress, setHasSelectedAddress] = useState(false);
+
+    const addressSelect = (select) => {
+        console.log("Địa chỉ đã chọn:", select);
+        setHasSelectedAddress(true);
+        handleAddressSelect(select);
+    };
+
+    // Hàm xử lý địa chỉ
+    const handleAddressSelect = async (address) => {
+        if (!address) return;
+
+        // Set địa chỉ cụ thể
+        setForm(prevForm => ({
+            ...prevForm,
+            address: address.diaChiCuThe || ""
+        }));
+
+        // Tìm province object
+        const provinceObj = provinces.find(p =>
+            p.ProvinceName === address.tinhThanhPho ||
+            p.ProvinceID === address.tinhThanhPhoId
+        );
+
+        if (provinceObj) {
+            setForm(prevForm => ({ ...prevForm, province: provinceObj }));
+
+            try {
+                const districtResponse = await ghnApi.get("/master-data/district", {
+                    params: { province_id: provinceObj.ProvinceID },
+                });
+
+                if (districtResponse.data?.data) {
+                    const districtsData = districtResponse.data.data;
+                    setDistricts(districtsData);
+
+                    const districtObj = districtsData.find(d =>
+                        d.DistrictName === address.quanHuyen ||
+                        d.DistrictID === address.quanHuyenId
+                    );
+
+                    if (districtObj) {
+                        setForm(prevForm => ({ ...prevForm, district: districtObj }));
+
+                        try {
+                            const wardResponse = await ghnApi.get("/master-data/ward", {
+                                params: { district_id: districtObj.DistrictID },
+                            });
+
+                            if (wardResponse.data?.data) {
+                                const wardsData = wardResponse.data.data;
+                                setWards(wardsData);
+
+                                const wardObj = wardsData.find(w =>
+                                    w.WardName === address.xaPhuong ||
+                                    w.WardCode === address.xaPhuongCode
+                                );
+
+                                if (wardObj) {
+                                    setForm(prevForm => ({ ...prevForm, ward: wardObj }));
+                                }
+                            }
+                        } catch (error) {
+                            console.error("Error loading wards:", error);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Error loading districts:", error);
+            }
+        }
+    };
+
+    useEffect(() => {
+        const fetchCustomerData = async () => {
+            if (!user?.id) return;
+
+            try {
+                const response = await axios.get(`http://localhost:8080/khachHang/${user.id}`, {
+                    withCredentials: true
+                });
+                const customerRes = response?.data?.data || response?.data;
+
+                // Set thông tin cơ bản
+                setForm(prevForm => ({
+                    ...prevForm,
+                    name: customerRes.tenKhachHang,
+                    phone: customerRes.sdt,
+                    email: customerRes.email,
+                }));
+
+                // Lấy địa chỉ mặc định
+                if (!hasSelectedAddress) {
+                    const defaultAddress = customerRes.diaChis?.find(d => Number(d.trangThai) === 1);
+                    if (defaultAddress) {
+                        await handleAddressSelect(defaultAddress);
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching customer data:", error);
+            }
+        };
+
+        if (provinces.length > 0) {
+            fetchCustomerData();
+        }
+    }, [user?.id, provinces, addressDialogOpen]);
+
 
     // 1. Lấy province từ GHN
     useEffect(() => {
@@ -476,14 +589,27 @@ export default function OrderForm() {
                             <Typography fontWeight={700} fontSize={18} color={MAIN_TEXT_COLOR}>
                                 Thông tin giao hàng
                             </Typography>
-                            <Button
-                                variant="outlined"
-                                color="primary"
-                                size="small"
-                                sx={{ borderRadius: 2, color: "#1976d2", fontWeight: 600, textTransform: "none" }}
-                            >
-                                Chọn địa chỉ có sẵn
-                            </Button>
+                            {user && (
+                                <>
+                                    <Button
+                                        variant="outlined"
+                                        color="primary"
+                                        size="small"
+                                        onClick={() => {
+                                            setSelectedCustomerId(user.id);
+                                            setAddressDialogOpen(true);
+                                        }}
+                                        sx={{
+                                            borderRadius: 2,
+                                            color: "#1976d2",
+                                            fontWeight: 600,
+                                            textTransform: "none",
+                                        }}
+                                    >
+                                        Chọn địa chỉ có sẵn
+                                    </Button>
+                                </>
+                            )}
                         </Box>
                         <Stack spacing={1.7} component="form" onSubmit={handleSubmit}>
                             <label>Họ và tên</label>
@@ -948,6 +1074,12 @@ export default function OrderForm() {
                 </Grid>
             </Grid>
             <Footer />
+            <AddressDialogClient
+                customerId={selectedCustomerId}
+                open={addressDialogOpen}
+                onClose={() => setAddressDialogOpen(false)}
+                onAddressSelect={addressSelect}
+            />
         </Box>
     );
 }
