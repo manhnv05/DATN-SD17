@@ -863,7 +863,7 @@ public class HoaDonServiceImpl implements HoaDonService {
 
     @Transactional
     @Override
-    public HoaDonDTO saveHoaDonOnlineChuaDangNhap(HoaDonOnlineRequest hoaDonOnlineRequest) {
+    public HoaDonDTO saveHoaDonOnlineChuaDangNhap(HoaDonOnlineRequest hoaDonOnlineRequest,String email) {
         HoaDon hoaDon = new HoaDon();
         hoaDon.setMaHoaDon(generateShortRandomMaHoaDonUUID());
         hoaDon.setNgayTao(LocalDateTime.now());
@@ -948,7 +948,13 @@ public class HoaDonServiceImpl implements HoaDonService {
 
         // Gửi mail (nếu cần - nên enable lại nếu đã config mail)
         // sendMailHoaDonToKhachHang(hoaDonDaLuu.getId(), hoaDonOnlineRequest.getEmail());
-
+        if (hoaDonDaLuu.getTrangThai() == TrangThai.CHO_XAC_NHAN) {
+            emailThongBaoHoaDonService.guiThongBaoCapNhatTrangThaiVoiEmail(
+                    hoaDonDaLuu.getId(),
+                    hoaDonDaLuu.getTrangThai(),
+                    email
+            );
+        }
         // Lịch sử hóa đơn
         String nguoiThucHienCapNhat = "Hệ thống"; // Hoặc lấy từ security context
         String noiDungLichSu;
