@@ -3,6 +3,9 @@ package com.example.datn.controller;
 import com.example.datn.config.ResponseHelper;
 import com.example.datn.dto.*;
 import com.example.datn.entity.HoaDon;
+import com.example.datn.exception.AppException;
+import com.example.datn.exception.ErrorCode;
+import com.example.datn.repository.HoaDonRepository;
 import com.example.datn.service.TraCuuHoaDonService;
 import com.example.datn.vo.hoaDonVO.*;
 import com.example.datn.vo.khachHangVO.CapNhatKhachRequestVO;
@@ -20,12 +23,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import com.example.datn.dto.HoaDonPdfResult;
@@ -38,7 +45,8 @@ import com.example.datn.dto.HoaDonPdfResult;
 public class HoaDonController {
     HoaDonService hoaDonService;
     TraCuuHoaDonService traCuuHoaDonService;
-
+    private SimpMessagingTemplate messagingTemplate;
+    private HoaDonRepository hoaDonRepository;
     @GetMapping("/{id}/pdf")
     public ResponseEntity<byte[]> exportPdf(@PathVariable String id) {
 
@@ -136,6 +144,24 @@ public class HoaDonController {
                 request.getGhiChu(),
                 request.getNguoiThucHien()
         );
+        HoaDon hoaDon = hoaDonRepository.findById(idHoaDon)
+                .orElseThrow(() -> new AppException(ErrorCode.ORDER_NOT_FOUND));
+        if (hoaDon != null && hoaDon.getKhachHang() != null) {
+            // 3. Bổ sung các trường còn thiếu vào DTO
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            String ngayTaoFormatted = hoaDon.getNgayTao() != null ? hoaDon.getNgayTao().format(formatter) : "N/A";
+
+            response.setIdKhachHang(hoaDon.getKhachHang().getId());
+            response.setMaHoaDon(hoaDon.getMaHoaDon());
+            response.setNgayTao(ngayTaoFormatted);
+            response.setTongTien(BigDecimal.valueOf(hoaDon.getTongTien()));
+            response.setSoLuongSanPham(hoaDon.getHoaDonChiTietList().size());
+            response.setDiaChi(hoaDon.getDiaChi());
+
+            // 4. Gửi DTO đã được làm giàu qua WebSocket
+            System.out.println("[Backend] Đang gửi tin nhắn đến kênh: /topic/orders/" + response.getIdKhachHang());
+            messagingTemplate.convertAndSend("/topic/orders/" + response.getIdKhachHang(), response);
+        }
         return ResponseEntity.ok(response);
     }
 

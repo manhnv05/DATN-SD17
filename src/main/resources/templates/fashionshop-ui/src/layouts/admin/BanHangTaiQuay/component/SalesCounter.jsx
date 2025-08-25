@@ -35,8 +35,8 @@ import ProductSelectionModal from "./ProductSelectionModal";
 import PropTypes from "prop-types";
 import { toast } from "react-toastify";
 import { useAuth } from "../AuthProvider.jsx";
-import { Client } from "@stomp/stompjs"; // <-- THÊM MỚI
-import SockJS from "sockjs-client";
+// import { Client } from "@stomp/stompjs"; // <-- THÊM MỚI
+// import SockJS from "sockjs-client";
 const formatCurrency = (amount) => {
   if (typeof amount !== "number" || isNaN(amount)) {
     return "N/A";
@@ -111,119 +111,119 @@ function SalesCounter({ onTotalChange, onInvoiceIdChange, onProductsChange, comp
   }, [completedOrderId]);
 
   const currentInvoiceId = currentOrder?.idHoaDonBackend;
-  const [clientId] = useState(() => `pos-${Math.random()}`);
-  useEffect(() => {
-    // Nếu không có hóa đơn được chọn, đảm bảo ngắt kết nối và thoát
-    if (!currentInvoiceId) {
-      if (stompClientRef.current) {
-        stompClientRef.current.deactivate();
-        stompClientRef.current = null;
-      }
-      return;
-    }
+  // const [clientId] = useState(() => `pos-${Math.random()}`);
+  // useEffect(() => {
+  //   // Nếu không có hóa đơn được chọn, đảm bảo ngắt kết nối và thoát
+  //   if (!currentInvoiceId) {
+  //     if (stompClientRef.current) {
+  //       stompClientRef.current.deactivate();
+  //       stompClientRef.current = null;
+  //     }
+  //     return;
+  //   }
 
-    // Nếu đã có kết nối cho hóa đơn hiện tại, không làm gì cả
-    if (stompClientRef.current && stompClientRef.current.connectedInvoiceId === currentInvoiceId) {
-      // Chỉ cần đồng bộ hóa giỏ hàng khi sản phẩm thay đổi
-      if (stompClientRef.current.active) {
-        const payload = { products: currentOrder.products, totalAmount, clientId: clientId };
-        console.log(`🚀 Syncing existing connection for invoice ${currentInvoiceId}`, payload);
-        stompClientRef.current.publish({
-          destination: `/app/cart/sync/${currentInvoiceId}`,
-          body: JSON.stringify(payload),
-        });
-      }
-      return;
-    }
+  //   // Nếu đã có kết nối cho hóa đơn hiện tại, không làm gì cả
+  //   if (stompClientRef.current && stompClientRef.current.connectedInvoiceId === currentInvoiceId) {
+  //     // Chỉ cần đồng bộ hóa giỏ hàng khi sản phẩm thay đổi
+  //     if (stompClientRef.current.active) {
+  //       const payload = { products: currentOrder.products, totalAmount, clientId: clientId };
+  //       console.log(`🚀 Syncing existing connection for invoice ${currentInvoiceId}`, payload);
+  //       stompClientRef.current.publish({
+  //         destination: `/app/cart/sync/${currentInvoiceId}`,
+  //         body: JSON.stringify(payload),
+  //       });
+  //     }
+  //     return;
+  //   }
 
-    // Nếu đang kết nối với một hóa đơn khác, ngắt kết nối cũ trước
-    if (stompClientRef.current) {
-      stompClientRef.current.deactivate();
-    }
+  //   // Nếu đang kết nối với một hóa đơn khác, ngắt kết nối cũ trước
+  //   if (stompClientRef.current) {
+  //     stompClientRef.current.deactivate();
+  //   }
 
-    const client = new Client({
-      webSocketFactory: () => new SockJS("http://localhost:8080/ws"),
-      onConnect: () => {
-        console.log(`✅ WS Connected! Subscribing to /topic/cart/${currentInvoiceId}`);
-        // Lưu lại ID hóa đơn đã kết nối thành công
-        client.connectedInvoiceId = currentInvoiceId;
+  //   const client = new Client({
+  //     webSocketFactory: () => new SockJS("http://localhost:8080/ws"),
+  //     onConnect: () => {
+  //       console.log(`✅ WS Connected! Subscribing to /topic/cart/${currentInvoiceId}`);
+  //       // Lưu lại ID hóa đơn đã kết nối thành công
+  //       client.connectedInvoiceId = currentInvoiceId;
 
-        // 1. Lắng nghe cập nhật từ các client khác
-        client.subscribe(`/topic/cart/${currentInvoiceId}`, (message) => {
-          // 1. Phân tích tin nhắn nhận được
-          const remoteCartState = JSON.parse(message.body);
+  //       // 1. Lắng nghe cập nhật từ các client khác
+  //       client.subscribe(`/topic/cart/${currentInvoiceId}`, (message) => {
+  //         // 1. Phân tích tin nhắn nhận được
+  //         const remoteCartState = JSON.parse(message.body);
 
-          // 2. Bỏ qua tin nhắn do chính mình gửi
-          if (remoteCartState.clientId === clientId) {
-            return;
-          }
-          if (remoteCartState.action === "UPDATE_QUANTITY") {
-            console.log(
-              `ACTION: Nhận yêu cầu cập nhật số lượng cho sản phẩm ${remoteCartState.productId} thành ${remoteCartState.quantity}`
-            );
+  //         // 2. Bỏ qua tin nhắn do chính mình gửi
+  //         if (remoteCartState.clientId === clientId) {
+  //           return;
+  //         }
+  //         if (remoteCartState.action === "UPDATE_QUANTITY") {
+  //           console.log(
+  //             `ACTION: Nhận yêu cầu cập nhật số lượng cho sản phẩm ${remoteCartState.productId} thành ${remoteCartState.quantity}`
+  //           );
 
-            // GỌI HÀM "handleUpdateQuantity" ĐÃ CÓ SẴN ĐỂ GỌI API
-            handleUpdateQuantity(remoteCartState.productId, remoteCartState.quantity);
-            return; // Dừng lại sau khi xử lý
-          }
-          // 3. SỬA LỖI Ở ĐÂY: Dùng đúng tên biến remoteCartState
-          if (remoteCartState.action === "REQUEST_STATE") {
-            console.log(
-              `🙋‍♂️ Nhận được yêu cầu trạng thái từ client: ${remoteCartState.clientId}. Đang gửi phản hồi...`
-            );
+  //           // GỌI HÀM "handleUpdateQuantity" ĐÃ CÓ SẴN ĐỂ GỌI API
+  //           handleUpdateQuantity(remoteCartState.productId, remoteCartState.quantity);
+  //           return; // Dừng lại sau khi xử lý
+  //         }
+  //         // 3. SỬA LỖI Ở ĐÂY: Dùng đúng tên biến remoteCartState
+  //         if (remoteCartState.action === "REQUEST_STATE") {
+  //           console.log(
+  //             `🙋‍♂️ Nhận được yêu cầu trạng thái từ client: ${remoteCartState.clientId}. Đang gửi phản hồi...`
+  //           );
 
-            // Lập tức gửi lại trạng thái giỏ hàng hiện tại của POS
-            if (currentOrder) {
-              const payload = {
-                products: currentOrder.products,
-                totalAmount,
-                clientId: clientId, // Gửi với ID của POS
-              };
-              stompClientRef.current.publish({
-                destination: `/app/cart/sync/${currentInvoiceId}`,
-                body: JSON.stringify(payload),
-              });
-            }
-            return; // Dừng lại sau khi đã phản hồi
-          }
+  //           // Lập tức gửi lại trạng thái giỏ hàng hiện tại của POS
+  //           if (currentOrder) {
+  //             const payload = {
+  //               products: currentOrder.products,
+  //               totalAmount,
+  //               clientId: clientId, // Gửi với ID của POS
+  //             };
+  //             stompClientRef.current.publish({
+  //               destination: `/app/cart/sync/${currentInvoiceId}`,
+  //               body: JSON.stringify(payload),
+  //             });
+  //           }
+  //           return; // Dừng lại sau khi đã phản hồi
+  //         }
 
-          console.log("📬 Received remote cart update:", remoteCartState);
-          setOrders((prevOrders) =>
-            prevOrders.map((order) =>
-              order.idHoaDonBackend === currentInvoiceId
-                ? { ...order, products: remoteCartState.products }
-                : order
-            )
-          );
-        });
+  //         console.log("📬 Received remote cart update:", remoteCartState);
+  //         setOrders((prevOrders) =>
+  //           prevOrders.map((order) =>
+  //             order.idHoaDonBackend === currentInvoiceId
+  //               ? { ...order, products: remoteCartState.products }
+  //               : order
+  //           )
+  //         );
+  //       });
 
-        // 2. Gửi đi trạng thái hiện tại của giỏ hàng ngay sau khi kết nối thành công
-        if (currentOrder) {
-          const payload = { products: currentOrder.products, totalAmount, clientId: clientId };
-          console.log(`🚀 Sending initial state for invoice ${currentInvoiceId}`, payload);
-          client.publish({
-            destination: `/app/cart/sync/${currentInvoiceId}`,
-            body: JSON.stringify(payload),
-          });
-        }
-      },
-      onDisconnect: () => {
-        console.log(`❌ WS Disconnected from invoice ${currentInvoiceId}`);
-      },
-    });
+  //       // 2. Gửi đi trạng thái hiện tại của giỏ hàng ngay sau khi kết nối thành công
+  //       if (currentOrder) {
+  //         const payload = { products: currentOrder.products, totalAmount, clientId: clientId };
+  //         console.log(`🚀 Sending initial state for invoice ${currentInvoiceId}`, payload);
+  //         client.publish({
+  //           destination: `/app/cart/sync/${currentInvoiceId}`,
+  //           body: JSON.stringify(payload),
+  //         });
+  //       }
+  //     },
+  //     onDisconnect: () => {
+  //       console.log(`❌ WS Disconnected from invoice ${currentInvoiceId}`);
+  //     },
+  //   });
 
-    client.activate();
-    stompClientRef.current = client;
+  //   client.activate();
+  //   stompClientRef.current = client;
 
-    // Hàm dọn dẹp khi component unmount
-    return () => {
-      if (stompClientRef.current) {
-        stompClientRef.current.deactivate();
-        stompClientRef.current = null;
-      }
-    };
-    // Dependency array bây giờ sẽ theo dõi cả ID hóa đơn và nội dung giỏ hàng
-  }, [currentInvoiceId, currentOrder, totalAmount]);
+  //   // Hàm dọn dẹp khi component unmount
+  //   return () => {
+  //     if (stompClientRef.current) {
+  //       stompClientRef.current.deactivate();
+  //       stompClientRef.current = null;
+  //     }
+  //   };
+  //   // Dependency array bây giờ sẽ theo dõi cả ID hóa đơn và nội dung giỏ hàng
+  // }, [currentInvoiceId, currentOrder, totalAmount]);
 
   const handleScanSuccess = async (decodedText) => {
     // 1. Đóng modal quét QR

@@ -34,6 +34,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -42,6 +43,7 @@ import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -84,6 +86,7 @@ public class HoaDonServiceImpl implements HoaDonService {
     EmailService emailService;
     ChiTietPhieuGiamGiaRepository chiTietPhieuGiamGiaRepository;
     EmailThongBaoHoaDonService emailThongBaoHoaDonService;
+    SimpMessagingTemplate messagingTemplate;
     @Override
     @Transactional
     public List<HoaDonChiTietDTO> updateDanhSachSanPhamChiTiet(Integer idHoaDon, List<CapNhatSanPhamChiTietDonHangVO> danhSachCapNhatSanPham) {
@@ -494,11 +497,18 @@ public class HoaDonServiceImpl implements HoaDonService {
         if (trangThaiCu == trangThaiMoi) {
             throw new AppException(ErrorCode.NO_STATUS_CHANGE);
         }
-
-
-
         // Nên lấy người thực hiện từ ngữ cảnh bảo mật (ví dụ: Spring Security) thay vì giả lập
-        String nguoiThucHienThayDoi = nguoiThucHien != null ? nguoiThucHien : hoaDon.getNhanVien().getHoVaTen();
+        String nguoiThucHienThayDoi;
+        if (nguoiThucHien != null) {
+            // 1. Ưu tiên người thực hiện được truyền vào (ví dụ: admin)
+            nguoiThucHienThayDoi = nguoiThucHien;
+        } else if (hoaDon.getNhanVien() != null) {
+            // 2. Nếu không có, lấy tên nhân viên từ hóa đơn (nếu có)
+            nguoiThucHienThayDoi = hoaDon.getNhanVien().getHoVaTen();
+        } else {
+            // 3. Nếu cả hai đều không có, mặc định là "Khách hàng"
+            nguoiThucHienThayDoi = "Khách hàng";
+        }
         hoaDon.setTrangThai(trangThaiMoi);
         HoaDon updatedHoaDon = hoaDonRepository.save(hoaDon);
         String noiDungThayDoi = String.format("Trạng thái hóa đơn thay đổi từ '%s' sang '%s'",
@@ -653,12 +663,30 @@ public class HoaDonServiceImpl implements HoaDonService {
         TrangThai trangThaiCu = hoaDon.getTrangThai();
         int currentIndex = listTrangThai.indexOf(trangThaiCu);
         if (currentIndex == -1 || currentIndex >= listTrangThai.size() - 1) {
-            throw new AppException(ErrorCode.INVALID_STATUS_TRANSITION);
+//            throw new AppException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
         TrangThai trangThaiMoi = listTrangThai.get(currentIndex + 1);
         return capNhatTrangThaiHoaDon(idHoaDon, trangThaiMoi, ghiChu, nguoiThucHien);
     }
+    private CapNhatTrangThaiDTO mapToCapNhatTrangThaiDTO(HoaDon hoaDon) {
+        // Định dạng ngày tháng cho nhất quán với frontend
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        String ngayTaoFormatted = hoaDon.getNgayTao() != null ? hoaDon.getNgayTao().format(formatter) : "N/A";
 
+        // SỬ DỤNG CONSTRUCTOR ĐẦY ĐỦ ĐỂ TẠO DTO CHO REAL-TIME
+        return new CapNhatTrangThaiDTO(
+                hoaDon.getId(),
+                hoaDon.getTrangThai().name(), // trangThaiMoi
+                hoaDon.getTrangThai().getDisplayName(), // tenTrangThaiMoi (theo yêu cầu của bạn)
+                "Cập nhật trạng thái thành công!", // message (theo yêu cầu của bạn)
+                hoaDon.getMaHoaDon(),
+                ngayTaoFormatted,
+                hoaDon.getKhachHang().getId(),
+                new BigDecimal(hoaDon.getTongTien()),
+                hoaDon.getHoaDonChiTietList().size(),
+                hoaDon.getDiaChi()
+        );
+    }
     @Override
     public CapNhatTrangThaiDTO huyHoaDon(Integer idHoaDon, String ghiChu, String nguoiThucHien) {
         HoaDon hoaDon = hoaDonRepository.findById(idHoaDon)
@@ -692,7 +720,29 @@ public class HoaDonServiceImpl implements HoaDonService {
                     chiTiet.getSoLuong()
             );
         }
-        return capNhatTrangThaiHoaDon(idHoaDon, TrangThai.HUY, ghiChu, nguoiThucHien);
+        // Gọi hàm cập nhật trạng thái như cũ
+        CapNhatTrangThaiDTO result = capNhatTrangThaiHoaDon(idHoaDon, TrangThai.HUY, ghiChu, nguoiThucHien);
+
+        // --- BẮT ĐẦU PHẦN THÊM MỚI ---
+        // Sau khi cập nhật thành công, gửi thông báo WebSocket
+        if (result != null) {
+            // Tạo payload để gửi đi
+            Map<String, Object> orderUpdatePayload = new HashMap<>();
+            orderUpdatePayload.put("idHoaDon", idHoaDon);
+            orderUpdatePayload.put("maHoaDon", hoaDon.getMaHoaDon()); // Lấy mã hóa đơn từ object đã load
+            orderUpdatePayload.put("trangThaiMoi", TrangThai.HUY.name());
+            orderUpdatePayload.put("thongBao", "Đơn hàng " + hoaDon.getMaHoaDon() + " đã được khách hàng hủy.");
+
+            System.out.println("PAYLOAD: " + orderUpdatePayload.toString());
+            // Gửi thông báo đến kênh của TẤT CẢ admin
+            String adminTopic = "/topic/admin/order-updates";
+            System.out.println("CHUẨN BỊ GỬI WEBSOCKET ĐẾN TOPIC: " + adminTopic);
+            messagingTemplate.convertAndSend(adminTopic, orderUpdatePayload);
+            System.out.println("ĐÃ GỌI HÀM convertAndSend.");
+        }
+        // --- KẾT THÚC PHẦN THÊM MỚI ---
+
+        return result;
     }
 
 

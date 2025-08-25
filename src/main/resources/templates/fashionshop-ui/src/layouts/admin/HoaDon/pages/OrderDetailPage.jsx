@@ -512,7 +512,8 @@ const OrderDetailPage = () => {
 
         {/* Modals và Dialogs */}
         {showHistoryModal && orderData && (
-          <OrderHistoryModal maHoaDon={orderData.maHoaDon} onClose={handleCloseHistoryModal} />
+          <OrderHistoryModal maHoaDon={orderData.maHoaDon} onClose={handleCloseHistoryModal}
+          onOrderUpdate={fetchOrderDetail} />
         )}
 
         <CancelOrderDialog

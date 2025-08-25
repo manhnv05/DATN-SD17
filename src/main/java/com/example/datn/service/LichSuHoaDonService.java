@@ -1,6 +1,7 @@
 package com.example.datn.service;
 
 import com.example.datn.dto.HoaDonHistoryDTO;
+import com.example.datn.dto.LichSuDonHangKhachHangDTO;
 import com.example.datn.entity.HoaDon;
 import com.example.datn.enums.TrangThai;
 import org.springframework.stereotype.Service;
@@ -12,7 +13,7 @@ public interface LichSuHoaDonService {
 
     List<HoaDonHistoryDTO> layLichSuThayDoiTrangThai(String maHoaDon);
 
-
+    List<LichSuDonHangKhachHangDTO> getLichSuDonHangCuaKhachHang(Integer idKhachHang);
 
     HoaDonHistoryDTO layLichSuThayDoiTrangThaiGanNhat (Integer idHoaDon);
 }
