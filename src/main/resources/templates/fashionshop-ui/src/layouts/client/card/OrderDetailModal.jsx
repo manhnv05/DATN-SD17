@@ -136,6 +136,7 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
         try {
           const response = await axios.get(
             `http://localhost:8080/api/hoa-don/tra-cuu-hoa-don/${orderCode}`
+            ,{ withCredentials: true }
           );
           if (response.data) {
             if (response.data.lichSuHoaDon) {

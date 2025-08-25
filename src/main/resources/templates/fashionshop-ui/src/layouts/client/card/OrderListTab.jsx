@@ -122,7 +122,7 @@ export default function OrderListTab({ user }) {
       try {
         // Gọi API để hủy đơn hàng
         // !!! LƯU Ý: Thay đổi URL này cho đúng với API backend của bạn !!!
-        await axios.put(`http://localhost:8080/api/don-hang/huy/${orderId}`);
+        await axios.put(`http://localhost:8080/api/don-hang/huy/${orderId}`),{ withCredentials: true };
 
         // Cập nhật giao diện ngay lập tức bằng cách xóa đơn hàng khỏi danh sách
         setAllOrders((prevOrders) => prevOrders.filter((order) => order.id !== orderId));
@@ -149,7 +149,10 @@ export default function OrderListTab({ user }) {
                 "Cache-Control": "no-cache",
                 Pragma: "no-cache",
                 Expires: "0",
+                
               },
+                withCredentials: true, 
+              
             }
           );
 

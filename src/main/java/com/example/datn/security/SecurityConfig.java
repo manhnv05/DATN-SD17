@@ -109,6 +109,24 @@ public class SecurityConfig {
                         )
                         .successHandler(oauth2SuccessHandler) // redirect về FE!
                 )
+                .logout(logout -> logout
+                        // 1. Endpoint để kích hoạt đăng xuất (phía FE sẽ gọi POST đến URL này)
+                        .logoutUrl("/api/auth/logout")
+
+                        // 2. Vô hiệu hóa session trên server (dọn dẹp "ngăn tủ")
+                        .invalidateHttpSession(true)
+
+                        // 3. Yêu cầu trình duyệt xóa các cookie này
+                        .deleteCookies("SESSION", "refreshToken")
+
+                        // 4. Xử lý sau khi logout thành công (trả về JSON cho FE)
+                        .logoutSuccessHandler((request, response, authentication) -> {
+                            response.setStatus(HttpServletResponse.SC_OK);
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"message\": \"Đã đăng xuất thành công!\"}");
+                            response.getWriter().flush();
+                        })
+                )
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) -> {

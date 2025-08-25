@@ -165,8 +165,9 @@ export default function OrderForm() {
             try {
                 const body = { tongTienHoaDon: itemSubtotal, khachHang: null };
                 const response = await axios.post(
-                    "http://localhost:8080/PhieuGiamGiaKhachHang/query", body
-                );
+                    "http://localhost:8080/PhieuGiamGiaKhachHang/query", body,
+                ); 
+                
                 setVouchers(response.data?.data?.content || []);
             } catch (e) {
                 setVouchers([]); toast.error("Không thể tải mã giảm giá.");
@@ -317,7 +318,8 @@ export default function OrderForm() {
         try {
             // 1. Lưu hóa đơn
             const resHoaDon = await axios.post(apiUrl, hoaDonOnlineRequest, {
-                headers: { "Content-Type": "application/json" }
+                headers: { "Content-Type": "application/json" },
+                   withCredentials: true
             });
 
             if (!(resHoaDon.data && resHoaDon.data.code === 1000)) {
@@ -339,7 +341,8 @@ export default function OrderForm() {
                     soTienThanhToan: Math.round(itemSubtotal + shippingFee - discountAmount),
                     ghiChu: "Thanh toán tiền mặt khi nhận hàng"
                 }, {
-                    headers: { "Content-Type": "application/json" }
+                    headers: { "Content-Type": "application/json" },
+                      withCredentials: true
                 });
 
                 setSuccess(true);
@@ -360,7 +363,7 @@ export default function OrderForm() {
                     urlReturn: window.location.origin + "/payment-result",
                 };
                 const res = await axios.post("http://localhost:8080/api/vnpay/submitOrder", payload, {
-                    headers: { "Content-Type": "application/json" }
+                    headers: { "Content-Type": "application/json" },  withCredentials: true
                 });
                 let payUrl = "";
                 if (res.data.url) {

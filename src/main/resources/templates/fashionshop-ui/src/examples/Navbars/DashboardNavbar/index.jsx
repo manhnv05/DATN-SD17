@@ -15,14 +15,16 @@ import Icon from "@mui/material/Icon";
 import Divider from "@mui/material/Divider";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
-
+import Badge from "@mui/material/Badge";
+import SoftTypography from "../../../components/SoftTypography"
 // Soft UI Dashboard React components
 import SoftBox from "components/SoftBox";
-
+import { toast } from "react-toastify";
 // Soft UI Dashboard React examples
 import Breadcrumbs from "examples/Breadcrumbs";
 import NotificationItem from "examples/Items/NotificationItem";
-
+import { Client } from "@stomp/stompjs"; // <-- THÊM MỚI
+import SockJS from "sockjs-client";
 // Custom styles for DashboardNavbar
 import {
     navbar,
@@ -90,6 +92,7 @@ function DashboardNavbar({ absolute, light, isMini }) {
     const location = useLocation();
     const navigate = useNavigate();
     const route = location.pathname.split("/").filter(Boolean);
+     const [notifications, setNotifications] = useState([]);
 
     // Giả lập thông tin user
     const user = {
@@ -121,7 +124,58 @@ function DashboardNavbar({ absolute, light, isMini }) {
         // Remove event listener on cleanup
         return () => window.removeEventListener("scroll", handleTransparentNavbar);
     }, [dispatch, fixedNavbar]);
+// useEffect cho WebSocket
+  useEffect(() => {
+    console.log("[DEBUG] Navbar component mounted. Setting up WebSocket...");
 
+    const client = new Client({
+      webSocketFactory: () => new SockJS('http://localhost:8080/ws'),
+      reconnectDelay: 5000,
+      debug: (str) => {
+        console.log(new Date(), str);
+      },
+      onConnect: () => {
+        console.log("[DEBUG] WebSocket CONNECTED successfully!");
+        const adminTopic = '/topic/admin/order-updates';
+        console.log(`[DEBUG] Subscribing to topic: ${adminTopic}`);
+        client.subscribe(adminTopic, (message) => {
+          console.log("[DEBUG] --- RAW MESSAGE RECEIVED ---");
+          console.log(message.body);
+          console.log("[DEBUG] --------------------------");
+          try {
+            const newNotification = JSON.parse(message.body);
+            console.log("[DEBUG] Parsed notification object:", newNotification);
+            console.log(`[DEBUG] Checking notification type. Received type is: '${newNotification.type}'`);
+            if (newNotification.type === 'NEW_ORDER') {
+              console.log("[DEBUG] CONDITION MET! This is a NEW_ORDER notification.");
+              toast.success(`Có đơn hàng mới: #${newNotification.maHoaDon}`);
+              setNotifications((prev) => {
+                const newState = [newNotification, ...prev];
+                console.log("[DEBUG] State is being updated. New notifications count:", newState.length);
+                return newState;
+              });
+            } else {
+              console.log("[DEBUG] Condition FAILED. Notification type is not 'NEW_ORDER', ignoring.");
+            }
+          } catch (error) {
+            console.error("[DEBUG] Error parsing WebSocket message:", error);
+          }
+        });
+      },
+      onStompError: (frame) => {
+        console.error('[DEBUG] Broker reported error: ' + frame.headers['message']);
+        console.error('[DEBUG] Additional details: ' + frame.body);
+      },
+    });
+
+    console.log("[DEBUG] Activating WebSocket client...");
+    client.activate();
+
+    return () => {
+      console.log("[DEBUG] Navbar component unmounted. Deactivating WebSocket.");
+      client.deactivate();
+    };
+  }, []); // Dependency rỗng để chỉ chạy 1 lần
     const handleMiniSidenav = () => setMiniSidenav(dispatch, !miniSidenav);
     const handleConfiguratorOpen = () => setOpenConfigurator(dispatch, !openConfigurator);
     const handleOpenMenu = (event) => setOpenMenu(event.currentTarget);
@@ -136,44 +190,37 @@ function DashboardNavbar({ absolute, light, isMini }) {
         navigate("/home");
     };
 
-    // Render the notifications menu
-    const renderMenu = () => (
-        <Menu
-            anchorEl={openMenu}
-            anchorOrigin={{
-                vertical: "bottom",
-                horizontal: "left",
+   const renderMenu = () => (
+    <Menu
+      anchorEl={openMenu}
+      anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+      open={Boolean(openMenu)}
+      onClose={handleCloseMenu}
+      sx={{ mt: 2 }}
+    >
+      {notifications.length > 0 ? (
+        notifications.map((noti) => (
+          <NotificationItem
+            key={noti.idHoaDon}
+            color="info"
+            image={<Icon fontSize="small" sx={{ color: "white" }}>shopping_cart</Icon>}
+            title={[`Đơn hàng mới #${noti.maHoaDon}`, `Từ: ${noti.tenKhachHang}`]}
+            date={new Date(noti.thoiGian).toLocaleString("vi-VN")}
+            onClick={() => {
+              navigate(`/QuanLyHoaDon/${noti.idHoaDon}`);
+              handleCloseMenu();
             }}
-            open={Boolean(openMenu)}
-            onClose={handleCloseMenu}
-            sx={{ mt: 2 }}
-        >
-            <NotificationItem
-                image={<img src={team2} alt="person" />}
-                title={["New message", "from Laur"]}
-                date="13 minutes ago"
-                onClick={handleCloseMenu}
-            />
-            <NotificationItem
-                image={<img src={logoSpotify} alt="Spotify" />}
-                title={["New album", "by Travis Scott"]}
-                date="1 day"
-                onClick={handleCloseMenu}
-            />
-            <NotificationItem
-                color="secondary"
-                image={
-                    <Icon fontSize="small" sx={{ color: ({ palette: { white } }) => white.main }}>
-                        payment
-                    </Icon>
-                }
-                title={["", "Payment successfully completed"]}
-                date="2 days"
-                onClick={handleCloseMenu}
-            />
-        </Menu>
-    );
-
+          />
+        ))
+      ) : (
+        <Box sx={{ p: 2, textAlign: "center" }}>
+          <SoftTypography variant="body2" color="textSecondary">
+            Không có thông báo mới.
+          </SoftTypography>
+        </Box>
+      )}
+    </Menu>
+  );
     // Render the account dropdown menu với nút Shop về /home
     const renderAccountMenu = () => (
         <Menu
@@ -328,22 +375,21 @@ function DashboardNavbar({ absolute, light, isMini }) {
                     <SoftBox sx={(theme) => navbarRow(theme, { isMini })}>
                         <SoftBox color={light ? "white" : "inherit"} display="flex" alignItems="center">
                             {/* Notification */}
-                            <IconButton
-                                size="large"
-                                color="inherit"
-                                sx={navbarIconButton}
-                                aria-controls="notification-menu"
-                                aria-haspopup="true"
-                                variant="contained"
-                                onClick={handleOpenMenu}
-                            >
-                                <Icon
-                                    className={light ? "text-white" : "text-dark"}
-                                    fontSize="large"
-                                >
-                                    notifications
-                                </Icon>
-                            </IconButton>
+                          <IconButton
+          size="large"
+          color="inherit"
+          sx={navbarIconButton}
+          aria-controls="notification-menu"
+          aria-haspopup="true"
+          variant="contained"
+          onClick={handleOpenMenu}
+        >
+          <Badge badgeContent={notifications.length} color="error">
+            <Icon className={light ? "text-white" : "text-dark"} fontSize="large">
+              notifications
+            </Icon>
+          </Badge>
+        </IconButton>
                             {/* Account Dropdown */}
                             <IconButton
                                 sx={navbarIconButton}
