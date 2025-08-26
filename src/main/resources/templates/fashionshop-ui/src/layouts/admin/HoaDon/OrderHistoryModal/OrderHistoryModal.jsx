@@ -24,7 +24,26 @@ const OrderHistoryModal = ({ maHoaDon, onClose }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const theme = useTheme(); // Hook để truy cập theme của Material-UI/Soft UI
-
+ const getStatusText = (status) => {
+        switch (status) {
+           case 0:
+            return "Tạo đơn hàng";
+        case 1:
+            return "Chờ xác nhận";
+        case 2:
+            return "Đã xác nhận";
+        case 3:
+            return "Chờ giao hàng";
+        case 4:
+            return "Đang vận chuyển";
+        case 5:
+            return "Hoàn thành";
+        case 6:
+            return "Hủy";
+            default:
+                return `Trạng thái ${status}`;
+        }
+    };
     const formatDateTime = (isoString) => {
         if (!isoString) return "";
         try {
@@ -55,14 +74,15 @@ const OrderHistoryModal = ({ maHoaDon, onClose }) => {
             setError(null);
             try {
                 const response = await fetch(
-                    `http://localhost:8080/api/hoa-don/lich-su/${maHoaDon}`,
+                    `http://localhost:8080/api/lich-su-hoa-don/lay-chi-tiet-hoa-don-thong-tin/${maHoaDon}`,
                     { credentials: "include" } // <-- SỬA ở đây, thêm dòng này
                 );
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
-                const data = await response.json();
-                setHistoryData(data);
+              const result = await response.json();
+                setHistoryData(result.data || []);
+                console.log("Lịch sử đơn hàng đã lấy:", result);
             } catch (err) {
                 console.error("Lỗi khi lấy lịch sử đơn hàng:", err);
                 setError("Không thể tải lịch sử đơn hàng. Vui lòng thử lại.");
@@ -122,6 +142,7 @@ const OrderHistoryModal = ({ maHoaDon, onClose }) => {
                             <TableCell sx={{ fontWeight: "bold" }}>Thời gian</TableCell>
                             <TableCell sx={{ fontWeight: "bold" }}>Người chỉnh sửa</TableCell>
                             <TableCell sx={{ fontWeight: "bold" }}>Trạng thái HĐ</TableCell>
+                             <TableCell sx={{ fontWeight: "bold" }}>Nội dung thay đổi</TableCell> 
                             <TableCell sx={{ fontWeight: "bold" }}>Ghi chú</TableCell>
 
                             <TableBody>
@@ -131,14 +152,14 @@ const OrderHistoryModal = ({ maHoaDon, onClose }) => {
                                         <TableRow
                                             key={item.id || index}
                                         >
-                                            <TableCell>{formatDateTime(item.thoiGian)}</TableCell>
-
-                                            <TableCell sx={{ fontWeight: "bold" }}>{item.nguoiChinhSua}</TableCell>
-                                            <TableCell>
-                                                <SoftTypography variant="body2" fontWeight="bold">
-                                                    {item.trangThaiHoaDon || "N/A"}
-                                                </SoftTypography>
-                                            </TableCell>
+                                           <TableCell>{formatDateTime(item.thoiGianThayDoi)}</TableCell>
+                                        <TableCell sx={{ fontWeight: "bold" }}>{item.nguoiThucHien}</TableCell>
+                                           <TableCell>
+                                            <SoftTypography sx={{ wordBreak: "break-word" }}>
+                                                {getStatusText(item.trangThai)}
+                                            </SoftTypography>
+                                        </TableCell>
+                                             <TableCell sx={{ wordBreak: "break-word" }}>{item.noiDungThayDoi || ""}</TableCell>
                                             <TableCell sx={{ wordBreak: "break-word" }}>{item.ghiChu || ""}</TableCell>
                                         </TableRow>
                                     );

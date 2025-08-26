@@ -77,9 +77,6 @@ const OrderInfo = ({ order }) => {
 
                 <hr className="my-3" /> 
 
-               
-
-              
              <h6 className="mb-3 fs-6 fw-bold" style={{ color: "#6ea8fe" }}>
   Thông tin người nhận
 </h6>

@@ -92,6 +92,7 @@ public class HoaDonController {
         return hoaDonService.layLichSuThayDoiTrangThai(maHoaDon);
     }
 
+
     @PutMapping("/trang-thai/{id}")
     public CapNhatTrangThaiDTO updateHoaDonStatus(@PathVariable Integer id, @RequestBody @Validated HoaDonUpdateStatusVO request) {
 
