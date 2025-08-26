@@ -47,6 +47,7 @@ public enum ErrorCode {
     ERROR_SEND_MAIL(400,"Lỗi gửi mail", HttpStatus.BAD_REQUEST),
 
     INVALID_QUANTITY_PGG(1015, "Số lượng PGG hết", HttpStatus.BAD_REQUEST),
+    LICH_SU_HOA_DON_NOT_FOUND(400,"Lịch sử hóa đơn không tồn tại", HttpStatus.NOT_FOUND),
     THERE_ARE_NO_ORDERS_YET(1018, "Chưa có đơn hàng nào", HttpStatus.BAD_REQUEST); //
 
 
