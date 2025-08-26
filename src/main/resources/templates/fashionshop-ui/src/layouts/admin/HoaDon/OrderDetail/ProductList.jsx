@@ -17,6 +17,7 @@ const ProductList = ({ orderId, orderStatus, onProductChange }) => {
   const [loading, setLoading] = useState(false);
   const [quantityInput, setQuantityInput] = useState({});
   const [stockData, setStockData] = useState({});
+
   const fetchAllStock = useCallback(async () => {
     try {
       const response = await axios.get(`${BASE_SERVER_URL}api/hoa-don/get-all-so-luong-ton-kho`,
@@ -48,17 +49,11 @@ const ProductList = ({ orderId, orderStatus, onProductChange }) => {
       const response = await axios.get(`${BASE_SERVER_URL}api/hoa-don/${orderId}`, {
         withCredentials: true,
       });
-      console.log("DEBUG: Response đầy đủ từ API:", response);
       const fetchedOrder = response.data || {};
-      console.log("%c--- DEBUG DỮ LIỆU KHÁCH HÀNG ---", "color: green; font-weight: bold;");
-      console.log("Toàn bộ dữ liệu hóa đơn (orderData) đã fetch về:", fetchedOrder);
-      console.log("Thông tin khách hàng cụ thể (orderData.khachHang):", fetchedOrder.khachHang);
-      console.log("---------------------------------");
       const fetchedProducts = fetchedOrder.danhSachChiTiet || [];
-
       setOrderData(fetchedOrder);
       setProductsInOrder(fetchedProducts);
-      console.log(`DEBUG: ĐÃ SET STATE productsInOrder với ${fetchedProducts.length} sản phẩm.`);
+
 
       const initialQuantities = {};
       fetchedProducts.forEach((product) => {
@@ -276,6 +271,7 @@ const ProductList = ({ orderId, orderStatus, onProductChange }) => {
         updatedProducts = productsInOrder.map((p) =>
           p.idSanPhamChiTiet === idChiTietSanPham ? { ...p, soLuong: newQuantity } : p
         );
+        console.log(newQuantity, idChiTietSanPham)
       } else {
         const price =
           productToAdd.giaTienSauKhiGiam !== null &&
@@ -290,10 +286,12 @@ const ProductList = ({ orderId, orderStatus, onProductChange }) => {
           gia: price,
         };
         updatedProducts = [...productsInOrder, newProduct];
+        console.log(quantity, idChiTietSanPham)
       }
-
+      // handleUpdateQuantity(,newQuantity )
       await updateOrderDetails(updatedProducts); // Gọi hàm helper
       toast.success("Thêm sản phẩm thành công!");
+      fetchListProductOrder()
     } catch (error) {
       console.error("Lỗi khi thêm sản phẩm:", error);
       toast.error(error.response?.data?.message || "Thêm sản phẩm thất bại.");
