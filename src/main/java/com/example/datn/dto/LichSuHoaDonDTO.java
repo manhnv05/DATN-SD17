@@ -3,6 +3,8 @@ package com.example.datn.dto;
 
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
 public class LichSuHoaDonDTO{
     private Integer id;
@@ -18,5 +20,6 @@ public class LichSuHoaDonDTO{
     private String ghiChu;
 
     private Integer trangThai;
+    private LocalDateTime thoiGianThayDoi;
 
 }

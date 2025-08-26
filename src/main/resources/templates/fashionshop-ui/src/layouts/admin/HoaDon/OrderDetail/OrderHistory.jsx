@@ -128,9 +128,32 @@ const OrderHistory = ({ orderId ,onOrderUpdate}) => {
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const data = await response.json();
       console.log("Dữ liệu lịch sử từ API:", data);
-      const transformedData = [...data]
-        .sort((a, b) => new Date(a.thoiGian) - new Date(b.thoiGian))
+
+
+      
+      // --- PHẦN LOGIC FILTER MỚI ĐÁNG TIN CẬY HƠN ---
+      const sortedData = [...data].sort((a, b) => new Date(a.thoiGian) - new Date(b.thoiGian));
+
+      const transformedData = sortedData
+        .filter((item, index, self) => {
+          const trangThai = item.trangThaiHoaDon ? item.trangThaiHoaDon.trim() : "";
+
+          // Nếu trạng thái không phải "Chờ xác nhận", luôn giữ lại
+          if (trangThai !== "Chờ xác nhận") {
+            return true;
+          }
+
+          // Nếu là "Chờ xác nhận", chỉ giữ lại item nếu vị trí của nó
+          // là vị trí ĐẦU TIÊN của trạng thái "Chờ xác nhận" trong cả mảng.
+          const firstIndex = self.findIndex(
+            i => i.trangThaiHoaDon?.trim() === "Chờ xác nhận"
+          );
+          return index === firstIndex;
+        })
         .map((item) => mapStatusToDisplay(item.trangThaiHoaDon, item.thoiGian));
+
+      // --- KẾT THÚC PHẦN SỬA ---
+
       console.log("Dữ liệu đã biến đổi để render:", transformedData);
       setHistoryData(transformedData);
     } catch (err) {

@@ -32,9 +32,6 @@ LIMIT 1 OFFSET 1
     HoaDonHistoryDTO findTrangThaiGanNhatCuaHoaDon( Integer idHoaDon);
 
 
-
-
-
-    List<LichSuHoaDon> findByHoaDon_MaHoaDonOrderByThoiGianThayDoiDesc(String maHoaDon);
+    List<LichSuHoaDon> findByHoaDon_MaHoaDonOrderByThoiGianThayDoiAsc(String hoaDonMaHoaDon);
 }
 

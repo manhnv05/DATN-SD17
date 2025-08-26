@@ -49,6 +49,7 @@ const mapOrderType = (apiType) => orderTypeMap[apiType] || apiType;
 
 const OrderDetailPage = () => {
   const { user } = useAuth();
+  console.log("Dữ liệu người dùng (user):", user);
   // === HOOKS VÀ STATE ===
   const { orderId } = useParams();
   const [orderData, setOrderData] = useState(null);
@@ -259,6 +260,7 @@ const OrderDetailPage = () => {
         tenNguoiNhan: orderData.receiverName,
         soDienThoai: orderData.phoneNumber,
         diaChi: orderData.diaChi,
+          phiVanChuyen: orderData.shippingFee,
       }
     : {};
 
@@ -533,6 +535,7 @@ const OrderDetailPage = () => {
             orderId={orderData.id}
             initialData={initialUpdateData}
             onUpdateSuccess={fetchOrderDetail}
+              currentUser={user?.tenNhanVien || "Không xác định"}
           />
         )}
 
