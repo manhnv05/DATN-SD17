@@ -956,7 +956,7 @@ public class HoaDonServiceImpl implements HoaDonService {
             );
         }
         // Lịch sử hóa đơn
-        String nguoiThucHienCapNhat = "Hệ thống"; // Hoặc lấy từ security context
+        String nguoiThucHienCapNhat = "Hệ thống";
         String noiDungLichSu;
         switch (hoaDonDaLuu.getTrangThai()) {
             case CHO_XAC_NHAN:

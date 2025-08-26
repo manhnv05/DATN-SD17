@@ -143,7 +143,9 @@ const OrderLookup = () => {
       try {
         // [ĐÃ SỬA] Thêm dấu "/" vào URL
         const response = await axios.get(
-          `http://localhost:8080/api/hoa-don/tra-cuu-hoa-don/${maHoaDon.trim()}`
+          `http://localhost:8080/api/hoa-don/tra-cuu-hoa-don/${maHoaDon.trim()}`,{ credentials: "include" }
+
+
         );
         if (response.data) {
           if (response.data.lichSuHoaDon) {
