@@ -169,9 +169,23 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
         <Typography sx={{ textAlign: "center", p: 3 }}>Chưa có lịch sử trạng thái.</Typography>
       );
 
-    const transformedData = history.map((item) => ({
-      ...getStatusDetails(item.trangThaiHoaDon),
-      formattedDate: formatDateTime(item.thoiGian),
+     const uniqueStatusHistory = [];
+    const seenStatuses = new Set();
+
+    for (const item of history) {
+        const statusDetails = getStatusDetails(item.trangThaiHoaDon);
+        const statusText = statusDetails.text; // Lấy ra text chuẩn hóa (ví dụ: "Chờ xác nhận")
+
+        if (!seenStatuses.has(statusText)) {
+            uniqueStatusHistory.push(item);
+            seenStatuses.add(statusText);
+        }
+    }
+    
+    // Sử dụng mảng đã được lọc để render
+    const transformedData = uniqueStatusHistory.map((item) => ({
+        ...getStatusDetails(item.trangThaiHoaDon),
+        formattedDate: formatDateTime(item.thoiGian),
     }));
     const totalItems = transformedData.length;
     const activeItems = transformedData.length;
