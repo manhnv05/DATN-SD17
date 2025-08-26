@@ -120,7 +120,7 @@ const PaymentHistory = ({ orderData }) => {
                         <strong>Mã giao dịch:</strong> {payment.maGiaoDich || "—"}
                       </div>
                       <div className="col-md-6 mb-2">
-                        <strong>Nhân viên xác nhận:</strong> {orderData.StaffName || "—"}
+                        <strong>Nhân viên xác nhận:</strong> {orderData.StaffName || "Nhân viên Hệ thống"}
                       </div>
                       <div className="col-md-6 mb-2">
                         <strong>Ghi chú:</strong> {payment.ghiChu || "—"}
