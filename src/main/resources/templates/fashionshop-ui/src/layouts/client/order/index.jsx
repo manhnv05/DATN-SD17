@@ -16,6 +16,11 @@ import {
   Autocomplete,
   Modal,
   IconButton,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from "@mui/material";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import ConfirmationNumberOutlinedIcon from "@mui/icons-material/ConfirmationNumberOutlined";
@@ -43,6 +48,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import AddressDialogClient from "../components/AddressDialog";
 
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 // --- GHN CONFIG ---
 const GHN_API_BASE_URL = "https://online-gateway.ghn.vn/shiip/public-api";
 const GHN_TOKEN = "03b71be1-6891-11f0-9e03-7626358ab3e0";
@@ -61,7 +67,7 @@ const formatCurrency = (amount) => `${Number(amount).toLocaleString("vi-VN")}₫
 export default function OrderForm() {
   const location = useLocation();
   const navigate = useNavigate();
-
+const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const selectedItems = location.state?.selectedItems || [];
   useEffect(() => {
     if (!selectedItems.length) {
@@ -312,7 +318,7 @@ export default function OrderForm() {
         setVouchers(response.data?.data?.content || []);
       } catch (e) {
         setVouchers([]);
-        toast.error("Không thể tải mã giảm giá.");
+    
       }
     };
     fetchVouchers();
@@ -443,9 +449,9 @@ useEffect(() => {
   };
 
   // Main submit
-  const handleSubmit = async (event) => {
+  const handleConfirmOrder = async (event) => {
     event.preventDefault();
-
+ setConfirmDialogOpen(false);
     if (
       !form.name ||
       !form.phone ||
@@ -542,21 +548,6 @@ useEffect(() => {
 
       if (form.payment === "cod") {
         // 2. Lưu chi tiết thanh toán (COD)
-        await axios.post(
-          "http://localhost:8080/chiTietThanhToan",
-          {
-            idHoaDon: hoaDon.id,
-            idHinhThucThanhToan: 1, // 1: COD
-            maGiaoDich: null,
-            soTienThanhToan: Math.round(itemSubtotal + shippingFee - discountAmount),
-            ghiChu: "Thanh toán tiền mặt khi nhận hàng",
-          },
-          {
-            headers: { "Content-Type": "application/json" },
-            withCredentials: true,
-          }
-        );
-
         setSuccess(true);
         toast.success("Đặt hàng thành công!");
         setTimeout(() => {
@@ -595,7 +586,15 @@ useEffect(() => {
       toast.error("Lỗi khi xử lý đơn hàng!");
     }
   };
-
+const handleSubmit = (event) => {
+    event.preventDefault();
+    // Kiểm tra sơ bộ trước khi mở dialog
+    if (!form.name || !form.phone || !form.address || !form.province || !form.district || !form.ward) {
+        toast.warn("Vui lòng nhập đầy đủ thông tin giao hàng!");
+        return;
+    }
+    setConfirmDialogOpen(true); // Chỉ mở dialog
+};
   const handleCartQuantityChange = (type, idx) => {
     setCartItems((prev) =>
       prev.map((item, i) =>
@@ -1198,7 +1197,7 @@ useEffect(() => {
                   "&:hover": { bgcolor: "#1762ac" },
                 }}
                 startIcon={<ShoppingCartIcon />}
-                onClick={handleSubmit}
+               onClick={handleSubmit}
                 disabled={isCalculatingFee || (shippingFee === 0 && form.ward !== null)}
               >
                 {isCalculatingFee ? "Đang tính phí..." : "Đặt hàng"}
@@ -1219,6 +1218,77 @@ useEffect(() => {
         onClose={() => setAddressDialogOpen(false)}
         onAddressSelect={addressSelect}
       />
+      <Dialog
+    open={confirmDialogOpen}
+    onClose={() => setConfirmDialogOpen(false)}
+    PaperProps={{
+        sx: {
+            borderRadius: "16px", // Bo góc dialog
+            width: "100%",
+            maxWidth: "400px",
+        },
+    }}
+>
+    <DialogTitle sx={{ p: 2.5, pb: 0 }}>
+        <Stack direction="row" alignItems="center" spacing={1.5}>
+            <HelpOutlineIcon sx={{ color: "primary.main", fontSize: "28px" }} />
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                Xác nhận đơn hàng
+            </Typography>
+        </Stack>
+    </DialogTitle>
+    <DialogContent sx={{ p: 2.5 }}>
+        <DialogContentText sx={{ fontSize: "1rem", color: "#424242" }}>
+            Hệ thống sẽ tiến hành tạo đơn hàng của bạn. Bạn có chắc chắn muốn tiếp tục không?
+        </DialogContentText>
+    </DialogContent>
+    <DialogActions sx={{ p: 2.5, pt: 1 }}>
+        <Stack direction="row" spacing={1.5} sx={{ width: "100%" }}>
+            <Button
+                onClick={() => setConfirmDialogOpen(false)}
+                variant="outlined"
+                color="secondary"
+                fullWidth
+               sx={{
+                    borderRadius: 2,
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    fontSize: '1rem',
+                    // Đặt màu cụ thể để dễ đọc hơn
+                    color: "grey.800",
+                    borderColor: "grey.400",
+                    '&:hover': {
+                        borderColor: "grey.800",
+                        bgcolor: "grey.100"
+                    }
+                }}
+            >
+                Xem lại
+            </Button>
+            <Button
+                onClick={handleConfirmOrder}
+                variant="contained"
+              
+                fullWidth
+               sx={{
+                    borderRadius: 2,
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    fontSize: '1rem',
+                   color: 'white !important',
+                    // Ghi đè màu nền để đồng bộ với icon
+                    bgcolor: '#1976d2', // Xanh đậm
+                    '&:hover': {
+                        bgcolor: '#1565c0' // Đậm hơn một chút khi hover
+                    },
+                    boxShadow: 'none'
+                }}
+            >
+                Xác nhận
+            </Button>
+        </Stack>
+    </DialogActions>
+</Dialog>
     </Box>
   );
 }
