@@ -19,7 +19,8 @@ const ProductList = ({ orderId, orderStatus, onProductChange }) => {
   const [stockData, setStockData] = useState({});
   const fetchAllStock = useCallback(async () => {
     try {
-      const response = await axios.get(`${BASE_SERVER_URL}api/hoa-don/get-all-so-luong-ton-kho`);
+      const response = await axios.get(`${BASE_SERVER_URL}api/hoa-don/get-all-so-luong-ton-kho`,
+        { withCredentials: true });
       const stockList = response.data?.data || [];
       // Chuyển đổi mảng thành một object để tra cứu nhanh hơn (dạng {id: soLuong})
       const stockMap = stockList.reduce((map, item) => {
@@ -168,20 +169,22 @@ const ProductList = ({ orderId, orderStatus, onProductChange }) => {
       toast.warn("Không thể xóa sản phẩm cuối cùng.");
       return;
     }
-
+    console.log(parsedQuantity, productToUpdate)
     setLoading(true);
     try {
       // BƯỚC 1: CẬP NHẬT TỒN KHO
       const chenhLech = parsedQuantity - currentQuantity;
       if (chenhLech > 0) {
         await axios.put(
-          `${BASE_SERVER_URL}api/hoa-don/giam-so-luong-san-pham/${productId}?soLuong=${chenhLech}`
+          `${BASE_SERVER_URL}api/hoa-don/giam-so-luong-san-pham/${productId}?soLuong=${chenhLech}`, {},
+          { withCredentials: true }
         );
       } else {
         await axios.put(
           `${BASE_SERVER_URL}api/hoa-don/tang-so-luong-san-pham/${productId}?soLuong=${Math.abs(
             chenhLech
-          )}`
+          )}`, {},
+          { withCredentials: true }
         );
       }
 
@@ -260,7 +263,8 @@ const ProductList = ({ orderId, orderStatus, onProductChange }) => {
 
       // BƯỚC 1: CẬP NHẬT TỒN KHO
       await axios.put(
-        `${BASE_SERVER_URL}api/hoa-don/giam-so-luong-san-pham/${idChiTietSanPham}?soLuong=${quantity}`
+        `${BASE_SERVER_URL}api/hoa-don/giam-so-luong-san-pham/${idChiTietSanPham}?soLuong=${quantity}`, {},
+        { withCredentials: true }
       );
 
       // BƯỚC 2: CẬP NHẬT HÓA ĐƠN
@@ -275,7 +279,7 @@ const ProductList = ({ orderId, orderStatus, onProductChange }) => {
       } else {
         const price =
           productToAdd.giaTienSauKhiGiam !== null &&
-          productToAdd.giaTienSauKhiGiam < productToAdd.gia
+            productToAdd.giaTienSauKhiGiam < productToAdd.gia
             ? productToAdd.giaTienSauKhiGiam
             : productToAdd.gia;
         const newProduct = {
