@@ -85,8 +85,10 @@ public class SecurityConfig {
                                 "/api/v1/**",
                                 "/api/outlet/**",
                                 "/api/hoa-don/luu-hoa-don-online-chua-dang-nhap",
+
                                 "/chiTietThanhToan",
                                 "/api/hoa-don/tra-cuu-hoa-don/**"
+
 
                         ).permitAll()
                         // CHẶN QUYỀN TRUY CẬP API QUẢN TRỊ: chỉ cho phép các role quản trị
