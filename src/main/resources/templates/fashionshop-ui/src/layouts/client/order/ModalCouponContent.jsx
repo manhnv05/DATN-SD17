@@ -1,20 +1,62 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import PropTypes from "prop-types";
-import { Box, Typography, Button, IconButton } from "@mui/material";
+import { Box, Typography, Button, IconButton, CircularProgress, Paper, Stack } from "@mui/material";
 import ConfirmationNumberOutlinedIcon from "@mui/icons-material/ConfirmationNumberOutlined";
 import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
 import CloseIcon from "@mui/icons-material/Close";
-import {
-    PRIMARY_BLUE,
-    WHITE,
-    LIGHT_BLUE_BG,
-    BORDER_COLOR,
-    MAIN_TEXT_COLOR
-} from "./constants";
+import { PRIMARY_BLUE, WHITE, LIGHT_BLUE_BG, BORDER_COLOR, MAIN_TEXT_COLOR } from "./constants";
 import axios from "axios";
+// --- Helpers ---
+const formatCurrency = (amount) => `${Number(amount).toLocaleString("vi-VN")}₫`;
 
+// Hàm tính giá trị giảm giá thực tế của một voucher dựa trên tổng tiền
+const calculateActualDiscount = (coupon, subtotal) => {
+  if (!coupon || subtotal <= 0) return 0;
+  let discount = 0;
+  // Giảm theo %
+  if (coupon.loaiPhieu === 0 || (coupon.phamTramGiamGia && coupon.phamTramGiamGia > 0)) {
+    discount = subtotal * (coupon.phamTramGiamGia / 100);
+    if (coupon.giamToiDa > 0) {
+      discount = Math.min(discount, coupon.giamToiDa);
+    }
+  } 
+  // Giảm thẳng tiền
+  else if (coupon.loaiPhieu === 1 || (coupon.soTienGiam && coupon.soTienGiam > 0)) {
+    discount = coupon.soTienGiam;
+  }
+  return discount;
+};
+
+const formatVoucherDetails = (voucher) => {
+    if (!voucher) return "";
+    let details = [];
+  
+    // Theo ý bạn: loaiPhieu === 0 là giảm thẳng tiền
+    if (voucher.loaiPhieu === 0 && voucher.soTienGiam > 0) {
+      details.push(`Giảm ${formatCurrency(voucher.soTienGiam)}`);
+    } 
+    // Theo ý bạn: loaiPhieu === 1 là giảm theo %
+    else if (voucher.loaiPhieu === 1 && voucher.phamTramGiamGia > 0) {
+      details.push(`Giảm ${voucher.phamTramGiamGia}%`);
+      if (voucher.giamToiDa > 0) {
+        details.push(`tối đa ${formatCurrency(voucher.giamToiDa)}`);
+      }
+    }
+  
+    // Điều kiện tối thiểu vẫn giữ nguyên
+    if (voucher.dieuKienGiam > 0) {
+      details.push(`cho đơn từ ${formatCurrency(voucher.dieuKienGiam)}`);
+    }
+  
+    // Xử lý trường hợp không có thông tin giảm giá rõ ràng
+    if (details.length === 0) {
+        return "Khuyến mãi đặc biệt";
+    }
+  
+    return details.join(" ");
+};
 // Dùng API động, không lấy AVAILABLE_COUPONS cứng nữa
-export default function ModalCouponContent({ onClose, handleQuickCouponSelect }) {
+export default function ModalCouponContent({ onClose, handleQuickCouponSelect ,itemSubtotal, user}) {
     const [coupons, setCoupons] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -27,7 +69,8 @@ export default function ModalCouponContent({ onClose, handleQuickCouponSelect })
                 // Thay thế bằng API thực tế của bạn, ví dụ /PhieuGiamGiaKhachHang/query
                 const response = await axios.post(
                     "http://localhost:8080/PhieuGiamGiaKhachHang/query",
-                    { tongTienHoaDon: 1000000, khachHang: null }
+                    {  tongTienHoaDon: itemSubtotal,
+          khachHang: user && user.id ?  user.id : null }
                 );
                 setCoupons(response.data?.data?.content || []);
             } catch {
@@ -36,163 +79,132 @@ export default function ModalCouponContent({ onClose, handleQuickCouponSelect })
             setLoading(false);
         };
         fetchCoupons();
-    }, []);
+    }, [itemSubtotal, user]);
 
+    // Sắp xếp để tìm coupon tốt nhất dựa trên giá trị giảm giá thực tế
+  const sortedCoupons = useMemo(() => {
+    if (!coupons || coupons.length === 0) return [];
+    return [...coupons].sort((a, b) => {
+        const discountA = calculateActualDiscount(a, itemSubtotal);
+        const discountB = calculateActualDiscount(b, itemSubtotal);
+        return discountB - discountA; // Sắp xếp giảm dần
+    });
+  }, [coupons, itemSubtotal]);
     // Tìm coupon tốt nhất (ví dụ: giảm nhiều nhất)
-    let bestCoupon = null;
-    let otherCoupons = [];
-    if (coupons && coupons.length > 0) {
-        bestCoupon = coupons[0];
-        for (let i = 1; i < coupons.length; ++i) {
-            // So sánh giảm giá thực tế
-            const bestValue = bestCoupon.loaiPhieu === 0
-                ? bestCoupon.giamToiDa
-                : (bestCoupon.soTienGiam || 0);
-            const thisValue = coupons[i].loaiPhieu === 0
-                ? coupons[i].giamToiDa
-                : (coupons[i].soTienGiam || 0);
-            if (thisValue > bestValue) bestCoupon = coupons[i];
-        }
-        otherCoupons = coupons.filter(c => c !== bestCoupon);
-    }
+   const bestCoupon = sortedCoupons.length > 0 ? sortedCoupons[0] : null;
+  const otherCoupons = sortedCoupons.length > 1 ? sortedCoupons.slice(1) : [];
 
-    return (
-        <Box
-            sx={{
-                bgcolor: WHITE,
-                borderRadius: 3,
-                width: 350,
-                maxWidth: "90vw",
-                mx: "auto",
-                mt: 7,
-                p: 0,
-                boxShadow: 8,
-                outline: "none",
-                overflow: "hidden"
-            }}
-        >
-            <Box sx={{ display: "flex", alignItems: "center", borderBottom: `1px solid ${BORDER_COLOR}`, p: 2, pb: 1.5 }}>
-                <IconButton size="small" sx={{ mr: 1 }} onClick={onClose}>
-                    <CloseIcon />
-                </IconButton>
-                <Typography sx={{ fontWeight: 700, flex: 1, textAlign: "center", fontSize: 17, color: MAIN_TEXT_COLOR }}>
-                    Chọn mã khuyến mãi
+  
+  return (
+    <Paper
+      sx={{
+        bgcolor: WHITE, borderRadius: 3, width: 450, maxWidth: "90vw",
+        mx: "auto", p: 0, boxShadow: 8, outline: "none",
+        display: 'flex', flexDirection: 'column'
+      }}
+    >
+      <Box sx={{ display: "flex", alignItems: "center", borderBottom: `1px solid ${BORDER_COLOR}`, p: 2, pb: 1.5, flexShrink: 0 }}>
+        <IconButton size="small" sx={{ mr: 1 }} onClick={onClose}> <CloseIcon /> </IconButton>
+        <Typography sx={{ fontWeight: 700, flex: 1, textAlign: "center", fontSize: 17, color: MAIN_TEXT_COLOR }}>
+          Chọn mã khuyến mãi
+        </Typography>
+        <Box width={32} />
+      </Box>
+
+      <Box sx={{ p: 2, flex: 1, overflowY: 'auto', minHeight: 300, maxHeight: '70vh' }}>
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+            <CircularProgress />
+          </Box>
+        ) : coupons.length === 0 ? (
+          <Box sx={{ textAlign: 'center', my: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <LocalOfferOutlinedIcon sx={{ color: "#ccc", fontSize: 56, mb: 2 }} />
+            <Typography color="#888" fontWeight={500}>
+              Không có mã khuyến mãi phù hợp
+            </Typography>
+          </Box>
+        ) : (
+          <Stack spacing={2}>
+            {bestCoupon && (
+              <Box>
+                <Typography sx={{ fontWeight: 700, color: PRIMARY_BLUE, mb: 1, fontSize: 15 }}>
+                  Đề xuất tốt nhất
                 </Typography>
-                <Box width={32} />
-            </Box>
-            <Box sx={{ p: 3, pt: 1.5, textAlign: "center" }}>
-                {loading ? (
-                    <Typography color="#888" fontWeight={500}>
-                        Đang tải mã khuyến mãi...
-                    </Typography>
-                ) : coupons.length === 0 ? (
-                    <Box>
-                        <LocalOfferOutlinedIcon sx={{ color: "#bbb", fontSize: 56, mb: 2 }} />
-                        <Typography color="#888" fontWeight={500}>
-                            Không có mã khuyến mãi phù hợp
-                        </Typography>
-                    </Box>
-                ) : (
-                    <Box>
-                        {bestCoupon && (
-                            <Button
-                                variant="outlined"
-                                fullWidth
-                                sx={{
-                                    mb: 1.5,
-                                    borderRadius: 3,
-                                    fontWeight: 700,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "flex-start",
-                                    fontSize: 15,
-                                    borderWidth: 2,
-                                    borderColor: PRIMARY_BLUE,
-                                    bgcolor: LIGHT_BLUE_BG,
-                                    color: PRIMARY_BLUE,
-                                    textTransform: "none",
-                                    "& .MuiSvgIcon-root": { mr: 1 }
-                                }}
-                                onClick={() => handleQuickCouponSelect(bestCoupon)}
-                                startIcon={<ConfirmationNumberOutlinedIcon sx={{ color: PRIMARY_BLUE }} />}
-                            >
-                                {bestCoupon.maPhieuGiamGia}
-                                <Typography variant="caption" sx={{ color: "#888", ml: 1 }}>
-                                    ({bestCoupon.tenPhieu})
-                                </Typography>
-                                <Box sx={{
-                                    ml: 1.5,
-                                    px: 1.2,
-                                    py: 0.2,
-                                    bgcolor: PRIMARY_BLUE,
-                                    color: WHITE,
-                                    fontWeight: 700,
-                                    fontSize: 12,
-                                    borderRadius: 1
-                                }}>
-                                    Tốt nhất
-                                </Box>
-                            </Button>
-                        )}
-                        {otherCoupons.map((coupon) => (
-                            <Button
-                                key={coupon.id}
-                                variant="outlined"
-                                fullWidth
-                                sx={{
-                                    my: 0.5,
-                                    borderRadius: 3,
-                                    fontWeight: 600,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "flex-start",
-                                    fontSize: 15,
-                                    color: PRIMARY_BLUE,
-                                    borderColor: BORDER_COLOR,
-                                    textTransform: "none"
-                                }}
-                                onClick={() => handleQuickCouponSelect(coupon)}
-                                startIcon={<ConfirmationNumberOutlinedIcon sx={{ color: "#bdbdbd" }} />}
-                            >
-                                {coupon.maPhieuGiamGia}
-                                <Typography variant="caption" sx={{ color: "#888", ml: 1 }}>
-                                    ({coupon.tenPhieu})
-                                </Typography>
-                            </Button>
-                        ))}
-                        {(!bestCoupon && otherCoupons.length === 0) && (
-                            <Box sx={{ mt: 3, mb: 2 }}>
-                                <LocalOfferOutlinedIcon sx={{ color: "#bbb", fontSize: 56, mb: 2 }} />
-                                <Typography color="#888" fontWeight={500}>
-                                    Không có mã khuyến mãi phù hợp
-                                </Typography>
-                            </Box>
-                        )}
-                    </Box>
-                )}
-            </Box>
-            <Box sx={{ borderTop: `1px solid ${BORDER_COLOR}`, bgcolor: "#fafafa", p: 1.3 }}>
-                <Button
-                    fullWidth
-                    variant="contained"
-                    color="inherit"
-                    onClick={onClose}
-                    sx={{
-                        bgcolor: "#eee",
-                        color: "#444",
-                        boxShadow: "none",
-                        fontWeight: 700,
-                        borderRadius: 2,
-                        fontSize: 15,
-                        textTransform: "none"
-                    }}
-                >Đóng</Button>
-            </Box>
-        </Box>
-    );
+                <VoucherCard coupon={bestCoupon} onSelect={handleQuickCouponSelect} subtotal={itemSubtotal} isBest />
+              </Box>
+            )}
+            {otherCoupons.length > 0 && (
+              <Box>
+                <Typography sx={{ fontWeight: 700, color: MAIN_TEXT_COLOR, mb: 1, fontSize: 15 }}>
+                  Các mã khác
+                </Typography>
+                <Stack spacing={1.5}>
+                  {otherCoupons.map((coupon) => (
+                    <VoucherCard key={coupon.id} coupon={coupon} onSelect={handleQuickCouponSelect} subtotal={itemSubtotal} />
+                  ))}
+                </Stack>
+              </Box>
+            )}
+          </Stack>
+        )}
+      </Box>
+    </Paper>
+  );
 }
 
+// Component con để render từng thẻ Voucher
+const VoucherCard = ({ coupon, onSelect, subtotal, isBest = false }) => {
+    const actualDiscount = calculateActualDiscount(coupon, subtotal);
+
+    return (
+        <Paper 
+            variant="outlined"
+            sx={{
+                p: 1.5,
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                borderColor: isBest ? PRIMARY_BLUE : BORDER_COLOR,
+                borderWidth: isBest ? '1.5px' : '1px',
+                bgcolor: isBest ? LIGHT_BLUE_BG : 'transparent',
+            }}
+        >
+            <Box sx={{ mr: 2, textAlign: 'center', color: PRIMARY_BLUE }}>
+                <ConfirmationNumberOutlinedIcon sx={{ fontSize: 40 }}/>
+            </Box>
+            <Box flex={1}>
+                <Typography fontWeight={700} color={MAIN_TEXT_COLOR}>{coupon.tenPhieu}</Typography>
+                <Typography fontSize={14} color={isBest ? PRIMARY_BLUE : "#444"} fontWeight={500}>{formatVoucherDetails(coupon)}</Typography>
+                <Typography fontSize={13} color="#777">HSD: {new Date(coupon.ngayKetThuc).toLocaleDateString('vi-VN')}</Typography>
+            </Box>
+            <Button
+                variant="text"
+                onClick={() => onSelect(coupon)}
+                sx={{ fontWeight: 700, color: PRIMARY_BLUE, ml: 1, alignSelf: 'center' }}
+            >
+                Dùng
+            </Button>
+        </Paper>
+    )
+}
+
+
 ModalCouponContent.propTypes = {
-    onClose: PropTypes.func.isRequired,
-    handleQuickCouponSelect: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
+  handleQuickCouponSelect: PropTypes.func.isRequired,
+  // Thêm propTypes cho các props mới
+  itemSubtotal: PropTypes.number.isRequired,
+  user: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
+  })
+};
+
+ModalCouponContent.defaultProps = {
+    user: null
+};
+VoucherCard.propTypes = {
+    coupon: PropTypes.object.isRequired,
+    onSelect: PropTypes.func.isRequired,
+    subtotal: PropTypes.number.isRequired,
+    isBest: PropTypes.bool
 };
