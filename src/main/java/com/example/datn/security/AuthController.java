@@ -3,6 +3,7 @@ package com.example.datn.security;
 import com.example.datn.dto.QuenMatKhauDTO;
 import com.example.datn.dto.RegisterKhachHangDTO;
 import com.example.datn.dto.ResetMatKhauDTO;
+import com.example.datn.dto.TaiKhoanResponseDTO;
 import com.example.datn.entity.KhachHang;
 import com.example.datn.entity.NhanVien;
 import com.example.datn.repository.KhachHangRepository;
@@ -296,6 +297,58 @@ public class AuthController {
         }
 
         // Không tìm thấy user
+        return ResponseEntity.status(HttpServletResponse.SC_UNAUTHORIZED)
+                .body(Collections.singletonMap("message", "Không tìm thấy thông tin người dùng"));
+    }
+    @GetMapping("/lay-thong-tin/nguoi-dung-hien-tai")
+    public ResponseEntity<?> getUser(Authentication authentication) {
+        // 1. Kiểm tra trạng thái đăng nhập
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpServletResponse.SC_UNAUTHORIZED)
+                    .body(Collections.singletonMap("message", "Chưa đăng nhập"));
+        }
+
+        String username = authentication.getName(); // Lấy email từ phiên đăng nhập
+
+        // 2. Ưu tiên tìm trong bảng Nhân Viên trước
+        Optional<NhanVien> nvOpt = nhanVienRepository.findByEmail(username);
+        if (nvOpt.isPresent()) {
+            NhanVien nv = nvOpt.get();
+            // Xác định vai trò dựa trên id_vai_tro
+            String vaiTro = (nv.getVaiTro().getId() == 2) ? "ADMIN" : "NHANVIEN";
+
+            // Tạo DTO hợp nhất từ thông tin Nhân Viên
+            TaiKhoanResponseDTO dto = new TaiKhoanResponseDTO(
+                    nv.getId(),
+                    nv.getMaNhanVien(),
+                    nv.getHoVaTen(),
+                    nv.getEmail(),
+                    nv.getHinhAnh(),
+                    vaiTro
+            );
+            // Trả về đối tượng DTO duy nhất
+            return ResponseEntity.ok(dto);
+        }
+
+        // 3. Nếu không phải Nhân Viên, tìm trong bảng Khách Hàng
+        Optional<KhachHang> khOpt = khachHangRepository.findByEmail(username);
+        if (khOpt.isPresent()) {
+            KhachHang kh = khOpt.get();
+
+            // Tạo DTO hợp nhất từ thông tin Khách Hàng
+            TaiKhoanResponseDTO dto = new TaiKhoanResponseDTO(
+                    kh.getId(),
+                    kh.getMaKhachHang(), // Giả sử khách hàng có mã
+                    kh.getTenKhachHang(),
+                    kh.getEmail(),
+                    kh.getHinhAnh(),
+                    "KHACHHANG"
+            );
+            // Trả về đối tượng DTO duy nhất
+            return ResponseEntity.ok(dto);
+        }
+
+        // 4. Nếu không tìm thấy thông tin ở cả 2 bảng
         return ResponseEntity.status(HttpServletResponse.SC_UNAUTHORIZED)
                 .body(Collections.singletonMap("message", "Không tìm thấy thông tin người dùng"));
     }

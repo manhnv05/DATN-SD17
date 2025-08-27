@@ -1,6 +1,7 @@
 package com.example.datn.controller;
 
 import com.example.datn.dto.NhanVienDTO;
+import com.example.datn.repository.KhachHangRepository;
 import com.example.datn.service.NhanVienService;
 import com.example.datn.vo.nhanVienVO.NhanVienQueryVO;
 import com.example.datn.vo.nhanVienVO.NhanVienUpdateVO;
@@ -19,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class NhanVienController {
 
     private final NhanVienService nhanVienService;
+
 
     @Autowired
     public NhanVienController(NhanVienService nhanVienService) {
@@ -57,4 +59,6 @@ public class NhanVienController {
     public Page<NhanVienDTO> query(@Valid NhanVienQueryVO vO) {
         return nhanVienService.query(vO);
     }
+
+
 }
