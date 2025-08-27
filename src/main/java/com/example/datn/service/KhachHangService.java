@@ -8,6 +8,7 @@ import com.example.datn.entity.DiaChi;
 import com.example.datn.entity.KhachHang;
 import com.example.datn.repository.DiaChiRepository;
 import com.example.datn.repository.KhachHangRepository;
+import com.example.datn.repository.NhanVienRepository;
 import com.example.datn.vo.khachHangVO.KhachHangQueryVO;
 import com.example.datn.vo.khachHangVO.KhachHangUpdateVO;
 import com.example.datn.vo.khachHangVO.KhachHangVO;
@@ -33,7 +34,8 @@ public class KhachHangService {
 
     @Autowired
     private KhachHangRepository khachHangRepository;
-
+    @Autowired
+    private NhanVienRepository nhanVienRepository;
     @Autowired
     private DiaChiRepository diaChiRepository;
 
@@ -44,6 +46,9 @@ public class KhachHangService {
 
     @Autowired
     private CloudinaryService cloudinaryService;
+
+
+
 
     // Lưu khách hàng, nhận thêm file ảnh (có thể null)
     public Integer save(KhachHangVO vO, MultipartFile imageFile) {
