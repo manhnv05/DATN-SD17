@@ -8,6 +8,7 @@ import com.example.datn.entity.KhachHang;
 import com.example.datn.entity.NhanVien;
 import com.example.datn.repository.KhachHangRepository;
 import com.example.datn.repository.NhanVienRepository;
+import com.example.datn.vo.clientVO.ChangePasswordDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -166,6 +167,33 @@ public class AuthController {
         return ResponseEntity.ok("Đăng ký tài khoản thành công!");
     }
 
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordDTO request) {
+        logger.info("Yêu cầu đổi mật khẩu cho khách hàng: {}", request.getEmail());
+
+        // Tìm khách hàng theo email
+        Optional<KhachHang> optionalKhachHang = khachHangRepository.findByEmail(request.getEmail());
+        if (optionalKhachHang.isEmpty()) {
+            logger.warn("Không tìm thấy khách hàng với email: {}", request.getEmail());
+            return ResponseEntity.badRequest().body("Email không tồn tại!");
+        }
+
+        KhachHang khachHang = optionalKhachHang.get();
+
+        // Kiểm tra mật khẩu cũ
+        if (!passwordEncoder.matches(request.getOldPassword(), khachHang.getMatKhau())) {
+            logger.warn("Mật khẩu cũ không đúng cho email: {}", request.getEmail());
+            return ResponseEntity.badRequest().body("Mật khẩu cũ không đúng!");
+        }
+
+        // Cập nhật mật khẩu mới
+        khachHang.setMatKhau(passwordEncoder.encode(request.getNewPassword()));
+        khachHangRepository.save(khachHang);
+
+        logger.info("Đổi mật khẩu thành công cho email: {}", request.getEmail());
+        return ResponseEntity.ok("Đổi mật khẩu thành công!");
+    }
+
     /**
      * API logout: xóa refreshToken cookie
      */
@@ -293,6 +321,12 @@ public class AuthController {
             res.put("id", kh.getId()); // id khách hàng
             res.put("username", kh.getEmail());
             res.put("role", "KHACHHANG");
+            res.put("hinhAnh", kh.getHinhAnh());
+            res.put("sdt", kh.getSdt());
+            res.put("gioiTinh", kh.getGioiTinh());
+            res.put("tenKh", kh.getTenKhachHang());
+            res.put("maKh", kh.getMaKhachHang());
+            res.put("email", kh.getEmail());
             return ResponseEntity.ok(res);
         }
 

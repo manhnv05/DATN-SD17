@@ -18,12 +18,12 @@ import CloseIcon from "@mui/icons-material/Close";
 import AddIcon from "@mui/icons-material/Add";
 
 export default function SelectAddressModal({
-                                               open,
-                                               onClose,
-                                               addresses = [],
-                                               onSelect,
-                                               onAddNew,
-                                           }) {
+    open,
+    onClose,
+    addresses = [],
+    onSelect,
+    onAddNew,
+}) {
     return (
         <Modal
             open={open}

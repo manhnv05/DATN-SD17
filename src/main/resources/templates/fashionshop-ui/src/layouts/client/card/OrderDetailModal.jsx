@@ -252,7 +252,7 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
       };
       fetchOrderDetails();
     }
-  }, [open, orderCode, onClose]);
+  }, [open, orderCode, onClose, openEdit]);
 
   const handleChangePGG = (event) => {
     const selectedId = event.target.value;

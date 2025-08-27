@@ -13,12 +13,21 @@ import PaymentResultPage from "layouts/client/order/PaymentResultPage"; // THÊM
 
 
 import OrderLookup from "../admin/OrderLookup/OrderLookup"; 
+import ProfileLayout from "layouts/client/userDetail/sidebarUser";
 const routesClient = [
     {
         name: "Trang chủ",
         key: "home",
         route: "/home",
         component: <Home />,
+        noCollapse: true,
+        hidden: false,
+    },
+    {
+        name: "Profle",
+        key: "profile",
+        route: "/profile",
+        component: <ProfileLayout />,
         noCollapse: true,
         hidden: false,
     },
