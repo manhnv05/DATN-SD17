@@ -50,16 +50,6 @@ const navItems = [
      { label: "Theo Dõi Đơn Hàng", route: "/tra-cuu-don-hang" },
 ];
 
-const subNavItems = [
-    "New Arrivals",
-    "Best Selling",
-    "Tops",
-    "Bottoms",
-    "Outerwear",
-    "Accessories",
-    "Sale Off"
-];
-
 export default function Header() {
     const isMobile = useMediaQuery('(max-width:900px)');
     const navigate = useNavigate();
@@ -202,7 +192,9 @@ export default function Header() {
     }
 
     function handleAccount() {
-        alert("Tài khoản!");
+        setTimeout(function () {
+            navigate("/profile");
+        }, 150);
         handleCloseMenu();
     }
 
@@ -572,40 +564,6 @@ export default function Header() {
                         justifyContent: "center"
                     }}
                 >
-                    <Stack
-                        direction="row"
-                        spacing={2.7}
-                        sx={{ py: 0.85 }}
-                        justifyContent="center"
-                        alignItems="center"
-                    >
-                        {subNavItems.map(function (item, idx) {
-                            return (
-                                <Typography
-                                    key={item}
-                                    variant="caption"
-                                    sx={{
-                                        color: idx === 0 ? "#1976d2" : "#205072",
-                                        fontWeight: idx === 0 ? 700 : 500,
-                                        textTransform: "capitalize",
-                                        fontSize: 15.2,
-                                        letterSpacing: 0.5,
-                                        cursor: "pointer",
-                                        px: 1.1,
-                                        borderRadius: 1.5,
-                                        "&:hover": {
-                                            color: "#1769aa",
-                                            background: "#bde0fe44",
-                                            textDecoration: "underline"
-                                        },
-                                        transition: "all 0.14s"
-                                    }}
-                                >
-                                    {item}
-                                </Typography>
-                            );
-                        })}
-                    </Stack>
                 </Box>
             )}
         </Box>
