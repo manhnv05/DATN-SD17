@@ -15,7 +15,10 @@ import {
   Typography,
   CircularProgress,
   Grid,
+  TextField,
   Paper,
+  MenuItem,
+  Select
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
@@ -23,6 +26,7 @@ import CloseIcon from "@mui/icons-material/Close";
 // TẠO MỘT FILE OrderDetailModal.module.css VÀ COPY CSS TỪ FILE CŨ SANG
 import styles from "./OrderDetailModal.module.css";
 import { toast } from "react-toastify"; // Đảm bảo bạn đã cài đặt react-toastify
+import styles2 from "./ProductList.module.css";
 
 // Import các ảnh trạng thái (hãy chắc chắn đường dẫn là chính xác)
 import tao_hoa_don_img from "../../../assets/images/tao_hoa_don.png";
@@ -33,12 +37,26 @@ import check from "../../../assets/images/check.png";
 import dang_giao_hang from "../../../assets/images/dang_giao_hang.png";
 import hoan_thanh from "../../../assets/images/hoan_thanh.png";
 import Huy from "../../../assets/images/Huy.png";
- import ProductSlideshow from "../../admin/BanHangTaiQuay/component/ProductSlideshow";
+import ProductSlideshow from "../../admin/BanHangTaiQuay/component/ProductSlideshow";
 
+import { Add, Remove } from "@mui/icons-material";
+import EditRecipientModal from "./EditRecipientModal";
+
+import ProductSelectionModalOrderDetail from "layouts/admin/HoaDon/OrderDetail/ProductSelectionModalOrderDetail";
+
+const BASE_SERVER_URL = "http://localhost:8080/";
 
 export default function OrderDetailModal({ open, onClose, orderCode }) {
   const [orderData, setOrderData] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  const [selectedPGG, setSelectedPGG] = useState(""); // hoặc null
+  const [listPGGKH, setListPGGKH] = useState([]);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading2, setLoading2] = useState(false);
+
+  const [productsInOrder, setProductsInOrder] = useState([]);
 
   // === CÁC HÀM HELPER (Lấy từ OrderLookup) ===
   const formatDateTime = useCallback((isoString) => {
@@ -126,6 +144,76 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
         return styles.badgeSecondary;
     }
   };
+  const fetchAllStock = useCallback(async () => {
+    try {
+      const response = await axios.get(`${BASE_SERVER_URL}api/hoa-don/get-all-so-luong-ton-kho`,
+        { withCredentials: true });
+      const stockList = response.data?.data || [];
+      // Chuyển đổi mảng thành một object để tra cứu nhanh hơn (dạng {id: soLuong})
+      const stockMap = stockList.reduce((map, item) => {
+        map[item.idChitietSanPham] = item.soLuongTonKho;
+        return map;
+      }, {});
+      setStockData(stockMap);
+    } catch (error) {
+      console.error("Lỗi khi tải danh sách tồn kho:", error);
+      toast.error("Không thể tải dữ liệu tồn kho.");
+    }
+  }, []);
+
+  const updateOrderDetails = async (updatedProducts) => {
+    const subTotal = updatedProducts.reduce(
+      (total, product) => total + product.gia * product.soLuong,
+      0
+    );
+    const phiVanChuyen = orderData?.phiVanChuyen || 0;
+    const tongTienHoaDon = subTotal;
+
+    let bestCouponId = null;
+    if (tongTienHoaDon > 0) {
+      try {
+        const couponResponse = await axios.post(`${BASE_SERVER_URL}PhieuGiamGiaKhachHang/query`, {
+          khachHang: orderData?.khachHang?.id || null,
+          tongTienHoaDon: tongTienHoaDon,
+        });
+        if (couponResponse.data?.data?.content?.length > 0) {
+          bestCouponId = couponResponse.data.data.content[0].id;
+        }
+      } catch (couponError) {
+        console.error("Lỗi khi tìm phiếu giảm giá:", couponError);
+      }
+    }
+
+    const payload = {
+      idHoaDon: orderData.id,
+      phieuGiamGia: bestCouponId ? String(bestCouponId) : null,
+      danhSachSanPham: updatedProducts.map((p) => ({
+        id: p.idSanPhamChiTiet,
+        soLuong: p.soLuong,
+        donGia: p.gia,
+      })),
+      phiVanChuyen: orderData.phiVanChuyen,
+      ghiChu: orderData?.ghiChu,
+      tenKhachHang: orderData?.tenKhachHang,
+      sdt: orderData?.sdt,
+      diaChi: orderData?.diaChi,
+      khachHang: orderData?.idKhachHang ? String(orderData.idKhachHang) : null,
+      nhanVien: orderData?.idNhanVien ? String(orderData.idNhanVien) : null,
+    };
+
+    await axios.put(`${BASE_SERVER_URL}api/hoa-don/update-hoa-don-da-luu`, payload, {
+      withCredentials: true,
+    });
+  };
+
+  const getpggd = (pggd) =>{
+    if (pggd.phamTramGiamGia){
+      return pggd.maPhieuGiamGia + " - " + pggd.phamTramGiamGia + " %"
+    }
+    else{
+      return pggd.maPhieuGiamGia + " - " + pggd.soTienGiam + " VNĐ"
+    }
+  }
 
   // === LOGIC GỌI API ===
   useEffect(() => {
@@ -136,7 +224,7 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
         try {
           const response = await axios.get(
             `http://localhost:8080/api/hoa-don/tra-cuu-hoa-don/${orderCode}`
-            ,{ withCredentials: true }
+            , { withCredentials: true }
           );
           if (response.data) {
             if (response.data.lichSuHoaDon) {
@@ -145,6 +233,10 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
               );
             }
             setOrderData(response.data);
+            setSelectedPGG(response.data.phieuGiamGia.maPhieu)
+            const res = await loadPggKh(response.data.tongTienBanDau)
+            console.log(res.data.content)
+            setListPGGKH(res.data.content)
           } else {
             throw new Error("Không tìm thấy đơn hàng.");
           }
@@ -152,6 +244,7 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
           const errorMessage =
             error.response?.data?.message || "Không tìm thấy đơn hàng hoặc có lỗi xảy ra.";
           toast.error(errorMessage);
+          console.log(error)
           onClose(); // Đóng modal nếu có lỗi
         } finally {
           setLoading(false);
@@ -161,6 +254,162 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
     }
   }, [open, orderCode, onClose]);
 
+  const handleChangePGG = (event) => {
+    const selectedId = event.target.value;
+    setSelectedPGG(selectedId);
+
+    const selectedVoucher = listPGGKH.find((pgg) => pgg.id === selectedId);
+    if (selectedVoucher) {
+      setTienGiam(selectedVoucher.giaTri); // hoặc cập nhật orderData.giamGia tùy theo logic
+    }
+  };
+
+  const handleAddProduct = async (productToAdd) => {
+    setLoading(true);
+    try {
+      const { idChiTietSanPham, quantity, soLuongTonKho } = productToAdd;
+      if (quantity > soLuongTonKho) {
+        toast.warn(`Số lượng tồn kho chỉ còn ${soLuongTonKho}.`);
+        return;
+      }
+
+      // BƯỚC 1: CẬP NHẬT TỒN KHO
+      await axios.put(
+        `${BASE_SERVER_URL}api/hoa-don/giam-so-luong-san-pham/${idChiTietSanPham}?soLuong=${quantity}`, {},
+        { withCredentials: true }
+      );
+
+      // BƯỚC 2: CẬP NHẬT HÓA ĐƠN
+      const existingProduct = productsInOrder.find((p) => p.idSanPhamChiTiet === idChiTietSanPham);
+      let updatedProducts;
+
+      if (existingProduct) {
+        const newQuantity = existingProduct.soLuong + quantity;
+        updatedProducts = productsInOrder.map((p) =>
+          p.idSanPhamChiTiet === idChiTietSanPham ? { ...p, soLuong: newQuantity } : p
+        );
+        console.log(newQuantity, idChiTietSanPham)
+      } else {
+        const price =
+          productToAdd.giaTienSauKhiGiam !== null &&
+            productToAdd.giaTienSauKhiGiam < productToAdd.gia
+            ? productToAdd.giaTienSauKhiGiam
+            : productToAdd.gia;
+        const newProduct = {
+          ...productToAdd,
+          id: null,
+          idSanPhamChiTiet: idChiTietSanPham,
+          soLuong: quantity,
+          gia: price,
+        };
+        updatedProducts = [...productsInOrder, newProduct];
+        console.log(quantity, idChiTietSanPham)
+      }
+      // handleUpdateQuantity(,newQuantity )
+      await updateOrderDetails(updatedProducts); // Gọi hàm helper
+      toast.success("Thêm sản phẩm thành công!");
+      fetchListProductOrder()
+    } catch (error) {
+      console.error("Lỗi khi thêm sản phẩm:", error);
+      toast.error(error.response?.data?.message || "Thêm sản phẩm thất bại.");
+    } finally {
+      await fetchListProductOrder();
+      await fetchAllStock();
+    }
+  };
+
+  const fetchListProductOrder = useCallback(async () => {
+    if (!orderData) {
+      console.log("DEBUG: fetchListProductOrder dừng vì không có orderId.");
+      setProductsInOrder([]);
+      setOrderData(null);
+      return;
+    }
+    setLoading(true);
+    console.log(`DEBUG: Bắt đầu fetchListProductOrder cho orderId: ${orderData.id}`);
+    try {
+      // API này cần trả về đầy đủ thông tin hóa đơn, bao gồm cả list sản phẩm
+      const response = await axios.get(`${BASE_SERVER_URL}api/hoa-don/${orderData.id}`, {
+        withCredentials: true,
+      });
+      const fetchedOrder = response.data || {};
+      const fetchedProducts = fetchedOrder.danhSachChiTiet || [];
+      setOrderData(fetchedOrder);
+      setProductsInOrder(fetchedProducts);
+
+
+      const initialQuantities = {};
+      fetchedProducts.forEach((product) => {
+        initialQuantities[product.idSanPhamChiTiet] = product.soLuong;
+      });
+      setQuantityInput(initialQuantities);
+
+    } catch (error) {
+      console.error("Không thể fetch dữ liệu:", error);
+      toast.error("Không thể tải dữ liệu hóa đơn.");
+    } finally {
+      setLoading(false);
+    }
+  }, [orderData]);
+
+  const loadPggKh = async (tongtien) => {
+    const loadKhachHang = await fetch(`http://localhost:8080/api/auth/me`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include", // <-- Thêm dòng này!
+    });
+    const result = await loadKhachHang.json()
+    const data = {
+      "khachHang": result.id,
+      "tongTienHoaDon": tongtien
+    }
+    const pggkh = await fetch(`http://localhost:8080/PhieuGiamGiaKhachHang/query`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+      credentials: "include", // <-- Thêm dòng này!
+    });
+    const pggkhres = await pggkh.json()
+    return pggkhres
+
+  }
+
+  const handleQuantityChange = async (index, value) => {
+    setOrderData((prev) => {
+      const updated = { ...prev };
+      updated.danhSachChiTiet = [...prev.danhSachChiTiet];
+
+      // Cập nhật số lượng cho sản phẩm
+      const newSoLuong = value > 0 ? value : 1;
+      updated.danhSachChiTiet[index] = {
+        ...updated.danhSachChiTiet[index],
+        soLuong: newSoLuong,
+        thanhTien: updated.danhSachChiTiet[index].gia * newSoLuong,
+      };
+
+      // 🔹 Tính lại tổng sau khi đổi số lượng
+      const tongTienBanDau = updated.danhSachChiTiet.reduce(
+        (sum, item) => sum + item.gia * item.soLuong,
+        0
+      );
+      console.log(updated.giamGia)
+      // nếu có giảm giá thì trừ ra, còn không thì giữ nguyên
+      const tongTien = tongTienBanDau - (updated.giamGia || 0);
+
+      const tongHoaDon = tongTien + (updated.phiVanChuyen || 0);
+
+      // gán lại vào orderData
+      updated.tongTienBanDau = tongTienBanDau;
+      updated.tongTien = tongTien;
+      updated.tongHoaDon = tongHoaDon;
+
+      return updated;
+    });
+  };
   // === CÁC HÀM RENDER (Chuyển đổi từ Bootstrap sang MUI Grid và Paper) ===
   const renderTimeline = () => {
     const history = orderData?.lichSuHoaDon || [];
@@ -169,23 +418,23 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
         <Typography sx={{ textAlign: "center", p: 3 }}>Chưa có lịch sử trạng thái.</Typography>
       );
 
-     const uniqueStatusHistory = [];
+    const uniqueStatusHistory = [];
     const seenStatuses = new Set();
 
     for (const item of history) {
-        const statusDetails = getStatusDetails(item.trangThaiHoaDon);
-        const statusText = statusDetails.text; // Lấy ra text chuẩn hóa (ví dụ: "Chờ xác nhận")
+      const statusDetails = getStatusDetails(item.trangThaiHoaDon);
+      const statusText = statusDetails.text; // Lấy ra text chuẩn hóa (ví dụ: "Chờ xác nhận")
 
-        if (!seenStatuses.has(statusText)) {
-            uniqueStatusHistory.push(item);
-            seenStatuses.add(statusText);
-        }
+      if (!seenStatuses.has(statusText)) {
+        uniqueStatusHistory.push(item);
+        seenStatuses.add(statusText);
+      }
     }
-    
+
     // Sử dụng mảng đã được lọc để render
     const transformedData = uniqueStatusHistory.map((item) => ({
-        ...getStatusDetails(item.trangThaiHoaDon),
-        formattedDate: formatDateTime(item.thoiGian),
+      ...getStatusDetails(item.trangThaiHoaDon),
+      formattedDate: formatDateTime(item.thoiGian),
     }));
     const totalItems = transformedData.length;
     const activeItems = transformedData.length;
@@ -222,6 +471,33 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
     );
   };
 
+  const [openEdit, setOpenEdit] = useState(false);
+  const [recipient, setRecipient] = useState({
+    tenKhachHang: "",
+    sdt: "",
+    diaChi: "",
+  });
+
+  // Khi orderData có giá trị, cập nhật recipient
+  useEffect(() => {
+    if (orderData) {
+      setRecipient({
+        tenKhachHang: orderData.tenKhachHang || "",
+        sdt: orderData.sdt || "",
+        diaChi: orderData.diaChi || "",
+      });
+    }
+  }, [orderData]);
+
+  const handleOpen = () => setOpenEdit(true);
+  const handleClose = () => setOpenEdit(false);
+
+  const handleSave = (updated) => {
+    setRecipient(updated);
+    console.log(updated, orderData.id)
+    // gọi API cập nhật nếu cần
+  };
+
   const renderOrderInfo = () => (
     <Paper elevation={2} sx={{ p: 2.5, mb: 3 }}>
       <Typography variant="h6" fontWeight="bold" sx={{ color: "#49a3f1", mb: 2 }}>
@@ -248,9 +524,20 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
         </Grid>
       </Grid>
       <hr style={{ margin: "16px 0" }} />
-      <Typography variant="h6" fontWeight="bold" sx={{ color: "#49a3f1", mb: 2 }}>
-        Thông tin người nhận
-      </Typography>
+      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+        <Typography variant="h6" fontWeight="bold" sx={{ color: "#49a3f1" }}>
+          Thông tin người nhận
+        </Typography>
+        {getStatusDetails(orderData.trangThai).text === "Chờ xác nhận" && (
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleOpen}
+          >
+            Sửa
+          </Button>
+        )}
+      </Box>
       <Grid container spacing={1}>
         <Grid item xs={12} sm={6}>
           <Typography>
@@ -268,14 +555,32 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
           </Typography>
         </Grid>
       </Grid>
+      {/* Modal nằm ở đây nhưng không phá vỡ renderOrderInfo */}
+      <EditRecipientModal
+        open={openEdit}
+        onClose={handleClose}
+        recipientData={recipient}
+        onSave={handleSave}
+      />
     </Paper>
   );
 
   const renderProductList = () => (
     <Paper elevation={2} sx={{ p: 2.5 }}>
-      <Typography variant="h6" fontWeight="bold" sx={{ color: "#49a3f1", mb: 2 }}>
-        Sản phẩm đã đặt
-      </Typography>
+      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+        <Typography variant="h6" fontWeight="bold" sx={{ color: "#49a3f1", mb: 2 }}>
+          Sản phẩm đã đặt
+        </Typography>
+        {getStatusDetails(orderData.trangThai).text === "Chờ xác nhận" && (
+          <button
+            className={`${styles2.btn} ${styles2.btnConfirm}`}
+            onClick={() => setIsModalOpen(true)}
+            disabled={loading2}
+          >
+            Thêm sản phẩm
+          </button>
+        )}
+      </Box>
       {(orderData.danhSachChiTiet || []).map((product, index) => (
         <Box key={index} className={styles.productItem}>
           <Box className={styles.productImageContainer}>
@@ -291,13 +596,40 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
             <p className={styles.productAttrs}>
               Màu: {product.tenMauSac} - Size: {product.tenKichThuoc}
             </p>
-            <p className={styles.productPrice}>
-              {formatCurrency(product.gia)} x {product.soLuong}
-            </p>
+            <Box display="flex" alignItems="center" gap={1}>
+              <IconButton
+                size="small"
+                onClick={() => handleQuantityChange(index, product.soLuong - 1)}
+              >
+                <Remove />
+              </IconButton>
+              <TextField
+                type="number"
+                value={product.soLuong}
+                onChange={(e) =>
+                  handleQuantityChange(index, parseInt(e.target.value) || 1)
+                }
+                inputProps={{ min: 1, style: { textAlign: "center", width: 60 } }}
+                size="small"
+              />
+              <IconButton
+                size="small"
+                onClick={() => handleQuantityChange(index, product.soLuong + 1)}
+              >
+                <Add />
+              </IconButton>
+            </Box>
           </div>
-          <div className={styles.productTotal}>{formatCurrency(product.thanhTien)}</div>
+          <div className={styles.productTotal}>
+            {formatCurrency(product.thanhTien)}
+          </div>
         </Box>
       ))}
+      <ProductSelectionModalOrderDetail
+        open={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSelectProduct={handleAddProduct}
+      />
     </Paper>
   );
 
@@ -317,10 +649,27 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
             <Typography>Phí vận chuyển</Typography>
             <Typography>{formatCurrency(orderData.phiVanChuyen)}</Typography>
           </Box>
-          {tienGiam > 0 && (
-            <Box display="flex" justifyContent="space-between" mb={1} color="error.main">
-              <Typography color="inherit">Giảm giá</Typography>
-              <Typography color="inherit">- {formatCurrency(tienGiam)}</Typography>
+          {listPGGKH.length > 0 && selectedPGG && (
+            <Box mb={1}>
+              <Typography mb={0.5}>Chọn phiếu giảm giá:</Typography>
+              <Select
+                value={selectedPGG}
+                onChange={handleChangePGG}
+                size="small"
+                fullWidth
+              >
+                {/* Nếu selectedPGG không có trong danh sách, thêm nó vào đầu danh sách */}
+                {!listPGGKH.some(pgg => pgg.maPhieuGiamGia === selectedPGG) && (
+                  <MenuItem value={selectedPGG} disabled>
+                    {selectedPGG} (Đã hết)
+                  </MenuItem>
+                )}
+                {listPGGKH.map((pgg) => (
+                  <MenuItem key={pgg.id} value={pgg.maPhieuGiamGia}>
+                    {getpggd(pgg)}
+                  </MenuItem>
+                ))}
+              </Select>
             </Box>
           )}
           <hr />
