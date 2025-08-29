@@ -22,7 +22,7 @@ import axios from "axios";
 import { styled } from "@mui/material/styles";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import SafeAutocomplete from "../nhanvien/component/SafeAutocomplete";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Radio from "@mui/material/Radio";
 import RadioGroup from "@mui/material/RadioGroup";
@@ -421,7 +421,6 @@ export default function UpdateKhachHangForm({ id: propId, onClose }) {
           py: 4,
         }}
       >
-        <ToastContainer />
         <Fade in timeout={600}>
           <StyledCard>
             <Typography

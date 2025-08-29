@@ -23,7 +23,7 @@ import FormLabel from "@mui/material/FormLabel";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import MenuItem from "@mui/material/MenuItem";
 import SafeAutocomplete from "../nhanvien/component/SafeAutocomplete";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import EmailIcon from "@mui/icons-material/Email";
 import Autocomplete from "@mui/material/Autocomplete";
@@ -336,7 +336,6 @@ export default function AddKhachHangForm() {
   return (
     <DashboardLayout>
       <DashboardNavbar />
-      <ToastContainer position="top-center" autoClose={2000} />
       <Box
         sx={{
           minHeight: "100vh",

@@ -122,7 +122,7 @@ function ProductDetailTable() {
                     mauSac: mauSacRes.data || [],
                     kichCo: kichCoRes.data || [],
                 });
-            } catch (error) {}
+            } catch (error) { }
         }
 
         async function fetchProductAndDetails() {
@@ -188,10 +188,10 @@ function ProductDetailTable() {
             if (html5QrCodeRef.current) {
                 try {
                     await html5QrCodeRef.current.stop();
-                } catch (error) {}
+                } catch (error) { }
                 try {
                     await html5QrCodeRef.current.clear();
-                } catch (error) {}
+                } catch (error) { }
                 html5QrCodeRef.current = null;
             }
         }
@@ -222,7 +222,10 @@ function ProductDetailTable() {
                         try {
                             const res = await axios.get(
                                 "http://localhost:8080/chiTietSanPham/find-by-ma?ma=" +
-                                encodeURIComponent(decodedText)
+                                encodeURIComponent(decodedText),
+                                {
+                                    withCredentials: true // <-- Dòng này tương đương với credentials: "include"
+                                }
                             );
                             if (res.data) {
                                 setSelectedInfoDetail(res.data);
@@ -238,7 +241,7 @@ function ProductDetailTable() {
                             );
                         }
                     },
-                    function () {}
+                    function () { }
                 )
                 .catch(function () {
                     setScanning(false);
