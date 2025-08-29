@@ -22,7 +22,7 @@ import axios from "axios";
 import { styled } from "@mui/material/styles";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import SafeAutocomplete from "./component/SafeAutocomplete";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import CCCDCameraModal from "./modalQuetCCCD";
 import { handleCameraCapture, parseCCCDText } from "./component/handleCameraCapture";
@@ -420,7 +420,6 @@ export default function AddNhanVienForm() {
                     py: 4
                 }}
             >
-                <ToastContainer />
                 <Fade in timeout={600}>
                     <StyledCard>
                         <Typography

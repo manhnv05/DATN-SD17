@@ -18,7 +18,7 @@ import { CircularProgress, Grid, Tooltip, Typography, Box } from "@mui/material"
 import CreatableSelect from "react-select/creatable";
 import Select from "react-select";
 import { FaPlus, FaTrash } from "react-icons/fa";
-import { toast, ToastContainer } from "react-toastify";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate } from "react-router-dom";
 
@@ -1586,17 +1586,6 @@ function ProductForm() {
                     </DialogActions>
                 </Dialog>
             </SoftBox>
-            <ToastContainer
-                position="top-right"
-                autoClose={3000}
-                hideProgressBar={false}
-                newestOnTop={false}
-                closeOnClick
-                rtl={false}
-                pauseOnFocusLoss
-                draggable
-                pauseOnHover
-            />
             <Footer />
         </DashboardLayout>
     );
