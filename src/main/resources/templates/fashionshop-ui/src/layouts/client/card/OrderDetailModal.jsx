@@ -38,7 +38,7 @@ import dang_giao_hang from "../../../assets/images/dang_giao_hang.png";
 import hoan_thanh from "../../../assets/images/hoan_thanh.png";
 import Huy from "../../../assets/images/Huy.png";
 import ProductSlideshow from "../../admin/BanHangTaiQuay/component/ProductSlideshow";
-
+import OrderHistoryModal from "../../admin/HoaDon/OrderHistoryModal/OrderHistoryModal"
 import { Add, Remove } from "@mui/icons-material";
 import EditRecipientModal from "./EditRecipientModal";
 
@@ -55,9 +55,12 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading2, setLoading2] = useState(false);
-
+ const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const handleOpenHistoryModal = () => setIsHistoryModalOpen(true);
+  const handleCloseHistoryModal = () => setIsHistoryModalOpen(false);
+ 
   const [productsInOrder, setProductsInOrder] = useState([]);
-
+const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
   // === CÁC HÀM HELPER (Lấy từ OrderLookup) ===
   const formatDateTime = useCallback((isoString) => {
     if (!isoString) return "Chưa cập nhật";
@@ -471,7 +474,7 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
     );
   };
 
-  const [openEdit, setOpenEdit] = useState(false);
+
   const [recipient, setRecipient] = useState({
     tenKhachHang: "",
     sdt: "",
@@ -491,7 +494,60 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
 
   const handleOpen = () => setOpenEdit(true);
   const handleClose = () => setOpenEdit(false);
+// Sửa lại tên hàm cho đúng với state
+  const handleOpenEditRecipient = () => setIsEditRecipientOpen(true);
+  const handleCloseEditRecipient = () => setIsEditRecipientOpen(false);
 
+  // Hàm này sẽ được truyền vào prop `onSave` của modal con
+  const handleSaveRecipient = async (updatedData) => {
+    if (!orderData) return;
+
+    // Payload này chỉ chứa những trường cần cập nhật
+    const payload = {
+      tenKhachHang: updatedData.tenKhachHang,
+      sdt: updatedData.sdt,
+      diaChi: updatedData.diaChi,
+      phiVanChuyen: orderData.phiVanChuyen,  // Modal con đã trả về địa chỉ đầy đủ
+    };
+
+    try {
+      // API endpoint để cập nhật thông tin người nhận
+      const backendApiUrl = `${BASE_SERVER_URL}api/hoa-don/cap-nhat-thong-tin/${orderData.id}`;
+      await axios.put(backendApiUrl, payload, { withCredentials: true });
+
+      toast.success("Cập nhật thông tin người nhận thành công!");
+      handleCloseEditRecipient(); // Đóng modal
+      fetchOrderDetails(orderCode); // Tải lại dữ liệu để hiển thị thông tin mới
+    } catch (error) {
+      console.error("Lỗi khi cập nhật thông tin người nhận:", error);
+      toast.error(`Lỗi: ${error.response?.data?.message || "Không thể cập nhật thông tin."}`);
+    }
+  };
+  const fetchOrderDetails = useCallback(async (code) => {
+    if (!code) return;
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        `${BASE_SERVER_URL}api/hoa-don/tra-cuu-hoa-don/${code}`,
+        { withCredentials: true }
+      );
+      if (response.data) {
+        if (response.data.lichSuHoaDon) {
+          response.data.lichSuHoaDon.sort((a, b) => new Date(a.thoiGian) - new Date(b.thoiGian));
+        }
+        setOrderData(response.data);
+        // ... (các logic set state khác)
+      } else {
+        throw new Error("Không tìm thấy đơn hàng.");
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || "Lỗi khi tải đơn hàng.";
+      toast.error(errorMessage);
+      onClose();
+    } finally {
+      setLoading(false);
+    }
+  }, [onClose]);
   const handleSave = (updated) => {
     setRecipient(updated);
     console.log(updated, orderData.id)
@@ -500,9 +556,14 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
 
   const renderOrderInfo = () => (
     <Paper elevation={2} sx={{ p: 2.5, mb: 3 }}>
-      <Typography variant="h6" fontWeight="bold" sx={{ color: "#49a3f1", mb: 2 }}>
-        Thông tin hóa đơn
-      </Typography>
+      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+        <Typography variant="h6" fontWeight="bold" sx={{ color: "#49a3f1" }}>
+          Thông tin hóa đơn
+        </Typography>
+        <Button variant="text" size="small" onClick={handleOpenHistoryModal}>
+          Xem lịch sử
+        </Button>
+      </Box>
       <Grid container spacing={2}>
         <Grid item xs={12} sm={6}>
           <Typography>
@@ -524,15 +585,16 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
         </Grid>
       </Grid>
       <hr style={{ margin: "16px 0" }} />
-      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+       <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
         <Typography variant="h6" fontWeight="bold" sx={{ color: "#49a3f1" }}>
           Thông tin người nhận
         </Typography>
-        {getStatusDetails(orderData.trangThai).text === "Chờ xác nhận" && (
+        {orderData && getStatusDetails(orderData.trangThai).text === "Chờ xác nhận" && (
+          // SỬA LẠI onClick CHO ĐÚNG HÀM
           <Button
             variant="outlined"
             size="small"
-            onClick={handleOpen}
+            onClick={handleOpenEditRecipient} 
           >
             Sửa
           </Button>
@@ -556,12 +618,14 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
         </Grid>
       </Grid>
       {/* Modal nằm ở đây nhưng không phá vỡ renderOrderInfo */}
-      <EditRecipientModal
-        open={openEdit}
-        onClose={handleClose}
+     {isEditRecipientOpen && orderData && (
+        <EditRecipientModal
+        open={isEditRecipientOpen}
+        onClose={handleCloseEditRecipient}
         recipientData={recipient}
-        onSave={handleSave}
+        onSave={handleSaveRecipient}
       />
+      )}
     </Paper>
   );
 
@@ -682,6 +746,13 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
             </Typography>
           </Box>
         </Box>
+         {isHistoryModalOpen && orderData?.maHoaDon && (
+        <OrderHistoryModal
+          maHoaDon={orderData.maHoaDon}
+          onClose={handleCloseHistoryModal}
+        />
+      )}
+      {/* --- END: THÊM MỚI --- */}
       </Paper>
     );
   };
