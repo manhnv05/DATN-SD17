@@ -8,4 +8,5 @@ import java.util.Optional;
 
 public interface KhachHangRepository extends JpaRepository<KhachHang, Integer>, JpaSpecificationExecutor<KhachHang> {
     Optional<KhachHang> findByEmail(String email);
+    Optional<KhachHang> findByEmailIgnoreCase(String email);
 }
