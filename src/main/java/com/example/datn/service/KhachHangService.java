@@ -55,6 +55,11 @@ public class KhachHangService {
 
     // Lưu khách hàng, nhận thêm file ảnh (có thể null)
     public Integer save(KhachHangVO vO, MultipartFile imageFile) {
+        if (vO.getEmail() != null && !vO.getEmail().trim().isEmpty()) {
+            if (khachHangRepository.findByEmailIgnoreCase(vO.getEmail()).isPresent()) {
+                throw new IllegalArgumentException("Email '" + vO.getEmail() + "' đã tồn tại trong hệ thống.");
+            }
+        }
         KhachHang bean = new KhachHang();
         BeanUtils.copyProperties(vO, bean);
 
@@ -78,6 +83,9 @@ public class KhachHangService {
      */
     @Transactional
     public Integer saveWithAddress(KhachHangWithDiaChiVO vO, MultipartFile imageFile) {
+        if (khachHangRepository.findByEmailIgnoreCase(vO.getKhachHang().getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Email '" + vO.getKhachHang().getEmail() + "' đã tồn tại trong hệ thống.");
+        }
         // Tạo khách hàng
         KhachHang kh = new KhachHang();
         BeanUtils.copyProperties(vO.getKhachHang(), kh);
@@ -154,6 +162,11 @@ public class KhachHangService {
     }
     @Transactional
     public Integer saveKhachHangBanHangTaiQuay(KhachHangWithDiaChiVO vO) {
+        if (vO.getKhachHang().getEmail() != null && !vO.getKhachHang().getEmail().trim().isEmpty()) {
+            if (khachHangRepository.findByEmailIgnoreCase(vO.getKhachHang().getEmail()).isPresent()) {
+                throw new IllegalArgumentException("Email '" + vO.getKhachHang().getEmail() + "' đã tồn tại trong hệ thống.");
+            }
+        }
         // 1. Tạo khách hàng từ dữ liệu được cung cấp (VO)
         KhachHang kh = new KhachHang();
         BeanUtils.copyProperties(vO.getKhachHang(), kh);
@@ -179,7 +192,13 @@ public class KhachHangService {
 
     // Cập nhật khách hàng, có thể upload lại ảnh mới
     public void update(Integer id, KhachHangUpdateVO vO, MultipartFile imageFile) {
+
         KhachHang bean = requireOne(id);
+        if (vO.getEmail() != null && !vO.getEmail().equalsIgnoreCase(bean.getEmail())) {
+            if (khachHangRepository.findByEmailIgnoreCase(vO.getEmail()).isPresent()) {
+                throw new IllegalArgumentException("Email '" + vO.getEmail() + "' đã được sử dụng bởi một tài khoản khác.");
+            }
+        }
         BeanUtils.copyProperties(vO, bean);
 
         // Nếu có file ảnh mới, upload và cập nhật lại url cloud
