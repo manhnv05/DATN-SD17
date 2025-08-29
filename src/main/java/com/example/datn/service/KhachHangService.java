@@ -13,6 +13,8 @@ import com.example.datn.vo.khachHangVO.KhachHangQueryVO;
 import com.example.datn.vo.khachHangVO.KhachHangUpdateVO;
 import com.example.datn.vo.khachHangVO.KhachHangVO;
 import com.example.datn.vo.khachHangVO.KhachHangWithDiaChiVO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
@@ -48,6 +50,7 @@ public class KhachHangService {
     private CloudinaryService cloudinaryService;
 
 
+    private static final Logger log = LoggerFactory.getLogger(KhachHangService.class);
 
 
     // Lưu khách hàng, nhận thêm file ảnh (có thể null)
@@ -85,6 +88,7 @@ public class KhachHangService {
                 String imageUrl = cloudinaryService.uploadImage(imageFile);
                 kh.setHinhAnh(imageUrl);
             } catch (Exception e) {
+                log.error("Lỗi upload ảnh lên Cloudinary: {}", e.getMessage(), e);
                 throw new RuntimeException("Lỗi upload ảnh lên Cloudinary: " + e.getMessage(), e);
             }
         }
@@ -97,7 +101,7 @@ public class KhachHangService {
         diaChi.setKhachHang(kh);
         diaChiRepository.save(diaChi);
 
-        // Gửi email tài khoản/mật khẩu cho khách hàng nếu có email và emailConfigService cấu hình
+        // --- PHẦN GỬI EMAIL ĐÃ SỬ DỤNG HÀM MỚI ---
         if (emailConfigService != null && kh.getEmail() != null && !kh.getEmail().trim().isEmpty()) {
             String subject = "🎉 Chào mừng bạn đến với Fashion Shirt Shop! 🎉";
             String body = "<div style=\"font-family:'Segoe UI',Arial,sans-serif;background:#f9fafd;padding:32px 0;\">"
@@ -105,7 +109,7 @@ public class KhachHangService {
                     + "<div style=\"text-align:center;\">"
                     + "    <img src=\"https://i.imgur.com/3fJ1P48.png\" alt=\"Logo Shop\" style=\"width:80px;margin-bottom:16px;\">"
                     + "    <h2 style=\"color:#1976d2;margin-bottom:8px;letter-spacing:1px;\">Đăng ký tài khoản thành công!</h2>"
-                    + "    <p style=\"color:#444;font-size:17px;margin:0 0 20px 0;\">Xin chào <b style='color:#1976d2\">" + kh.getTenKhachHang() + "</b>,</p>"
+                    + "    <p style=\"color:#444;font-size:17px;margin:0 0 20px 0;\">Xin chào <b style='color:#1976d2'>" + kh.getTenKhachHang() + "</b>,</p>"
                     + "</div>"
                     + "<div style=\"background:#f7fbfd;border-radius:12px;padding:24px 18px;margin:18px 0 22px 0;border:1.5px solid #e3f3fc;\">"
                     + "    <div style=\"font-size:17px;\">"
@@ -127,13 +131,22 @@ public class KhachHangService {
                     + "</div>"
                     + "</div>";
             try {
-                emailConfigService.sendEmail(
+                // Lấy tên file gốc để làm tên file đính kèm
+                String attachmentName = (imageFile != null && !imageFile.isEmpty()) ? imageFile.getOriginalFilename() : "anh-dai-dien.jpg";
+
+                // Gọi hàm mới để gửi email kèm file ảnh đại diện
+                emailConfigService.sendEmailWithAttachment(
                         kh.getEmail(),
                         subject,
-                        body
+                        body,
+                        imageFile, // File đính kèm
+                        attachmentName // Tên file đính kèm
                 );
+                log.info("Đã gửi email chào mừng và ảnh đại diện tới: {}", kh.getEmail());
+
             } catch (Exception ex) {
-                System.err.println("Gửi email thất bại: " + ex.getMessage());
+                // Sử dụng logger để ghi lại lỗi chuyên nghiệp hơn
+                log.error("Gửi email chào mừng cho {} thất bại. Lỗi: {}", kh.getEmail(), ex.getMessage(), ex);
             }
         }
 
