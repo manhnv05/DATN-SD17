@@ -6,6 +6,8 @@ import com.example.datn.dto.DiaChiDTO;
 import com.example.datn.dto.KhachHangDTO;
 import com.example.datn.entity.DiaChi;
 import com.example.datn.entity.KhachHang;
+import com.example.datn.exception.AppException;
+import com.example.datn.exception.ErrorCode;
 import com.example.datn.repository.DiaChiRepository;
 import com.example.datn.repository.KhachHangRepository;
 import com.example.datn.repository.NhanVienRepository;
@@ -57,7 +59,8 @@ public class KhachHangService {
     public Integer save(KhachHangVO vO, MultipartFile imageFile) {
         if (vO.getEmail() != null && !vO.getEmail().trim().isEmpty()) {
             if (khachHangRepository.findByEmailIgnoreCase(vO.getEmail()).isPresent()) {
-                throw new IllegalArgumentException("Email '" + vO.getEmail() + "' đã tồn tại trong hệ thống.");
+                throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
+
             }
         }
         KhachHang bean = new KhachHang();
@@ -84,7 +87,7 @@ public class KhachHangService {
     @Transactional
     public Integer saveWithAddress(KhachHangWithDiaChiVO vO, MultipartFile imageFile) {
         if (khachHangRepository.findByEmailIgnoreCase(vO.getKhachHang().getEmail()).isPresent()) {
-            throw new IllegalArgumentException("Email '" + vO.getKhachHang().getEmail() + "' đã tồn tại trong hệ thống.");
+            throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
         // Tạo khách hàng
         KhachHang kh = new KhachHang();
@@ -164,7 +167,7 @@ public class KhachHangService {
     public Integer saveKhachHangBanHangTaiQuay(KhachHangWithDiaChiVO vO) {
         if (vO.getKhachHang().getEmail() != null && !vO.getKhachHang().getEmail().trim().isEmpty()) {
             if (khachHangRepository.findByEmailIgnoreCase(vO.getKhachHang().getEmail()).isPresent()) {
-                throw new IllegalArgumentException("Email '" + vO.getKhachHang().getEmail() + "' đã tồn tại trong hệ thống.");
+                throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
             }
         }
         // 1. Tạo khách hàng từ dữ liệu được cung cấp (VO)
@@ -196,7 +199,7 @@ public class KhachHangService {
         KhachHang bean = requireOne(id);
         if (vO.getEmail() != null && !vO.getEmail().equalsIgnoreCase(bean.getEmail())) {
             if (khachHangRepository.findByEmailIgnoreCase(vO.getEmail()).isPresent()) {
-                throw new IllegalArgumentException("Email '" + vO.getEmail() + "' đã được sử dụng bởi một tài khoản khác.");
+                throw new AppException(ErrorCode.EMAIL_ALREADY_EXISTS);
             }
         }
         BeanUtils.copyProperties(vO, bean);

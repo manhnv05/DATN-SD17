@@ -13,6 +13,8 @@ import {
   DialogTitle,
   DialogContent,
   IconButton,
+  DialogContentText, // Thêm import
+  DialogActions,
 } from "@mui/material";
 import axios from "axios";
 
@@ -35,6 +37,7 @@ import { InputAdornment } from "@mui/material";
 import { toast } from "react-toastify";
 import InHoaDon from "../../HoaDon/InHoaDon/InHoaDon";
 import PaymentIcon from "@mui/icons-material/Payment";
+
 // Hàm định dạng tiền tệ
 const formatCurrency = (amount) => {
   if (typeof amount !== "number" || isNaN(amount)) return "0 VND";
@@ -65,7 +68,7 @@ function Pay({
   const [suggestedVoucher, setSuggestedVoucher] = useState(null);
   const [bestidVoucher, setBestidVoucher] = useState(null);
   const [idHoaDonNew, setIdHoaDonNew] = useState(null);
-
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false); 
   const [customer, setCustomer] = useState({ id: null, tenKhachHang: "Khách lẻ" });
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [shippingFormData, setShippingFormData] = useState(null);
@@ -486,6 +489,8 @@ function Pay({
   };
 
   const handleFinalSave = async () => {
+  setIsConfirmModalOpen(false); // Đóng hộp thoại xác nhận trước
+  
     if (!isDelivery) {
       const totalPaid = paymentDetails.reduce((sum, p) => sum + p.soTienThanhToan, 0);
 
@@ -515,10 +520,10 @@ function Pay({
 
       // --- LOGIC MỚI ĐỂ IN HÓA ĐƠN ---
       // Chỉ mở modal in nếu là thanh toán tại quầy
-      if (!isDelivery) {
+     
         setInvoiceToPrintId(hoaDonId); // Lưu lại ID hóa đơn vừa thanh toán
         setIsInvoiceModalOpen(true); // Mở modal in
-      }
+      
       resetForm();
     } catch (error) {
       console.error("Lỗi khi lưu và in hóa đơn:", error);
@@ -929,7 +934,7 @@ function Pay({
             }}
             fullWidth
             disabled={isDisabled}
-            onClick={handleFinalSave}
+             onClick={() => setIsConfirmModalOpen(true)}
           >
             <Typography variant="h6" color="#49a3f1" fontWeight="bold">
               {isDelivery ? " ĐẶT HÀNG" : " THANH TOÁN"}
@@ -943,7 +948,7 @@ function Pay({
         open={isCustomerModalOpen}
         onClose={() => setIsCustomerModalOpen(false)}
         fullWidth
-        maxWidth="lg"
+        maxWidth="xl"
       >
         <DialogTitle>
           <Box display="flex" justifyContent="space-between" alignItems="center">
@@ -999,6 +1004,32 @@ function Pay({
         onConfirm={handleConfirmPayment}
         hoaDonId={hoaDonId}
       />
+       {/* MODAL XÁC NHẬN THANH TOÁN / ĐẶT HÀNG MỚI THÊM */}
+      <Dialog
+        open={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          {isDelivery ? "Xác nhận đặt hàng" : "Xác nhận thanh toán"}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Bạn có chắc chắn muốn {isDelivery ? "đặt hàng" : "thanh toán"} cho hóa đơn này không?
+            <br />
+            Tổng tiền: <strong>{formatCurrency(finalTotal)}</strong>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <SoftButton onClick={() => setIsConfirmModalOpen(false)} color="secondary">
+            Hủy
+          </SoftButton>
+          <SoftButton onClick={handleFinalSave} color="info" autoFocus>
+            Xác nhận
+          </SoftButton>
+        </DialogActions>
+      </Dialog>
       {invoiceToPrintId && (
         <InHoaDon
           isOpen={isInvoiceModalOpen}

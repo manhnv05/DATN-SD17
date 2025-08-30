@@ -34,7 +34,7 @@ import AddCustomerDialog from "./AddCustomerDialog"; // Đảm bảo đường d
 
 // --- Các hàm tiện ích (giữ nguyên) ---
 const genderList = ["Tất cả", "Nam", "Nữ", "Khác"];
-const statusList = ["Tất cả", "Online", "Offline"];
+const statusList = ["Tất cả", "Hoạt Động", "Ngừng hoạt động"];
 const viewOptions = [5, 10, 20];
 
 function getGenderText(gender) {
@@ -44,8 +44,8 @@ function getGenderText(gender) {
 }
 
 function getStatusText(status) {
-  if (status === 1 || status === "Online") return "Online";
-  return "Offline";
+  if (status === 1 || status === "Online") return "Hoạt Động";
+  return "Ngừng hoạt động";
 }
 
 function getPaginationItems(current, total) {
@@ -157,7 +157,8 @@ function CustomerTable({ isSelectionMode = false, onSelectCustomer = () => {} ,i
         size: viewCount,
         tenKhachHang: search || undefined,
         gioiTinh: getGenderParam(),
-        trangThai: statusFilter !== "Tất cả" ? (statusFilter === "Online" ? 1 : 0) : undefined,
+     trangThai:
+          statusFilter !== "Tất cả" ? (statusFilter === "Hoạt Động" ? 1 : 0) : undefined,
       };
 
       const response = await axios.get("http://localhost:8080/khachHang", {
@@ -188,11 +189,21 @@ function CustomerTable({ isSelectionMode = false, onSelectCustomer = () => {} ,i
       render: (value, row) => (
         <Box display="flex" alignItems="center" gap={1.5}>
           <Avatar src={row.anh} alt={value} />
-          <Typography variant="body2">{value}</Typography>
+         <Typography variant="body2" sx={{ textTransform: 'none' }}>{value}</Typography>
         </Box>
       ),
     },
-    { name: "email", label: "Email", align: "left" },
+   {
+  name: "email",
+  label: "Email",
+  align: "left",
+  render: (value) => (
+    <Typography variant="body2" sx={{ textTransform: 'none' }}>
+     
+      {value ? value.toLowerCase() : ''}
+    </Typography>
+  )
+},
     {
       name: "ngaySinh",
       label: "Ngày sinh",
@@ -205,27 +216,34 @@ function CustomerTable({ isSelectionMode = false, onSelectCustomer = () => {} ,i
       align: "center",
       render: (value) => getGenderText(value),
     },
-    {
-      name: "trangThai",
-      label: "Trạng thái",
-      align: "center",
-      render: (value) => (
-        <Typography
-          component="span"
-          variant="caption"
-          sx={{
-            background: getStatusText(value) === "Online" ? "#e6f4ea" : "#f4f6fb",
-            color: getStatusText(value) === "Online" ? "#2e7d32" : "#5f6368",
-            border: `1px solid ${getStatusText(value) === "Online" ? "#2e7d32" : "#e0e0e0"}`,
-            borderRadius: "6px",
-            fontWeight: 600,
-            padding: "4px 8px",
-          }}
-        >
-          {getStatusText(value)}
-        </Typography>
-      ),
-    },
+{
+  name: "trangThai",
+  label: "Trạng thái",
+  align: "center",
+  render: (value) => (
+    <Typography
+      component="span"
+      variant="caption"
+     sx={{
+  // Các thuộc tính cũ giữ nguyên
+  background: getStatusText(value) === "Hoạt Động" ? "#e6f4ea" : "#f4f6fb",
+  color: getStatusText(value) === "Hoạt Động" ? "#2e7d32" : "#5f6368",
+  border: `1px solid ${getStatusText(value) === "Hoạt Động" ? "#2e7d32" : "#e0e0e0"}`,
+  borderRadius: "6px",
+  fontWeight: 600,
+  padding: "4px 8px",
+  whiteSpace: "nowrap",
+
+  // === THAY ĐỔI VÀ BỔ SUNG TẠI ĐÂY ===
+  display: 'inline-block', // Đảm bảo width hoạt động đúng
+  width: '120px',          // Đặt ĐỘ RỘNG CỐ ĐỊNH (thay cho minWidth)
+  textAlign: 'center',     // Căn giữa chữ trong ô cho đẹp
+}}
+    >
+      {getStatusText(value)}
+    </Typography>
+  ),
+},
     {
       name: "actions",
       label: "Thao tác",

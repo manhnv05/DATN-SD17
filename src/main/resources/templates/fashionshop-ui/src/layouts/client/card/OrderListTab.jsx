@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import PropTypes from "prop-types";
 import OrderDetailModal from "./OrderDetailModal";
 import axios from "axios"; // Import axios để gọi API
@@ -86,7 +86,8 @@ export default function OrderListTab({ user }) {
       // API MỚI với URL và payload chính xác
       await axios.put(
         `http://localhost:8080/api/hoa-don/chuyen-trang-thai-huy/${orderToCancel.id}`,
-        { ghiChu: "DA_HUY" } // Đây là payload bạn đã cung cấp
+        { ghiChu: "DA_HUY" },
+         { withCredentials: true }  // Đây là payload bạn đã cung cấp
       );
 
       // Cập nhật UI ngay lập tức
@@ -115,6 +116,7 @@ export default function OrderListTab({ user }) {
   const handlePageChange = (event, value) => {
     setPage(value);
   };
+
   // <-- BẮT ĐẦU PHẦN THÊM MỚI (HÀM HỦY ĐƠN) -->
   const handleCancelOrder = async (orderId) => {
     // Hỏi người dùng để xác nhận
@@ -122,7 +124,8 @@ export default function OrderListTab({ user }) {
       try {
         // Gọi API để hủy đơn hàng
         // !!! LƯU Ý: Thay đổi URL này cho đúng với API backend của bạn !!!
-        await axios.put(`http://localhost:8080/api/don-hang/huy/${orderId}`),{ withCredentials: true };
+        await axios.put(`http://localhost:8080/api/don-hang/huy/${orderId}`),
+          { withCredentials: true };
 
         // Cập nhật giao diện ngay lập tức bằng cách xóa đơn hàng khỏi danh sách
         setAllOrders((prevOrders) => prevOrders.filter((order) => order.id !== orderId));
@@ -136,55 +139,69 @@ export default function OrderListTab({ user }) {
       }
     }
   };
-  useEffect(() => {
-    if (user && user.id) {
-      const fetchOrders = async () => {
-        setLoading(true);
-        try {
-          const response = await axios.get(
-            `http://localhost:8080/api/lich-su-hoa-don/lay-lich-su/khach-hang/${user.id}`,
-            {
-              headers: {
-                // <-- THÊM VÀO ĐỂ CHỐNG CACHE
-                "Cache-Control": "no-cache",
-                Pragma: "no-cache",
-                Expires: "0",
-                
-              },
-                withCredentials: true, 
-              
-            }
-          );
+  const fetchOrdersAndPayments = useCallback(async () => {
+    // Sử dụng optional chaining (?.) để kiểm tra user và user.id một cách an toàn
+    if (!user?.id) {
+      setAllOrders([]);
+      setLoading(false);
+      return;
+    }
 
-          if (response.data && response.data.data) {
-            // Lọc ra các đơn hàng đang xử lý (không phải HOAN_THANH hoặc DA_HUY)
-            const pendingOrders = response.data.data
-              .filter((order) => order.trangThai !== "HOAN_THANH" && order.trangThai !== "HUY")
-              .map((order) => ({
-                id: order.idHoaDon,
-                maHoaDon: order.maHoaDon,
-                trangThai: order.trangThai,
-                ngayTao: formatDate(order.ngayTao),
-                tongTien: order.tongTien,
-                soLuongSanPham: order.soLuongSanPham,
-                diaChi: order.diaChi || "Không có thông tin địa chỉ",
-              }));
-            setOrders(pendingOrders);
-            setAllOrders(pendingOrders);
-          }
-        } catch (error) {
-          console.error("Lỗi khi tải danh sách đơn hàng:", error);
-        } finally {
-          setLoading(false);
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        `http://localhost:8080/api/lich-su-hoa-don/lay-lich-su/khach-hang/${user.id}`,
+        {
+          headers: { "Cache-Control": "no-cache", Pragma: "no-cache", Expires: "0" },
+          withCredentials: true,
         }
-      };
+      );
 
-      fetchOrders();
-    } else {
+      if (response.data && response.data.data) {
+        const pendingOrdersRaw = response.data.data
+          .filter((order) => order.trangThai !== "HOAN_THANH" && order.trangThai !== "HUY")
+          .map((order) => ({
+            id: order.idHoaDon,
+            maHoaDon: order.maHoaDon,
+            trangThai: order.trangThai,
+            ngayTao: order.ngayTao, // Giữ nguyên định dạng date để sort
+            tongTien: order.tongTien,
+            soLuongSanPham: order.soLuongSanPham,
+            diaChi: order.diaChi || "Không có thông tin địa chỉ",
+          }));
+
+        const ordersWithPaymentStatusPromises = pendingOrdersRaw.map(async (order) => {
+          let hasPaid = false;
+          if (order.trangThai === "CHO_XAC_NHAN") {
+            try {
+              const paymentResponse = await axios.get(
+                `http://localhost:8080/chiTietThanhToan/lich-su-thanh-toan/${order.id}`,
+                { withCredentials: true }
+              );
+              if (paymentResponse.data?.data?.length > 0) {
+                hasPaid = true;
+              }
+            } catch (e) {}
+          }
+          return { ...order, daThanhToan: hasPaid };
+        });
+
+        const finalOrders = await Promise.all(ordersWithPaymentStatusPromises);
+        // Sắp xếp theo ngày tạo mới nhất
+        setAllOrders(finalOrders.sort((a, b) => new Date(b.ngayTao) - new Date(a.ngayTao)));
+      } else {
+        setAllOrders([]);
+      }
+    } catch (error) {
+      console.error("Lỗi khi tải danh sách đơn hàng:", error);
+      toast.error("Không thể tải dữ liệu đơn hàng.");
+    } finally {
       setLoading(false);
     }
-  }, [user]);
-
+  }, [user?.id]); // ✅ SỬA LỖI: Chỉ phụ thuộc vào user.id, là một giá trị ổn định
+  useEffect(() => {
+    fetchOrdersAndPayments();
+  }, [fetchOrdersAndPayments]);
   useEffect(() => {
     if (user && user.id) {
       const client = new Client({
@@ -196,50 +213,50 @@ export default function OrderListTab({ user }) {
           client.subscribe(`/topic/orders/${user.id}`, (message) => {
             const updatedOrderDTO = JSON.parse(message.body);
 
-           setAllOrders((prevOrders) => {
-  const newStatus = updatedOrderDTO.trangThaiMoi;
-  const isStillPending = newStatus !== "HOAN_THANH" && newStatus !== "HUY";
+            setAllOrders((prevOrders) => {
+              const newStatus = updatedOrderDTO.trangThaiMoi;
+              const isStillPending = newStatus !== "HOAN_THANH" && newStatus !== "HUY";
 
-  const orderExists = prevOrders.some((o) => o.id == updatedOrderDTO.idHoaDon);
+              const orderExists = prevOrders.some((o) => o.id == updatedOrderDTO.idHoaDon);
 
-  // Trường hợp 1: Đơn hàng đã có trong danh sách
-  if (orderExists) {
-    if (isStillPending) {
-      // 1a: Cập nhật trạng thái mới
-      // Dùng .map() để TẠO RA MẢNG MỚI
-      return prevOrders.map((order) =>
-        order.id == updatedOrderDTO.idHoaDon
-          ? { ...order, trangThai: newStatus }
-          // Dấu hai chấm ":" biểu thị else. Nghĩa là: nếu id không khớp thì giữ nguyên.
-          : order
-      );
-    } else {
-      // 1b: Xóa khỏi danh sách vì đã hoàn thành/hủy
-      // Dùng .filter() để TẠO RA MẢNG MỚI không chứa đơn hàng cần xóa
-      return prevOrders.filter((order) => order.id != updatedOrderDTO.idHoaDon);
-    }
-  }
-  // Trường hợp 2: Đơn hàng mới xuất hiện
-  else {
-    if (isStillPending) {
-      // 2a: Thêm vào danh sách nếu là đơn hàng mới đang xử lý
-      const newOrderForState = {
-        id: updatedOrderDTO.idHoaDon,
-        // Giữ các thuộc tính khác khớp với cấu trúc state của bạn
-        maHoaDon: updatedOrderDTO.maHoaDon,
-        trangThai: updatedOrderDTO.trangThaiMoi,
-        ngayTao: formatDate(updatedOrderDTO.ngayTao), // Nên format lại
-        tongTien: updatedOrderDTO.tongTien,
-        soLuongSanPham: updatedOrderDTO.soLuongSanPham,
-        diaChi: updatedOrderDTO.diaChi,
-      };
-      // Dùng spread operator (...) để TẠO RA MẢNG MỚI có chứa đơn hàng mới ở đầu
-      return [newOrderForState, ...prevOrders];
-    }
-    // 2b: Bỏ qua nếu là đơn hàng mới nhưng đã hoàn thành/hủy
-    return prevOrders; // Trả về mảng cũ không thay đổi
-  }
-});
+              // Trường hợp 1: Đơn hàng đã có trong danh sách
+              if (orderExists) {
+                if (isStillPending) {
+                  // 1a: Cập nhật trạng thái mới
+                  // Dùng .map() để TẠO RA MẢNG MỚI
+                  return prevOrders.map((order) =>
+                    order.id == updatedOrderDTO.idHoaDon
+                      ? { ...order, trangThai: newStatus }
+                      : // Dấu hai chấm ":" biểu thị else. Nghĩa là: nếu id không khớp thì giữ nguyên.
+                        order
+                  );
+                } else {
+                  // 1b: Xóa khỏi danh sách vì đã hoàn thành/hủy
+                  // Dùng .filter() để TẠO RA MẢNG MỚI không chứa đơn hàng cần xóa
+                  return prevOrders.filter((order) => order.id != updatedOrderDTO.idHoaDon);
+                }
+              }
+              // Trường hợp 2: Đơn hàng mới xuất hiện
+              else {
+                if (isStillPending) {
+                  // 2a: Thêm vào danh sách nếu là đơn hàng mới đang xử lý
+                  const newOrderForState = {
+                    id: updatedOrderDTO.idHoaDon,
+                    // Giữ các thuộc tính khác khớp với cấu trúc state của bạn
+                    maHoaDon: updatedOrderDTO.maHoaDon,
+                    trangThai: updatedOrderDTO.trangThaiMoi,
+                    ngayTao: formatDate(updatedOrderDTO.ngayTao), // Nên format lại
+                    tongTien: updatedOrderDTO.tongTien,
+                    soLuongSanPham: updatedOrderDTO.soLuongSanPham,
+                    diaChi: updatedOrderDTO.diaChi,
+                  };
+                  // Dùng spread operator (...) để TẠO RA MẢNG MỚI có chứa đơn hàng mới ở đầu
+                  return [newOrderForState, ...prevOrders];
+                }
+                // 2b: Bỏ qua nếu là đơn hàng mới nhưng đã hoàn thành/hủy
+                return prevOrders; // Trả về mảng cũ không thay đổi
+              }
+            });
           });
         },
         onStompError: (frame) => {
@@ -253,7 +270,7 @@ export default function OrderListTab({ user }) {
         client.deactivate();
       };
     }
-  }, [user]);
+  }, [user?.id, fetchOrdersAndPayments]);
 
   if (!user || !user.id) {
     return (
