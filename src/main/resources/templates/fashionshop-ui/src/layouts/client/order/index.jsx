@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect ,useCallback ,useMemo} from "react";
 import {
   Box,
   Grid,
@@ -80,6 +80,7 @@ export default function OrderForm() {
 
   // Lấy user từ API /me thay vì localStorage!
   const [user, setUser] = useState(null);
+   const cartId = useMemo(() => localStorage.getItem("cartId"), []);
   useEffect(() => {
     async function fetchUser() {
       try {
@@ -447,7 +448,48 @@ export default function OrderForm() {
     setSelectedVoucher(coupon);
     setCouponModalOpen(false);
   };
+ // Hàm này sẽ chịu trách nhiệm xóa các sản phẩm đã mua khỏi giỏ hàng
+    const clearPurchasedItemsFromCart = useCallback(async () => {
+        if (!cartItems || cartItems.length === 0) {
+            return; 
+        }
 
+        console.log("Bắt đầu xóa các sản phẩm đã mua khỏi giỏ hàng...");
+
+        const deletePromises = cartItems.map(item => {
+            const itemId = item.id;
+            let deleteUrl = '';
+            let config = {};
+
+            if (user?.id && user?.role) {
+                // API cho người dùng đã đăng nhập (lưu trong DB)
+                deleteUrl = `http://localhost:8080/api/v1/cart/db/items/${itemId}?idNguoiDung=${user.id}&loaiNguoiDung=${user.role}`;
+                config = { withCredentials: true };
+            } else if (cartId) {
+                // API cho khách (lưu trong Redis)
+                deleteUrl = `http://localhost:8080/api/v1/cart/${cartId}/items/${itemId}`;
+            }
+
+            if (deleteUrl) {
+                return axios.delete(deleteUrl, config).catch(err => {
+                    // Ghi lại lỗi nếu có nhưng không làm dừng vòng lặp
+                    console.warn(`Lỗi khi xóa sản phẩm ${itemId} khỏi giỏ hàng:`, err.response?.data || err.message);
+                });
+            }
+            return Promise.resolve();
+        });
+
+        try {
+            await Promise.allSettled(deletePromises);
+            console.log("Đã hoàn tất quá trình xóa giỏ hàng.");
+
+            // Gửi sự kiện để cập nhật lại icon giỏ hàng ở header
+            // Giả sử giỏ hàng trống sau khi mua, nếu không bạn cần tính lại số lượng
+            window.dispatchEvent(new CustomEvent("cart-updated", { detail: { count: 0 } }));
+        } catch (error) {
+            console.error("Lỗi không mong muốn khi xóa giỏ hàng:", error);
+        }
+    }, [cartItems, user, cartId]);
   // Main submit
   const handleConfirmOrder = async (event) => {
     event.preventDefault();
@@ -545,7 +587,7 @@ export default function OrderForm() {
         toast.error("Không lấy được id hóa đơn từ BE!");
         return;
       }
-
+     await clearPurchasedItemsFromCart(); 
       if (form.payment === "cod") {
         // 2. Lưu chi tiết thanh toán (COD)
         setSuccess(true);

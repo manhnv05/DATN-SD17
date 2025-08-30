@@ -20,6 +20,7 @@ public enum ErrorCode {
     VALIDATION_ERROR(1008, "VALIDATION_ERROR", HttpStatus.BAD_REQUEST),
     INVALID_DOB(1009, "Your must be at least {min}", HttpStatus.BAD_REQUEST),
 
+    EMAIL_ALREADY_EXISTS(1019, "Email đã tồn tại ", HttpStatus.BAD_REQUEST),
     // Product/Customer/Order
     INSUFFICIENT_QUANTITY(1001, "Số lượng yêu cầu vượt quá số lượng tồn kho", HttpStatus.BAD_REQUEST),
     PRODUCT_NOT_FOUND(1010, "Sản phẩm không tồn tại", HttpStatus.BAD_REQUEST),

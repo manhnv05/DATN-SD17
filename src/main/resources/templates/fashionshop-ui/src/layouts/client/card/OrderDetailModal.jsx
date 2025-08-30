@@ -255,7 +255,7 @@ const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
       };
       fetchOrderDetails();
     }
-  }, [open, orderCode, onClose, openEdit]);
+  }, [open, orderCode, onClose]);
 
   const handleChangePGG = (event) => {
     const selectedId = event.target.value;
