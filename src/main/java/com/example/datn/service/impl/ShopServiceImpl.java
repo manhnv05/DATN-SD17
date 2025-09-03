@@ -109,4 +109,8 @@ public class ShopServiceImpl implements ShopService {
 
         return new PageImpl<>(voList, pageable, sanPhamPage.getTotalElements());
     }
+    public Double getMaxProductPrice() {
+        Double maxPrice = chiTietSanPhamRepository.findMaxPriceFromChiTiet();
+        return maxPrice == null ? 0.0 : maxPrice; // Trả về 0 nếu không có sản phẩm nào
+    }
 }

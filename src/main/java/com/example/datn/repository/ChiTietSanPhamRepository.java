@@ -75,5 +75,6 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
     ChiTietSanPham findExisting(@Param("idSanPham") Integer idSanPham,
                                 @Param("idMauSac") Integer idMauSac,
                                 @Param("idKichThuoc") Integer idKichThuoc);
-
+    @Query("SELECT MAX(ctsp.gia) FROM ChiTietSanPham ctsp WHERE ctsp.trangThai = 1")
+    Double findMaxPriceFromChiTiet();
 }

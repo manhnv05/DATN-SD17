@@ -18,7 +18,7 @@ import {
   TextField,
   Paper,
   MenuItem,
-  Select
+  Select,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
@@ -38,7 +38,7 @@ import dang_giao_hang from "../../../assets/images/dang_giao_hang.png";
 import hoan_thanh from "../../../assets/images/hoan_thanh.png";
 import Huy from "../../../assets/images/Huy.png";
 import ProductSlideshow from "../../admin/BanHangTaiQuay/component/ProductSlideshow";
-import OrderHistoryModal from "../../admin/HoaDon/OrderHistoryModal/OrderHistoryModal"
+import OrderHistoryModal from "../../admin/HoaDon/OrderHistoryModal/OrderHistoryModal";
 import { Add, Remove } from "@mui/icons-material";
 import EditRecipientModal from "./EditRecipientModal";
 
@@ -55,21 +55,24 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading2, setLoading2] = useState(false);
- const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const handleOpenHistoryModal = () => setIsHistoryModalOpen(true);
   const handleCloseHistoryModal = () => setIsHistoryModalOpen(false);
- 
+
   const [productsInOrder, setProductsInOrder] = useState([]);
-const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
-  // === CÁC HÀM HELPER (Lấy từ OrderLookup) ===
+  const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
+  // === CÁC HÀM HELPER (Lấy từ OrderLookup) ===\
+
   const formatDateTime = useCallback((isoString) => {
     if (!isoString) return "Chưa cập nhật";
     const date = new Date(isoString);
-    return `${String(date.getHours()).padStart(2, "0")}:${String(
-      date.getMinutes()
-    ).padStart(2, "0")} - ${String(date.getDate()).padStart(2, "0")}/${String(
-      date.getMonth() + 1
-    ).padStart(2, "0")}/${date.getFullYear()}`;
+    return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(
+      2,
+      "0"
+    )} - ${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}/${date.getFullYear()}`;
   }, []);
 
   const formatCurrency = useCallback((amount) => {
@@ -149,8 +152,9 @@ const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
   };
   const fetchAllStock = useCallback(async () => {
     try {
-      const response = await axios.get(`${BASE_SERVER_URL}api/hoa-don/get-all-so-luong-ton-kho`,
-        { withCredentials: true });
+      const response = await axios.get(`${BASE_SERVER_URL}api/hoa-don/get-all-so-luong-ton-kho`, {
+        withCredentials: true,
+      });
       const stockList = response.data?.data || [];
       // Chuyển đổi mảng thành một object để tra cứu nhanh hơn (dạng {id: soLuong})
       const stockMap = stockList.reduce((map, item) => {
@@ -209,15 +213,33 @@ const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
     });
   };
 
-  const getpggd = (pggd) =>{
-    if (pggd.phamTramGiamGia){
-      return pggd.maPhieuGiamGia + " - " + pggd.phamTramGiamGia + " %"
+  const getpggd = (pggd) => {
+    if (pggd.phamTramGiamGia) {
+      return pggd.maPhieuGiamGia + " - " + pggd.phamTramGiamGia + " %";
+    } else {
+      return pggd.maPhieuGiamGia + " - " + pggd.soTienGiam + " VNĐ";
     }
-    else{
-      return pggd.maPhieuGiamGia + " - " + pggd.soTienGiam + " VNĐ"
-    }
-  }
-
+  };
+  const recordHistoryLog = useCallback(
+    async (actionDetail) => {
+      if (!orderData?.id) return;
+      try {
+        const payload = {
+          
+          idHoaDon: orderData.id,
+          noiDungThayDoi: actionDetail,
+        };
+        // THAY ĐÚNG ENDPOINT API LƯU LOG CỦA BẠN
+        await axios.post(`${BASE_SERVER_URL}api/lich-su-hoa-don/log`, payload, {
+          withCredentials: true,
+        });
+      } catch (error) {
+        console.error("Lỗi khi ghi log lịch sử:", error);
+        toast.error("Không thể ghi lại lịch sử thay đổi.");
+      }
+    },
+    [orderData]
+  );
   // === LOGIC GỌI API ===
   useEffect(() => {
     if (open && orderCode) {
@@ -226,8 +248,8 @@ const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
         setOrderData(null); // Xóa dữ liệu cũ
         try {
           const response = await axios.get(
-            `http://localhost:8080/api/hoa-don/tra-cuu-hoa-don/${orderCode}`
-            , { withCredentials: true }
+            `http://localhost:8080/api/hoa-don/tra-cuu-hoa-don/${orderCode}`,
+            { withCredentials: true }
           );
           if (response.data) {
             if (response.data.lichSuHoaDon) {
@@ -236,10 +258,10 @@ const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
               );
             }
             setOrderData(response.data);
-            setSelectedPGG(response.data.phieuGiamGia.maPhieu)
-            const res = await loadPggKh(response.data.tongTienBanDau)
-            console.log(res.data.content)
-            setListPGGKH(res.data.content)
+            setSelectedPGG(response.data.phieuGiamGia.maPhieu);
+            const res = await loadPggKh(response.data.tongTienBanDau);
+            console.log(res.data.content);
+            setListPGGKH(res.data.content);
           } else {
             throw new Error("Không tìm thấy đơn hàng.");
           }
@@ -247,7 +269,7 @@ const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
           const errorMessage =
             error.response?.data?.message || "Không tìm thấy đơn hàng hoặc có lỗi xảy ra.";
           toast.error(errorMessage);
-          console.log(error)
+          console.log(error);
           onClose(); // Đóng modal nếu có lỗi
         } finally {
           setLoading(false);
@@ -278,7 +300,8 @@ const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
 
       // BƯỚC 1: CẬP NHẬT TỒN KHO
       await axios.put(
-        `${BASE_SERVER_URL}api/hoa-don/giam-so-luong-san-pham/${idChiTietSanPham}?soLuong=${quantity}`, {},
+        `${BASE_SERVER_URL}api/hoa-don/giam-so-luong-san-pham/${idChiTietSanPham}?soLuong=${quantity}`,
+        {},
         { withCredentials: true }
       );
 
@@ -291,11 +314,11 @@ const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
         updatedProducts = productsInOrder.map((p) =>
           p.idSanPhamChiTiet === idChiTietSanPham ? { ...p, soLuong: newQuantity } : p
         );
-        console.log(newQuantity, idChiTietSanPham)
+        console.log(newQuantity, idChiTietSanPham);
       } else {
         const price =
           productToAdd.giaTienSauKhiGiam !== null &&
-            productToAdd.giaTienSauKhiGiam < productToAdd.gia
+          productToAdd.giaTienSauKhiGiam < productToAdd.gia
             ? productToAdd.giaTienSauKhiGiam
             : productToAdd.gia;
         const newProduct = {
@@ -306,12 +329,12 @@ const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
           gia: price,
         };
         updatedProducts = [...productsInOrder, newProduct];
-        console.log(quantity, idChiTietSanPham)
+        console.log(quantity, idChiTietSanPham);
       }
       // handleUpdateQuantity(,newQuantity )
       await updateOrderDetails(updatedProducts); // Gọi hàm helper
       toast.success("Thêm sản phẩm thành công!");
-      fetchListProductOrder()
+      fetchListProductOrder();
     } catch (error) {
       console.error("Lỗi khi thêm sản phẩm:", error);
       toast.error(error.response?.data?.message || "Thêm sản phẩm thất bại.");
@@ -340,13 +363,11 @@ const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
       setOrderData(fetchedOrder);
       setProductsInOrder(fetchedProducts);
 
-
       const initialQuantities = {};
       fetchedProducts.forEach((product) => {
         initialQuantities[product.idSanPhamChiTiet] = product.soLuong;
       });
       setQuantityInput(initialQuantities);
-
     } catch (error) {
       console.error("Không thể fetch dữ liệu:", error);
       toast.error("Không thể tải dữ liệu hóa đơn.");
@@ -363,11 +384,11 @@ const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
       },
       credentials: "include", // <-- Thêm dòng này!
     });
-    const result = await loadKhachHang.json()
+    const result = await loadKhachHang.json();
     const data = {
-      "khachHang": result.id,
-      "tongTienHoaDon": tongtien
-    }
+      khachHang: result.id,
+      tongTienHoaDon: tongtien,
+    };
     const pggkh = await fetch(`http://localhost:8080/PhieuGiamGiaKhachHang/query`, {
       method: "POST",
       headers: {
@@ -376,43 +397,10 @@ const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
       body: JSON.stringify(data),
       credentials: "include", // <-- Thêm dòng này!
     });
-    const pggkhres = await pggkh.json()
-    return pggkhres
-
-  }
-
-  const handleQuantityChange = async (index, value) => {
-    setOrderData((prev) => {
-      const updated = { ...prev };
-      updated.danhSachChiTiet = [...prev.danhSachChiTiet];
-
-      // Cập nhật số lượng cho sản phẩm
-      const newSoLuong = value > 0 ? value : 1;
-      updated.danhSachChiTiet[index] = {
-        ...updated.danhSachChiTiet[index],
-        soLuong: newSoLuong,
-        thanhTien: updated.danhSachChiTiet[index].gia * newSoLuong,
-      };
-
-      // 🔹 Tính lại tổng sau khi đổi số lượng
-      const tongTienBanDau = updated.danhSachChiTiet.reduce(
-        (sum, item) => sum + item.gia * item.soLuong,
-        0
-      );
-      console.log(updated.giamGia)
-      // nếu có giảm giá thì trừ ra, còn không thì giữ nguyên
-      const tongTien = tongTienBanDau - (updated.giamGia || 0);
-
-      const tongHoaDon = tongTien + (updated.phiVanChuyen || 0);
-
-      // gán lại vào orderData
-      updated.tongTienBanDau = tongTienBanDau;
-      updated.tongTien = tongTien;
-      updated.tongHoaDon = tongHoaDon;
-
-      return updated;
-    });
+    const pggkhres = await pggkh.json();
+    return pggkhres;
   };
+
   // === CÁC HÀM RENDER (Chuyển đổi từ Bootstrap sang MUI Grid và Paper) ===
   const renderTimeline = () => {
     const history = orderData?.lichSuHoaDon || [];
@@ -474,7 +462,6 @@ const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
     );
   };
 
-
   const [recipient, setRecipient] = useState({
     tenKhachHang: "",
     sdt: "",
@@ -494,20 +481,20 @@ const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
 
   const handleOpen = () => setOpenEdit(true);
   const handleClose = () => setOpenEdit(false);
-// Sửa lại tên hàm cho đúng với state
+  // Sửa lại tên hàm cho đúng với state
   const handleOpenEditRecipient = () => setIsEditRecipientOpen(true);
   const handleCloseEditRecipient = () => setIsEditRecipientOpen(false);
 
   // Hàm này sẽ được truyền vào prop `onSave` của modal con
-  const handleSaveRecipient = async (updatedData) => {
+  const handleSaveRecipient = async (dataFromModal) => {
     if (!orderData) return;
-
+    const { recipient, newShippingFee, logMessage } = dataFromModal;
     // Payload này chỉ chứa những trường cần cập nhật
     const payload = {
-      tenKhachHang: updatedData.tenKhachHang,
-      sdt: updatedData.sdt,
-      diaChi: updatedData.diaChi,
-      phiVanChuyen: orderData.phiVanChuyen,  // Modal con đã trả về địa chỉ đầy đủ
+      tenKhachHang: recipient.tenKhachHang, // Dùng 'recipient'
+        sdt: recipient.sdt,                   // Dùng 'recipient'
+        diaChi: recipient.diaChi,             // Dùng 'recipient'
+        phiVanChuyen: newShippingFee,    // Modal con đã trả về địa chỉ đầy đủ
     };
 
     try {
@@ -516,6 +503,7 @@ const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
       await axios.put(backendApiUrl, payload, { withCredentials: true });
 
       toast.success("Cập nhật thông tin người nhận thành công!");
+       await recordHistoryLog(logMessage);
       handleCloseEditRecipient(); // Đóng modal
       fetchOrderDetails(orderCode); // Tải lại dữ liệu để hiển thị thông tin mới
     } catch (error) {
@@ -523,34 +511,36 @@ const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
       toast.error(`Lỗi: ${error.response?.data?.message || "Không thể cập nhật thông tin."}`);
     }
   };
-  const fetchOrderDetails = useCallback(async (code) => {
-    if (!code) return;
-    setLoading(true);
-    try {
-      const response = await axios.get(
-        `${BASE_SERVER_URL}api/hoa-don/tra-cuu-hoa-don/${code}`,
-        { withCredentials: true }
-      );
-      if (response.data) {
-        if (response.data.lichSuHoaDon) {
-          response.data.lichSuHoaDon.sort((a, b) => new Date(a.thoiGian) - new Date(b.thoiGian));
+  const fetchOrderDetails = useCallback(
+    async (code) => {
+      if (!code) return;
+      setLoading(true);
+      try {
+        const response = await axios.get(`${BASE_SERVER_URL}api/hoa-don/tra-cuu-hoa-don/${code}`, {
+          withCredentials: true,
+        });
+        if (response.data) {
+          if (response.data.lichSuHoaDon) {
+            response.data.lichSuHoaDon.sort((a, b) => new Date(a.thoiGian) - new Date(b.thoiGian));
+          }
+          setOrderData(response.data);
+          // ... (các logic set state khác)
+        } else {
+          throw new Error("Không tìm thấy đơn hàng.");
         }
-        setOrderData(response.data);
-        // ... (các logic set state khác)
-      } else {
-        throw new Error("Không tìm thấy đơn hàng.");
+      } catch (error) {
+        const errorMessage = error.response?.data?.message || "Lỗi khi tải đơn hàng.";
+        toast.error(errorMessage);
+        onClose();
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || "Lỗi khi tải đơn hàng.";
-      toast.error(errorMessage);
-      onClose();
-    } finally {
-      setLoading(false);
-    }
-  }, [onClose]);
+    },
+    [onClose]
+  );
   const handleSave = (updated) => {
     setRecipient(updated);
-    console.log(updated, orderData.id)
+    console.log(updated, orderData.id);
     // gọi API cập nhật nếu cần
   };
 
@@ -560,7 +550,12 @@ const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
         <Typography variant="h6" fontWeight="bold" sx={{ color: "#49a3f1" }}>
           Thông tin hóa đơn
         </Typography>
-        <Button variant="text" size="small" onClick={handleOpenHistoryModal}>
+        <Button
+          variant="text"
+          sx={{ color: "#49a3f1" }}
+          size="small"
+          onClick={handleOpenHistoryModal}
+        >
           Xem lịch sử
         </Button>
       </Box>
@@ -585,7 +580,7 @@ const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
         </Grid>
       </Grid>
       <hr style={{ margin: "16px 0" }} />
-       <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
         <Typography variant="h6" fontWeight="bold" sx={{ color: "#49a3f1" }}>
           Thông tin người nhận
         </Typography>
@@ -593,10 +588,23 @@ const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
           // SỬA LẠI onClick CHO ĐÚNG HÀM
           <Button
             variant="outlined"
-            size="small"
-            onClick={handleOpenEditRecipient} 
+            size="medium"
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 400,
+              color: "#49a3f1",
+              borderColor: "#49a3f1",
+              boxShadow: "none",
+              "&:hover": {
+                borderColor: "#1769aa",
+                background: "#f0f6fd",
+                color: "#1769aa",
+              },
+            }}
+            onClick={handleOpenEditRecipient}
           >
-            Sửa
+            Sửa thông tin
           </Button>
         )}
       </Box>
@@ -618,82 +626,146 @@ const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
         </Grid>
       </Grid>
       {/* Modal nằm ở đây nhưng không phá vỡ renderOrderInfo */}
-     {isEditRecipientOpen && orderData && (
+      {isEditRecipientOpen && orderData && (
         <EditRecipientModal
-        open={isEditRecipientOpen}
-        onClose={handleCloseEditRecipient}
-        recipientData={recipient}
-        onSave={handleSaveRecipient}
-      />
+          open={isEditRecipientOpen}
+          onClose={handleCloseEditRecipient}
+          recipientData={recipient}
+          onSave={handleSaveRecipient}
+        />
       )}
     </Paper>
   );
 
   const renderProductList = () => (
-    <Paper elevation={2} sx={{ p: 2.5 }}>
-      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
-        <Typography variant="h6" fontWeight="bold" sx={{ color: "#49a3f1", mb: 2 }}>
-          Sản phẩm đã đặt
-        </Typography>
-        {getStatusDetails(orderData.trangThai).text === "Chờ xác nhận" && (
-          <button
-            className={`${styles2.btn} ${styles2.btnConfirm}`}
-            onClick={() => setIsModalOpen(true)}
-            disabled={loading2}
+    <Paper elevation={2} sx={{ p: { xs: 1.5, md: 3 } }}>
+      {/* === TIÊU ĐỀ CÁC CỘT === */}
+      <Grid
+        container
+        spacing={2}
+        sx={{ borderBottom: "1px solid #e0e0e0", pb: 1.5, display: { xs: "none", md: "flex" } }}
+      >
+        <Grid item md={6}>
+          <Typography
+            variant="subtitle2"
+            fontWeight="bold"
+            color="text.secondary"
+            sx={{ color: "#49a3f1" }}
           >
-            Thêm sản phẩm
-          </button>
-        )}
-      </Box>
+            Sản phẩm
+          </Typography>
+        </Grid>
+        <Grid item md={3} sx={{ textAlign: "center" }}>
+          <Typography
+            variant="subtitle2"
+            fontWeight="bold"
+            color="text.secondary"
+            sx={{ color: "#49a3f1" }}
+          >
+            Số lượng
+          </Typography>
+        </Grid>
+        <Grid item md={3} sx={{ textAlign: "right" }}>
+          <Typography
+            variant="subtitle2"
+            fontWeight="bold"
+            color="text.secondary "
+            sx={{ color: "#49a3f1" }}
+          >
+            Thành tiền
+          </Typography>
+        </Grid>
+      </Grid>
+
+      {/* === DANH SÁCH SẢN PHẨM === */}
       {(orderData.danhSachChiTiet || []).map((product, index) => (
-        <Box key={index} className={styles.productItem}>
-          <Box className={styles.productImageContainer}>
-            <ProductSlideshow
-              product={{
-                ...product,
-                listUrlImage: product.duongDanAnh ? [product.duongDanAnh] : [],
-              }}
-            />
-          </Box>
-          <div className={styles.productDetails}>
-            <p className={styles.productName}>{product.tenSanPham}</p>
-            <p className={styles.productAttrs}>
-              Màu: {product.tenMauSac} - Size: {product.tenKichThuoc}
-            </p>
-            <Box display="flex" alignItems="center" gap={1}>
-              <IconButton
-                size="small"
-                onClick={() => handleQuantityChange(index, product.soLuong - 1)}
+        <Grid
+          container
+          key={index}
+          spacing={2}
+          alignItems="center"
+          sx={{ py: 2.5, borderBottom: "1px solid #f0f0f0" }}
+        >
+          {/* --- Cột Sản phẩm --- */}
+          <Grid item xs={12} md={6}>
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              {/* === PHẦN HIỂN THỊ ẢNH TỪ CODE CŨ CỦA BẠN === */}
+              <Box
+                sx={{
+                  width: 80,
+                  height: 80,
+                  marginRight: "1.5rem",
+                  flexShrink: 0,
+                  overflow: "hidden",
+                  borderRadius: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
               >
-                <Remove />
-              </IconButton>
-              <TextField
-                type="number"
-                value={product.soLuong}
-                onChange={(e) =>
-                  handleQuantityChange(index, parseInt(e.target.value) || 1)
-                }
-                inputProps={{ min: 1, style: { textAlign: "center", width: 60 } }}
-                size="small"
-              />
-              <IconButton
-                size="small"
-                onClick={() => handleQuantityChange(index, product.soLuong + 1)}
-              >
-                <Add />
-              </IconButton>
+                <ProductSlideshow
+                  product={{
+                    ...product,
+                    listUrlImage: product.duongDanAnh ? [product.duongDanAnh] : [],
+                  }}
+                  className="productImage"
+                />
+              </Box>
+              {/* ============================================== */}
+
+              <Box>
+                <Typography variant="body1" fontWeight="bold">
+                  {product.tenSanPham}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {" "}
+                  {product.tenMauSac}
+                </Typography>
+                <Typography variant="body2" color="#e53935" fontWeight="bold">
+                  {" "}
+                  Giá: {formatCurrency(product.gia)}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Size: {product.tenKichThuoc}
+                </Typography>
+              </Box>
             </Box>
-          </div>
-          <div className={styles.productTotal}>
-            {formatCurrency(product.thanhTien)}
-          </div>
-        </Box>
+          </Grid>
+
+          {/* --- Cột Số lượng --- */}
+          <Grid item xs={6} md={3} sx={{ textAlign: "center" }}>
+            <Typography variant="body1" fontWeight="bold">
+              x {product.soLuong}
+            </Typography>
+          </Grid>
+
+          {/* --- Cột Thành tiền --- */}
+          <Grid item xs={6} md={3}>
+            <Typography variant="body1" fontWeight="bold" sx={{ textAlign: "right" }}>
+              {formatCurrency(product.thanhTien)}
+            </Typography>
+          </Grid>
+        </Grid>
       ))}
-      <ProductSelectionModalOrderDetail
-        open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSelectProduct={handleAddProduct}
-      />
+
+      {/* === TỔNG TIỀN === */}
+      <Box
+        sx={{
+          borderTop: "1px solid #ddd",
+          mt: 2,
+          pt: 2,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Typography variant="body1" fontWeight="bold">
+          Tổng tiền sản phẩm
+        </Typography>
+        <Typography variant="body1" fontWeight="bold" color="error">
+          {formatCurrency(orderData.tongTienBanDau)}
+        </Typography>
+      </Box>
     </Paper>
   );
 
@@ -713,27 +785,10 @@ const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
             <Typography>Phí vận chuyển</Typography>
             <Typography>{formatCurrency(orderData.phiVanChuyen)}</Typography>
           </Box>
-          {listPGGKH.length > 0 && selectedPGG && (
-            <Box mb={1}>
-              <Typography mb={0.5}>Chọn phiếu giảm giá:</Typography>
-              <Select
-                value={selectedPGG}
-                onChange={handleChangePGG}
-                size="small"
-                fullWidth
-              >
-                {/* Nếu selectedPGG không có trong danh sách, thêm nó vào đầu danh sách */}
-                {!listPGGKH.some(pgg => pgg.maPhieuGiamGia === selectedPGG) && (
-                  <MenuItem value={selectedPGG} disabled>
-                    {selectedPGG} (Đã hết)
-                  </MenuItem>
-                )}
-                {listPGGKH.map((pgg) => (
-                  <MenuItem key={pgg.id} value={pgg.maPhieuGiamGia}>
-                    {getpggd(pgg)}
-                  </MenuItem>
-                ))}
-              </Select>
+          {tienGiam > 0 && (
+            <Box display="flex" justifyContent="space-between" mb={1}>
+              <Typography>Giảm giá</Typography>
+              <Typography sx={{ color: "#e53935" }}>- {formatCurrency(tienGiam)}</Typography>
             </Box>
           )}
           <hr />
@@ -746,13 +801,10 @@ const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
             </Typography>
           </Box>
         </Box>
-         {isHistoryModalOpen && orderData?.maHoaDon && (
-        <OrderHistoryModal
-          maHoaDon={orderData.maHoaDon}
-          onClose={handleCloseHistoryModal}
-        />
-      )}
-      {/* --- END: THÊM MỚI --- */}
+        {isHistoryModalOpen && orderData?.maHoaDon && (
+          <OrderHistoryModal maHoaDon={orderData.maHoaDon} onClose={handleCloseHistoryModal} />
+        )}
+        {/* --- END: THÊM MỚI --- */}
       </Paper>
     );
   };
@@ -796,7 +848,23 @@ const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} variant="outlined">
+        <Button
+          onClick={onClose}
+          size="large"
+          sx={{
+            borderRadius: 2,
+            textTransform: "none",
+            fontWeight: 400,
+            color: "#49a3f1",
+            borderColor: "#49a3f1",
+            boxShadow: "none",
+            "&:hover": {
+              borderColor: "#1769aa",
+              background: "#f0f6fd",
+              color: "#1769aa",
+            },
+          }}
+        >
           Đóng
         </Button>
       </DialogActions>

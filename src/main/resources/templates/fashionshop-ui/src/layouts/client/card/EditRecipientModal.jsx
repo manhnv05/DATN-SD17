@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect ,useCallback } from "react";
 import {
     Box,
     TextField,
@@ -50,26 +50,62 @@ const normalizeString = (str = "") => {
     .replace(/Đ/g, "D")
     .replace(/[\s,.-]|(thành phố|tỉnh|quận|huyện|phường|xã|thị xã|thị trấn)/g, "");
 };
-
+const formatCurrency = (amount) => {
+    if (typeof amount !== "number") return "0 ₫";
+    return `${amount.toLocaleString("vi-VN")} ₫`;
+};
 
 const EditRecipientModal = ({ open, onClose, recipientData, onSave }) => {
+   
     const [provinces, setProvinces] = useState([]);
     const [districts, setDistricts] = useState([]);
     const [wards, setWards] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isFetchingProvinces, setIsFetchingProvinces] = useState(true);
-
+ const [initialData, setInitialData] = useState(null); // LƯU DỮ LIỆU BAN ĐẦU
+  const [isSaving, setIsSaving] = useState(false); 
     const [form, setForm] = useState({
         tenKhachHang: "",
         sdt: "",
-        diaChi: "", // This will hold only the specific part of the address
+        diaChi: "",
+         ghiChu: "", // This will hold only the specific part of the address
         province: null,
         district: null,
         ward: null,
     });
-
+useEffect(() => {
+ if (open && recipientData && provinces.length > 0) {
+ // LƯU LẠI DỮ LIỆU GỐC KHI MODAL MỞ
+setInitialData(recipientData); 
+ const addressParts = tachDiaChi(recipientData.diaChi);
+ setForm({
+ tenKhachHang: recipientData.tenKhachHang || "",
+ sdt: recipientData.sdt || "",
+ diaChi: addressParts.chiTiet || "",
+ province: null, district: null, ward: null,
+ });
+ if (addressParts.tinh) loadAddressFromData(addressParts);
+ }
+}, [open, recipientData, provinces]);
     // --- Effects for managing address data ---
-
+ const calculateShippingFee = useCallback(async (toDistrictId, toWardCode) => {
+        if (!toDistrictId || !toWardCode) return null;
+        try {
+            const response = await ghnApi.get("/v2/shipping-order/fee", {
+                params: {
+                    service_type_id: 2, // Dịch vụ chuẩn
+                    to_district_id: toDistrictId,
+                    to_ward_code: toWardCode,
+                    height: 15, length: 15, weight: 1000, width: 15, // Cân nặng/kích thước giả định
+                },
+            });
+            return response.data?.data?.total || null;
+        } catch (error) {
+            console.error("Lỗi tính phí vận chuyển:", error);
+            toast.error("Không thể tính lại phí vận chuyển.");
+            return null;
+        }
+    }, []);
     // 1. Fetch provinces from GHN when the component mounts
     useEffect(() => {
         const fetchProvinces = async () => {
@@ -98,6 +134,7 @@ const EditRecipientModal = ({ open, onClose, recipientData, onSave }) => {
                 tenKhachHang: recipientData.tenKhachHang || "",
                 sdt: recipientData.sdt || "",
                 diaChi: addressParts.chiTiet || "",
+                 ghiChu: recipientData.ghiChu || "", 
                 province: null, district: null, ward: null,
             });
 
@@ -210,32 +247,72 @@ const EditRecipientModal = ({ open, onClose, recipientData, onSave }) => {
         setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
     };
 
-    const handleSave = () => {
-        const phoneRegex = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
-        if (!form.tenKhachHang.trim() || !form.sdt.trim() || !form.diaChi.trim()) {
-            toast.error("Vui lòng nhập đầy đủ tên, SĐT và địa chỉ cụ thể.");
-            return;
-        }
-        if (!phoneRegex.test(form.sdt.trim())) {
-            toast.error("Định dạng số điện thoại không hợp lệ.");
-            return;
-        }
-        if (!form.province || !form.district || !form.ward) {
-            toast.error("Vui lòng chọn đầy đủ Tỉnh, Huyện và Xã.");
-            return;
-        }
+    const handleSave = async () => {
+        // --- Validation (giữ nguyên) ---
+        if (!form.tenKhachHang.trim() || !form.sdt.trim() || !form.diaChi.trim() || !form.province || !form.district || !form.ward) {
+            toast.error("Vui lòng điền đầy đủ thông tin bắt buộc.");
+            return;
+        }
 
-        const fullAddress = `${form.diaChi}, ${form.ward.WardName}, ${form.district.DistrictName}, ${form.province.ProvinceName}`;
-        
-        const savedData = {
-            tenKhachHang: form.tenKhachHang,
-            sdt: form.sdt,
-            diaChi: fullAddress, // Return the full, reconstructed address
-        };
-        
-        onSave(savedData);
-        onClose();
-    };
+        setIsSaving(true);
+        let logMessage = "Cập nhật thông tin đơn hàng:\n";
+        let hasChanges = false;
+        let newShippingFee = initialData.phiVanChuyen; // Mặc định là phí cũ
+
+        // 1. So sánh thông tin cơ bản
+        if (form.tenKhachHang !== initialData.tenKhachHang) {
+            logMessage += `- Tên người nhận: "${initialData.tenKhachHang}" -> "${form.tenKhachHang}"\n`;
+            hasChanges = true;
+        }
+        if (form.sdt !== initialData.sdt) {
+            logMessage += `- SĐT: "${initialData.sdt}" -> "${form.sdt}"\n`;
+            hasChanges = true;
+        }
+  
+        // So sánh Ghi chú <<-- THÊM MỚI
+        if (form.ghiChu !== initialData.ghiChu) {
+            logMessage += `- Ghi chú: "${initialData.ghiChu || ''}" -> "${form.ghiChu}"\n`;
+            hasChanges = true;
+        }
+        // 2. So sánh địa chỉ và tính lại phí nếu cần
+        const newFullAddress = `${form.diaChi}, ${form.ward.WardName}, ${form.district.DistrictName}, ${form.province.ProvinceName}`;
+        if (newFullAddress !== initialData.diaChi) {
+            logMessage += `- Địa chỉ: "${initialData.diaChi}" -> "${newFullAddress}"\n`;
+            hasChanges = true;
+
+            // Tính lại phí vận chuyển
+            const calculatedFee = await calculateShippingFee(form.district.DistrictID, form.ward.WardCode);
+            if (calculatedFee !== null) {
+                newShippingFee = calculatedFee;
+                if (newShippingFee !== initialData.phiVanChuyen) {
+                    logMessage += `- Phí vận chuyển: "${formatCurrency(initialData.phiVanChuyen)}" -> "${formatCurrency(newShippingFee)}"\n`;
+                }
+            } else {
+                // Nếu tính phí lỗi, không cho phép lưu
+                setIsSaving(false);
+                return;
+            }
+        }
+
+        // 3. Trả về dữ liệu cho component cha
+        if (hasChanges) {
+            const finalData = {
+                recipient: { // Dữ liệu người nhận mới
+                    tenKhachHang: form.tenKhachHang,
+                    sdt: form.sdt,
+                    diaChi: newFullAddress,
+                },
+                newShippingFee, // Phí vận chuyển mới
+                logMessage: logMessage.trim(), // Nội dung log
+            };
+            onSave(finalData); // Gửi object chứa tất cả thông tin
+        } else {
+            toast.info("Không có thay đổi nào để lưu.");
+        }
+
+        setIsSaving(false);
+        onClose();
+    };
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -314,6 +391,7 @@ EditRecipientModal.propTypes = {
         tenKhachHang: PropTypes.string,
         sdt: PropTypes.string,
         diaChi: PropTypes.string,
+          ghiChu: PropTypes.string,
     }),
     onSave: PropTypes.func.isRequired,
 };

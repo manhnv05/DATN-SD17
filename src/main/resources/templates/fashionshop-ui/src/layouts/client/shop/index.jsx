@@ -58,6 +58,7 @@ function getPaginationItems(currentPage, totalPages) {
 export default function ShopPage() {
     const isMobile = useMediaQuery("(max-width:900px)");
     const [price, setPrice] = useState([0, 500]);
+    const [maxPrice, setMaxPrice] = useState(500);
     const [selectedColors, setSelectedColors] = useState([]);
     const [selectedSizes, setSelectedSizes] = useState([]);
     const [selectedBrands, setSelectedBrands] = useState([]);
@@ -76,7 +77,17 @@ export default function ShopPage() {
     const [brandOptions, setBrandOptions] = useState([]);
     const [categoryOptions, setCategoryOptions] = useState([]);
     const navigate = useNavigate();
+const formatCurrency = (sliderValue) => {
+  // Bước 1: Lấy giá trị thật (ví dụ: sliderValue là 1134 -> actualPrice là 1134000)
+  const actualPrice = (sliderValue || 0) * 1000;
 
+  // Bước 2: Dùng toLocaleString để JavaScript tự động thêm các dấu chấm
+  // Ví dụ: 1134000 -> "1.134.000"
+  const formattedPrice = actualPrice.toLocaleString('vi-VN');
+
+  // Bước 3: Thêm ký hiệu tiền tệ và trả về
+  return `${formattedPrice} ₫`;
+};
     useEffect(() => {
         axios.get("http://localhost:8080/mauSac/all")
             .then(res => setColorOptions(res.data))
@@ -90,6 +101,21 @@ export default function ShopPage() {
         axios.get("http://localhost:8080/danhMuc/all")
             .then(res => setCategoryOptions(res.data))
             .catch(() => setCategoryOptions([]));
+              axios.get("http://localhost:8080/api/shop/max-price")
+        .then(res => {
+            const fetchedMaxPrice = res.data;
+            if (fetchedMaxPrice > 0) {
+                // Chuyển đổi giá trị về đúng định dạng của slider (chia cho 1000)
+                const sliderMax = Math.ceil(fetchedMaxPrice / 1000); 
+                
+                setMaxPrice(sliderMax); // Cập nhật state maxPrice
+                setPrice([0, sliderMax]); // Cập nhật state price để thanh trượt hiển thị đúng
+            }
+        })
+        .catch(err => {
+            console.error("Không thể lấy giá trị max:", err);
+            // Giữ nguyên giá trị mặc định nếu có lỗi
+        });
     }, []);
 
     useEffect(() => {
@@ -326,7 +352,7 @@ export default function ShopPage() {
                                 value={price}
                                 onChange={handlePriceChange}
                                 min={0}
-                                max={500}
+                                max={maxPrice}
                                 valueLabelDisplay="auto"
                                 sx={{
                                     color: "#1976d2",
@@ -335,10 +361,10 @@ export default function ShopPage() {
                                     }
                                 }}
                             />
-                            <Stack direction="row" justifyContent="space-between" fontSize={13.5} color="#888">
-                                <span>{price[0]}.000₫</span>
-                                <span>{price[1]}.000₫</span>
-                            </Stack>
+                          <Stack direction="row" justifyContent="space-between" fontSize={13.5} color="#888">
+    <span>{formatCurrency(price[0])}</span>
+    <span>{formatCurrency(price[1])}</span>
+</Stack>
                         </Box>
                         <Typography sx={{ fontWeight: 600, fontSize: 16, mt: 2, mb: 0.8, color: "#205072" }}>Màu sắc</Typography>
                         <Stack direction="row" flexWrap="wrap" gap={1.2} mb={1.5} ml={0.5}>
@@ -443,7 +469,7 @@ export default function ShopPage() {
                                                 textAlign: "center",
                                                 borderRadius: 6,
                                                 bgcolor: "#fff",
-                                                height: 420,
+                                                height: "100%",
                                                 display: "flex",
                                                 flexDirection: "column",
                                                 alignItems: "center",
@@ -526,14 +552,7 @@ export default function ShopPage() {
                                             <Typography fontWeight={800} sx={{ fontSize: 17, mb: 0.5, color: "#205072", letterSpacing: 0.3 }}>
                                                 {item.name}
                                             </Typography>
-                                            <Rating
-                                                size="small"
-                                                precision={0.5}
-                                                value={ratings[idx]}
-                                                sx={{ mb: 0.5 }}
-                                                onChange={(_, value) => handleChangeRating(idx, value)}
-                                                onClick={e => e.stopPropagation()}
-                                            />
+                                            
                                             <Stack direction="row" spacing={1.1} alignItems="center" justifyContent="center" sx={{ mb: 1 }}>
                                                 {item.salePrice ? (
                                                     <>
@@ -556,29 +575,7 @@ export default function ShopPage() {
                                             </Stack>
                                             <Box sx={{ mt: "auto", width: "100%" }}>
                                                 <Stack direction="row" justifyContent="center" alignItems="center" spacing={2}>
-                                                    <Tooltip title={favoriteIndexes.includes(idx) ? "Bỏ yêu thích" : "Yêu thích"}>
-                                                        <IconButton
-                                                            sx={{
-                                                                color: favoriteIndexes.includes(idx) ? "#e53935" : "#bbb",
-                                                                border: favoriteIndexes.includes(idx) ? "2px solid #e53935" : "2px solid #ececec",
-                                                                bgcolor: "#fff",
-                                                                borderRadius: "50%",
-                                                                boxShadow: favoriteIndexes.includes(idx) ? "0 4px 16px #ffe6e6" : "none",
-                                                                "&:hover": {
-                                                                    color: "#e53935",
-                                                                    border: "2px solid #e53935",
-                                                                    background: "#ffe6e6"
-                                                                },
-                                                                transition: "all 0.15s"
-                                                            }}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleToggleFavorite(idx);
-                                                            }}
-                                                        >
-                                                            {favoriteIndexes.includes(idx) ? <FavoriteIcon /> : <FavoriteBorderIcon />}
-                                                        </IconButton>
-                                                    </Tooltip>
+                                                  
                                                     <Tooltip title="Mua ngay">
                                                         <Button
                                                             variant="contained"
@@ -591,7 +588,8 @@ export default function ShopPage() {
                                                                 fontSize: 12,
                                                                 boxShadow: "0 2px 8px 0 #bde0fe33",
                                                                 background: "#6cacec",
-                                                                "&:hover": { background: "#205072" }
+                                                                 color: '#fff',
+                                                                "&:hover": { background: "#49a3f1" }
                                                             }}
                                                             onClick={(e) => {
                                                                 e.stopPropagation();

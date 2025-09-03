@@ -4,6 +4,7 @@ import com.example.datn.service.ShopService;
 import com.example.datn.vo.clientVO.ShopProductVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -29,5 +30,9 @@ public class ShopController {
             @RequestParam(defaultValue = "16") int pageSize
     ) {
         return shopService.getShopProducts(keyword, color, size, brand, category, priceMin, priceMax, page, pageSize);
+    }
+    @GetMapping("/max-price")
+    public ResponseEntity<Double> getMaxPrice() {
+        return ResponseEntity.ok(shopService.getMaxProductPrice());
     }
 }
