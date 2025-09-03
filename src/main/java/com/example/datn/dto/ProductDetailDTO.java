@@ -23,4 +23,6 @@ public class ProductDetailDTO {
     private Integer sold;
     private String shipping;
     private VoucherDTO voucher;
+    private int giaMin;
+    private int giaMax;
 }

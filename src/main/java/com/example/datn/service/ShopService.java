@@ -15,4 +15,5 @@ public interface ShopService {
             int page,
             int pageSize
     );
+    public Double getMaxProductPrice();
 }

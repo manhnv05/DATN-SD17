@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -52,6 +52,35 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [addCartStatus, setAddCartStatus] = useState({ loading: false, success: false, error: "" });
   const [user, setUser] = useState(null);
+  // TẠO DANH SÁCH SIZE HỢP LỆ DỰA TRÊN MÀU ĐÃ CHỌN
+const isSizeDisabled = (size) => {
+    // Nếu chưa chọn màu, không có size nào bị disable
+    if (!selectedColor) return false; 
+    
+    // Nếu đã chọn màu, kiểm tra xem có biến thể nào khớp với cặp màu-size này không
+    return !product.variants.some(
+        (variant) => variant.maMau === selectedColor.maMau && variant.kichThuoc === size
+    );
+};
+
+// Hàm kiểm tra xem một MÀU có nên bị disable không
+const isColorDisabled = (color) => {
+    // Nếu chưa chọn size, không có màu nào bị disable
+    if (!selectedSize) return false;
+    
+    // Nếu đã chọn size, kiểm tra xem có biến thể nào khớp với cặp size-màu này không
+    return !product.variants.some(
+        (variant) => variant.kichThuoc === selectedSize && variant.maMau === color.maMau
+    );
+};
+
+useEffect(() => {
+    // Nếu người dùng đổi màu và size đã chọn trước đó không còn hợp lệ
+    if (selectedSize && isSizeDisabled(selectedSize)) {
+        // Tự động bỏ chọn size đó
+        setSelectedSize(null);
+    }
+}, [selectedColor]);
 
   // Cart ID lấy từ localStorage hoặc tạo mới
   const cartId =
@@ -116,8 +145,7 @@ export default function ProductDetail() {
           detailImg: sizeGuideImg,
         });
         setSelectedImage(0);
-        setSelectedColor(defaultColor);
-        setSelectedSize(defaultSize);
+
         setLoading(false);
       })
       .catch(() => {
@@ -165,7 +193,13 @@ export default function ProductDetail() {
     // eslint-disable-next-line
   }, [selectedColor, selectedSize]);
 
-  // Xác định variant đúng với màu & size đang chọn
+ let priceDisplay = "";
+  let showDiscount = false;
+  let giaGoc = 0;
+  let giaSale = 0;
+  let discount = "";
+
+  // Bước 1: Chỉ xác định variant khi đã chọn đủ cả màu VÀ size
   let variant = null;
   if (product && product.variants && selectedColor && selectedSize) {
     variant = product.variants.find(
@@ -173,32 +207,41 @@ export default function ProductDetail() {
     );
   }
 
-  let priceDisplay = "";
-  let showDiscount = false;
-  let giaGoc = 0;
-  let giaSale = 0;
-  let discount = "";
+  // Bước 2: Logic hiển thị giá dựa trên kết quả của Bước 1
+  if (variant && variant.gia > 0) {
+    // ---- TRƯỜNG HỢP 1: Đã chọn được variant hợp lệ và có giá > 0 ----
+    giaGoc = variant.gia;
+    const coGiaSaleHopLe =
+      variant.giaSauKhiGiam != null &&
+      variant.giaSauKhiGiam > 0 &&
+      variant.giaSauKhiGiam < giaGoc;
 
-  // Khi chưa chọn đủ màu+size: chỉ hiển thị khoảng giá gốc min-max.
-  if (!variant) {
-    priceDisplay =
-      product && product.priceMin !== product.priceMax
-        ? `${Number(product.priceMin).toLocaleString("vi-VN")}₫ - ${Number(
-            product.priceMax
-          ).toLocaleString("vi-VN")}₫`
-        : product
-        ? `${Number(product.priceMin).toLocaleString("vi-VN")}₫`
-        : "";
-    showDiscount = false;
+    if (coGiaSaleHopLe) {
+      // Hiển thị giá sale của variant
+      showDiscount = true;
+      giaSale = variant.giaSauKhiGiam;
+      priceDisplay = `${Number(giaSale).toLocaleString("vi-VN")}₫`;
+      discount = variant.phanTramGiamGia ? `-${variant.phanTramGiamGia}%` : "";
+    } else {
+      // Hiển thị giá gốc của variant
+      showDiscount = false;
+      priceDisplay = `${Number(giaGoc).toLocaleString("vi-VN")}₫`;
+    }
   } else {
-    // Khi đã chọn đủ màu+size:
-    giaGoc = variant.gia ?? 0;
-    giaSale = variant.giaSauKhiGiam ?? giaGoc;
-    discount = variant.phanTramGiamGia ? `-${variant.phanTramGiamGia}%` : "";
-    showDiscount = variant.giaSauKhiGiam && variant.giaSauKhiGiam < giaGoc;
-    priceDisplay = showDiscount
-      ? `${Number(giaSale).toLocaleString("vi-VN")}₫`
-      : `${Number(giaGoc).toLocaleString("vi-VN")}₫`;
+    // ---- TRƯỜNG HỢP 2: Mới vào trang, hoặc chọn chưa đủ, hoặc variant có giá 0 ----
+    showDiscount = false;
+    if (product && product.priceMin > 0) {
+      // Ưu tiên hiển thị khoảng giá của sản phẩm cha nếu có
+      priceDisplay =
+        product.priceMin !== product.priceMax
+          ? `${Number(product.priceMin).toLocaleString("vi-VN")}₫ - ${Number(
+              product.priceMax
+            ).toLocaleString("vi-VN")}₫`
+          : `${Number(product.priceMin).toLocaleString("vi-VN")}₫`;
+    } else {
+      // Fallback cuối cùng nếu không có thông tin giá nào hợp lệ
+      priceDisplay = "Chọn màu & size để xem giá";
+    }
   }
 
   // Thêm vào giỏ hàng (tự động switch Redis/DB)
@@ -379,12 +422,6 @@ export default function ProductDetail() {
               <Typography variant="h5" fontWeight={900} sx={{ letterSpacing: 0.7, mb: 0.5 }}>
                 {product.name}
               </Typography>
-              <Stack direction="row" alignItems="center" spacing={1.5}>
-                <Rating value={product.rating} precision={0.1} size="small" readOnly />
-                <Typography sx={{ color: "#888", fontSize: 15 }}>
-                  ({product.sold} đã bán)
-                </Typography>
-              </Stack>
             </Box>
             <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2 }}>
               <Typography variant="h5" fontWeight={900} sx={{ color: "#e53935" }}>
@@ -423,68 +460,69 @@ export default function ProductDetail() {
             {product.colors && product.colors.length > 0 && (
               <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
                 <Typography sx={{ minWidth: 54, fontWeight: 500 }}>Màu:</Typography>
-                <Stack direction="row" flexWrap="wrap" gap={1.2}>
-                  {product.colors.map((color, idx) => (
-                    <Tooltip
-                      title={color.name || color.tenMauSac || color.value || color}
-                      key={color.value || color.tenMauSac || color.maMau || idx}
-                    >
-                      <IconButton
-                        sx={{
-                          border:
-                            selectedColor &&
-                            (selectedColor.value === (color.value || color.maMau) ||
-                              selectedColor.tenMauSac === color.tenMauSac)
-                              ? "2.5px solid #1976d2"
-                              : "2px solid #e3e3e3",
-                          bgcolor: color.value || color.maMau,
-                          width: 32,
-                          height: 32,
-                          margin: "2px",
-                          boxShadow: "0 1px 4px 0 #0002",
-                          transition: "border 0.15s",
-                          "&:hover": {
-                            borderColor: "#1976d2",
-                          },
-                          borderColor: (color.value || color.maMau) === "#fff" ? "#bbb" : undefined,
-                        }}
-                        onClick={() => setSelectedColor(color)}
-                      />
-                    </Tooltip>
-                  ))}
-                </Stack>
+               <Stack direction="row" flexWrap="wrap" gap={1.2}>
+    {/* Quay lại dùng product.colors */}
+    {product.colors && product.colors.map((color, idx) => {
+   // Gọi hàm kiểm tra
+ 
+        return (
+            <Tooltip
+                title={color.name || color.tenMauSac}
+                key={color.maMau || idx}
+            >
+                <IconButton
+                    onClick={() => setSelectedColor(color)}
+                   
+                    sx={{
+                        border: selectedColor?.maMau === color.maMau ? "2.5px solid #1976d2" : "2px solid #e3e3e3",
+                        bgcolor: color.maMau,
+                        width: 32,
+                        height: 32,
+                        opacity:  1,
+                        cursor: 'pointer',
+                        
+                    }}
+                />
+            </Tooltip>
+        );
+    })}
+</Stack>
               </Stack>
             )}
             {product.sizes && product.sizes.length > 0 && (
               <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
                 <Typography sx={{ minWidth: 54, fontWeight: 500 }}>Size:</Typography>
-                <Stack direction="row" spacing={1}>
-                  {product.sizes.map((size) => (
-                    <Box
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      sx={{
-                        width: 48,
-                        height: 48,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        borderRadius: 1.2,
-                        border:
-                          selectedSize === size ? "2.5px solid #1976d2" : "1.5px solid #e0e0e0",
-                        bgcolor: selectedSize === size ? "#e3f0fa" : "#fff",
-                        color: selectedSize === size ? "#1976d2" : "#222",
-                        fontWeight: selectedSize === size ? 900 : 600,
-                        fontSize: 14,
-                        cursor: "pointer",
-                        transition: "all 0.16s",
-                        boxShadow: selectedSize === size ? "0 2px 12px #1976d233" : "none",
-                      }}
-                    >
-                      {size}
-                    </Box>
-                  ))}
-                </Stack>
+               <Stack direction="row" spacing={1}>
+    {/* Quay lại dùng product.sizes */}
+    {product.sizes && product.sizes.map((size) => {
+        const disabled = isSizeDisabled(size); // Gọi hàm kiểm tra
+        return (
+            <Box
+                key={size}
+                // ✅ Chỉ cho phép click nếu không bị disabled
+                onClick={() => !disabled && setSelectedSize(size)}
+                sx={{
+                    width: 48,
+                    height: 48,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: 1.2,
+                    border: selectedSize === size ? "2.5px solid #1976d2" : "1.5px solid #e0e0e0",
+                    bgcolor: selectedSize === size ? "#e3f0fa" : "#fff",
+                    color: selectedSize === size ? "#1976d2" : "#222",
+                    fontWeight: selectedSize === size ? 900 : 600,
+                    transition: "all 0.16s",
+                    // ✅ Thêm style cho trạng thái disabled
+                    cursor: disabled ? "not-allowed" : "pointer",
+                    opacity: disabled ? 0.5 : 1,
+                }}
+            >
+                {size}
+            </Box>
+        );
+    })}
+</Stack>
               </Stack>
             )}
             <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>

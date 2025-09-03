@@ -176,8 +176,27 @@ const OrderLookup = () => {
         <Typography sx={{ textAlign: "center", p: 3 }}>Chưa có lịch sử trạng thái.</Typography>
       );
 
+
+      const filteredHistory = [];
+    let daThayChoXacNhan = false; // Biến cờ để kiểm tra
+
+    history.forEach(item => {
+        const trangThai = item.trangThaiHoaDon;
+
+        if (trangThai === "CHO_XAC_NHAN" || trangThai === "Chờ xác nhận") {
+            if (!daThayChoXacNhan) {
+                filteredHistory.push(item);
+                daThayChoXacNhan = true; // Đánh dấu là đã thấy
+            }
+            // Nếu đã thấy rồi thì không làm gì cả, bỏ qua item này
+        } else {
+            // Nếu là trạng thái khác, luôn thêm vào mảng
+            filteredHistory.push(item);
+        }
+    });
+
     // Tạo mảng dữ liệu đã được xử lý
-    const transformedData = history.map((item) => {
+    const transformedData = filteredHistory.map((item) => {
       const details = getStatusDetails(item.trangThaiHoaDon);
       return {
         ...details, // Bao gồm 'text' và 'className'
