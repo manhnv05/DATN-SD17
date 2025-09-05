@@ -34,4 +34,6 @@ public class DiaChi{
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_khach_hang", referencedColumnName = "id")
     private KhachHang khachHang;
+    @Column(name = "dia_chi_cu_the")
+    private String diaChiCuThe;
 }

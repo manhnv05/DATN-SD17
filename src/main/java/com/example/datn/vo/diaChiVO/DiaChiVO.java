@@ -16,5 +16,6 @@ public class DiaChiVO {
     private String xaPhuong;
 
     private Integer trangThai;
+    private String diaChiCuThe;
 
 }

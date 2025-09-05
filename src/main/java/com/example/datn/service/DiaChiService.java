@@ -28,7 +28,11 @@ public class DiaChiService {
     // Thêm mới địa chỉ
     public Integer save(DiaChiVO vO) {
         DiaChi diaChi = new DiaChi();
-        BeanUtils.copyProperties(vO, diaChi);
+        diaChi.setTinhThanhPho(vO.getTinhThanhPho());
+        diaChi.setQuanHuyen(vO.getQuanHuyen());
+        diaChi.setXaPhuong(vO.getXaPhuong());
+        diaChi.setTrangThai(vO.getTrangThai());
+        diaChi.setDiaChiCuThe(vO.getDiaChiCuThe());
         if (vO.getIdKhachHang() != null) {
             KhachHang khachHang = khachHangRepository.findById(vO.getIdKhachHang())
                     .orElseThrow(() -> new NoSuchElementException("Không tìm thấy khách hàng với id: " + vO.getIdKhachHang()));

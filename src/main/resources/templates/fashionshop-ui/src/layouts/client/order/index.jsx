@@ -1099,7 +1099,9 @@ export default function OrderForm() {
                       </Box>
                     </Stack>
                     <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 2, mb: 1 }}>
-
+                          <Typography sx={{ color: "#666", fontSize: 14 }}>
+                    Số lượng: <b style={{ color: "#222" }}>{item.qty || 1}</b>
+                  </Typography>
                     </Stack>
                     {idx < cartItems.length - 1 && (
                       <Divider sx={{ my: 1.1, borderStyle: "dashed" }} />

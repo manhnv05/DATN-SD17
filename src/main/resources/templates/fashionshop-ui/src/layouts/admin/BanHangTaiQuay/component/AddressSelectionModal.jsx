@@ -19,15 +19,20 @@ import CloseIcon from "@mui/icons-material/Close";
 import SoftTypography from "../../../../components/SoftTypography";
 import SoftButton from "../../../../components/SoftButton";
 import AddIcon from "@mui/icons-material/Add";
-import PropTypes from 'prop-types';
+import PropTypes from "prop-types";
 
 // Component này nhận vào 4 props:
 // - open: Trạng thái đóng/mở của modal
 // - onClose: Hàm để đóng modal
 // - addresses: Mảng danh sách địa chỉ để hiển thị
 // - onSelectAddress: Hàm callback khi người dùng nhấn nút "Chọn"
-function AddressSelectionModal({ open, onClose, addresses = [], onSelectAddress ,onOpenAddAddressModal }) {
-  
+function AddressSelectionModal({
+  open,
+  onClose,
+  addresses = [],
+  onSelectAddress,
+  onOpenAddAddressModal,
+}) {
   // Hàm xử lý khi nhấn nút chọn một địa chỉ
   const handleSelect = (address) => {
     onSelectAddress(address); // Gọi hàm callback truyền lên component cha
@@ -39,7 +44,7 @@ function AddressSelectionModal({ open, onClose, addresses = [], onSelectAddress 
       <DialogTitle>
         <Box display="flex" justifyContent="space-between" alignItems="center">
           <SoftTypography variant="h5">Chọn địa chỉ giao hàng</SoftTypography>
-         
+
           <IconButton onClick={onClose}>
             <CloseIcon />
           </IconButton>
@@ -52,8 +57,9 @@ function AddressSelectionModal({ open, onClose, addresses = [], onSelectAddress 
               <TableRow>
                 <TableCell>STT</TableCell>
                 <TableCell>Tỉnh/Thành phố</TableCell>
-           <TableCell>Quận/Huyện</TableCell>
+                <TableCell>Quận/Huyện</TableCell>
                 <TableCell>Xã/Phường</TableCell>
+                <TableCell>Địa chỉ cụ thể</TableCell>
                 <TableCell align="center">Thao tác</TableCell>
               </TableRow>
             </TableHead>
@@ -65,24 +71,24 @@ function AddressSelectionModal({ open, onClose, addresses = [], onSelectAddress 
                     <TableCell>{addr.tinhThanhPho}</TableCell>
                     <TableCell>{addr.quanHuyen}</TableCell>
                     <TableCell>{addr.xaPhuong}</TableCell>
+                    <TableCell>{addr.diaChiCuThe}</TableCell>
                     <TableCell align="center">
-                      <SoftButton 
+                      <SoftButton
                         variant="outlined"
-                          size="medium"
-                          sx={{
-                           
-                            borderRadius: 2,
-                            textTransform: "none",
-                            fontWeight: 400,
-                            color: "#49a3f1",
-                            borderColor: "#49a3f1",
-                            boxShadow: "none",
-                            "&:hover": {
-                              borderColor: "#1769aa",
-                              background: "#f0f6fd",
-                              color: "#1769aa",
-                            },
-                          }}
+                        size="medium"
+                        sx={{
+                          borderRadius: 2,
+                          textTransform: "none",
+                          fontWeight: 400,
+                          color: "#49a3f1",
+                          borderColor: "#49a3f1",
+                          boxShadow: "none",
+                          "&:hover": {
+                            borderColor: "#1769aa",
+                            background: "#f0f6fd",
+                            color: "#1769aa",
+                          },
+                        }}
                         onClick={() => handleSelect(addr)}
                       >
                         Chọn
@@ -102,30 +108,28 @@ function AddressSelectionModal({ open, onClose, addresses = [], onSelectAddress 
             </TableBody>
           </Table>
         </TableContainer>
-          <SoftButton
-
-               variant="outlined"
-                          size="medium"
-                          sx={{
-                            mt: 2,
-                            borderRadius: 2,
-                            textTransform: "none",
-                            fontWeight: 400,
-                            color: "#49a3f1",
-                            borderColor: "#49a3f1",
-                            boxShadow: "none",
-                            "&:hover": {
-                              borderColor: "#1769aa",
-                              background: "#f0f6fd",
-                              color: "#1769aa",
-                            },
-                          }}
-              startIcon={<AddIcon />}
-              onClick={onOpenAddAddressModal} // Gọi hàm từ component cha
-             
-            >
-              Thêm địa chỉ mới
-            </SoftButton>
+        <SoftButton
+          variant="outlined"
+          size="medium"
+          sx={{
+            mt: 2,
+            borderRadius: 2,
+            textTransform: "none",
+            fontWeight: 400,
+            color: "#49a3f1",
+            borderColor: "#49a3f1",
+            boxShadow: "none",
+            "&:hover": {
+              borderColor: "#1769aa",
+              background: "#f0f6fd",
+              color: "#1769aa",
+            },
+          }}
+          startIcon={<AddIcon />}
+          onClick={onOpenAddAddressModal} // Gọi hàm từ component cha
+        >
+          Thêm địa chỉ mới
+        </SoftButton>
       </DialogContent>
     </Dialog>
   );

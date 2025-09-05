@@ -303,7 +303,7 @@ export default function AddKhachHangForm() {
         tinhThanhPho: selectedProvince?.ProvinceName || "",
         quanHuyen: selectedDistrict?.DistrictName || "", // THÊM QUẬN/HUYỆN
         xaPhuong: selectedWard?.WardName || "",
-
+  diaChiCuThe: diaChiChiTiet,
         trangThai: 1,
       },
     };

@@ -414,37 +414,7 @@ export default function Header() {
                         </Stack>
                     )}
                     <Stack direction="row" spacing={1.1} alignItems="center" minWidth={isMobile ? 0 : 180}>
-                        <IconButton
-                            sx={{
-                                bgcolor: "#fff",
-                                border: "1.5px solid #e3f0fa",
-                                color: "#e53935",
-                                borderRadius: 2.5,
-                                width: 42,
-                                height: 42,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                transition: "all 0.13s",
-                                "&:hover": { bgcolor: "#ffe6e6", borderColor: "#e53935" }
-                            }}
-                            onClick={handleGoFavorites}
-                        >
-                            <Badge badgeContent={demoFavoriteCount} color="error" sx={{
-                                "& .MuiBadge-badge": {
-                                    background: "#e53935",
-                                    color: "#fff",
-                                    fontWeight: 700,
-                                    fontSize: 13,
-                                    minWidth: 20,
-                                    height: 20,
-                                    borderRadius: 2.5,
-                                    boxShadow: "0 1px 8px 0 #e5393522"
-                                }
-                            }}>
-                                <FavoriteIcon sx={{ fontSize: 23 }} />
-                            </Badge>
-                        </IconButton>
+                      
                         {!isLoggedIn ? (
                             <>
                                 <IconButton

@@ -217,7 +217,7 @@ function AddressFormSection({ open, onClose, onSubmit, initialData, isEdit }) {
     if (!selectedProvince) newErrors.province = "Vui lòng chọn Tỉnh/Thành phố";
     if (!selectedDistrict) newErrors.district = "Vui lòng chọn Quận/Huyện";
     if (!selectedWard) newErrors.ward = "Vui lòng chọn Phường/Xã";
-
+if (!diaChiChiTiet.trim()) newErrors.diaChiChiTiet = "Vui lòng nhập địa chỉ chi tiết";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -250,7 +250,7 @@ function AddressFormSection({ open, onClose, onSubmit, initialData, isEdit }) {
       tinhThanhPho: selectedProvince.ProvinceName,
       quanHuyen: selectedDistrict.DistrictName,
       xaPhuong: selectedWard.WardName,
-      diaChiChiTiet: diaChiChiTiet,
+       diaChiCuThe: diaChiChiTiet,
       trangThai: isDefault ? 1 : 0,
     };
     if (isEdit && initialData?.id) {
@@ -277,7 +277,17 @@ function AddressFormSection({ open, onClose, onSubmit, initialData, isEdit }) {
         <Grid item xs={12} sm={6}>
           <Autocomplete options={wards} getOptionLabel={(o) => o.WardName || ""} value={selectedWard} disabled={!selectedDistrict} isOptionEqualToValue={(option, value) => option.WardCode === value.WardCode} onChange={(e, v) => setSelectedWard(v)} renderInput={(params) => <TextField {...params} label="Phường/Xã" fullWidth error={!!errors.ward} helperText={errors.ward} />} />
         </Grid>
-
+ <Grid item xs={12} sm={6}>
+            <TextField 
+                label="Địa chỉ chi tiết"
+                placeholder="Số nhà, tên đường..."
+                fullWidth
+                value={diaChiChiTiet}
+                onChange={(e) => setDiaChiChiTiet(e.target.value)}
+                error={!!errors.diaChiChiTiet}
+                helperText={errors.diaChiChiTiet}
+            />
+        </Grid>
       </Grid>
       {!isEdit && (
         <Box display="flex" alignItems="center" gap={1} mt={2}>
@@ -711,7 +721,7 @@ function AddressDialog({ customerId, open, onClose }) {
                   </Box>
                 </Box>
                 <Typography fontWeight={600} fontSize={15.5} color="#333">
-                  {`${address.tinhThanhPho}, ${address.quanHuyen}, ${address.xaPhuong}`}
+                   {`${address.diaChiCuThe}, ${address.xaPhuong}, ${address.quanHuyen}, ${address.tinhThanhPho}`}
                 </Typography>
               </AnimatedCard>
             ))}
