@@ -565,41 +565,46 @@ useEffect(() => {
             </Stack>
             <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
               <Button
-                variant="contained"
-                color="error"
-                startIcon={<ShoppingCartIcon />}
-                sx={{
-                  fontWeight: 800,
-                  borderRadius: 3,
-                  px: 3.5,
-                  fontSize: 16.5,
-                  boxShadow: "0 2px 10px 0 #e539351a",
-                }}
-                onClick={handleAddToCart}
-                disabled={addCartStatus.loading}
-              >
-                {addCartStatus.loading ? "Đang thêm..." : "Thêm vào giỏ hàng"}
-              </Button>
-              <Tooltip title={favorite ? "Bỏ yêu thích" : "Yêu thích"}>
-                <IconButton
-                  sx={{
-                    color: favorite ? "#e53935" : "#bbb",
-                    border: favorite ? "2px solid #e53935" : "2px solid #ececec",
-                    bgcolor: "#fff",
-                    borderRadius: "50%",
-                    boxShadow: favorite ? "0 4px 16px #ffe6e6" : "none",
-                    "&:hover": {
-                      color: "#e53935",
-                      border: "2px solid #e53935",
-                      background: "#ffe6e6",
-                    },
-                    transition: "all 0.15s",
-                  }}
-                  onClick={() => setFavorite((fav) => !fav)}
-                >
-                  {favorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
-                </IconButton>
-              </Tooltip>
+  variant="contained"
+  color="error"
+  startIcon={<ShoppingCartIcon />}
+  sx={{
+     backgroundColor: "#4fc3f7",
+    
+    // 2. Cập nhật màu bóng đổ theo màu nền mới (RGB của #4fc3f7 là 79, 195, 247)
+    boxShadow: "0 2px 10px 0 rgba(79, 195, 247, 0.25)",
+    
+    // 3. Đảm bảo chữ luôn màu trắng (quan trọng vì nền nhạt hơn)
+    color: "#fff", 
+    fontWeight: 800,
+    borderRadius: 3,
+    px: 3.5,
+    fontSize: 16.5,
+    transition: "all 0.3s ease-in-out",
+    // 2. Định nghĩa các thay đổi khi hover
+    "&:hover": {
+
+       backgroundColor: "#e3f2fd", // light blue A100 (MUI)
+     backgroundColor: "#29b6f6", 
+       // Giữ chữ trắng khi hover
+      // Nâng nút lên một chút
+      transform: "translateY(-3px)",
+      
+      // Tăng độ đậm và lan tỏa của bóng
+      boxShadow: "0 4px 14px 0 rgba(151, 131, 240, 0.35)",
+      
+      // (Tùy chọn) Làm màu nền đậm hơn một chút
+    
+    },
+    
+    // --- KẾT THÚC CODE MỚI ---
+  }}
+  onClick={handleAddToCart}
+  disabled={addCartStatus.loading}
+>
+  {addCartStatus.loading ? "Đang thêm..." : "Thêm vào giỏ hàng"}
+</Button>
+              
             </Stack>
             {/* Thông báo trạng thái thêm vào giỏ hàng */}
             {addCartStatus.success && (
@@ -612,69 +617,7 @@ useEffect(() => {
                 {addCartStatus.error}
               </Alert>
             )}
-            {product.voucher && (
-              <Paper
-                elevation={0}
-                sx={{
-                  bgcolor: "#fff3f3",
-                  border: "1.5px solid #ffbebe",
-                  borderRadius: 3,
-                  px: 2.5,
-                  py: 1.7,
-                  mb: 2,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 2,
-                }}
-              >
-                <LocalOfferIcon sx={{ color: "#e53935", fontSize: 28 }} />
-                <Box flex={1}>
-                  <Typography sx={{ fontWeight: 900, color: "#e53935", fontSize: 17 }}>
-                    {product.voucher.percent}% GIẢM
-                  </Typography>
-                  {/* SỬA: KHÔNG để Chip nằm trong Typography với component mặc định là "p" */}
-                  <Box
-                    sx={{ display: "inline-flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}
-                  >
-                    <Typography component="span" sx={{ color: "#222", fontSize: 15.5 }}>
-                      Đơn tối thiểu {product.voucher.min}
-                    </Typography>
-                    <Chip
-                      label={product.voucher.expire}
-                      size="small"
-                      sx={{
-                        bgcolor: "#ffbebe",
-                        color: "#e53935",
-                        ml: 1,
-                        fontWeight: 700,
-                        fontSize: 15,
-                      }}
-                    />
-                  </Box>
-                  <Typography sx={{ color: "#e53935", fontSize: 14, mt: 0.5, fontWeight: 700 }}>
-                    Mã: <b>{product.voucher.code}</b>
-                  </Typography>
-                </Box>
-                <Button
-                  variant="outlined"
-                  color="error"
-                  size="small"
-                  sx={{
-                    fontWeight: 900,
-                    borderRadius: 2,
-                    px: 2,
-                    fontSize: 16,
-                    bgcolor: "#fff",
-                    color: "#e53935",
-                    borderColor: "#e53935",
-                    "&:hover": { bgcolor: "#ffe6e6", borderColor: "#e53935" },
-                  }}
-                  onClick={() => navigator.clipboard.writeText(product.voucher.code)}
-                >
-                  Sao chép mã
-                </Button>
-              </Paper>
-            )}
+           
             <Alert
               severity="info"
               sx={{

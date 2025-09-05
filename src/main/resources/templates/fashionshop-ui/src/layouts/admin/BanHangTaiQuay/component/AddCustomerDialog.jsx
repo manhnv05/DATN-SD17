@@ -174,7 +174,9 @@ function AddCustomerDialog({ open, onClose, onCustomerAdded, showNotification })
     if (!selectedProvince) newErrors.tinhThanhPho = "Vui lòng chọn Tỉnh/Thành phố.";
     if (!selectedDistrict) newErrors.quanHuyen = "Vui lòng chọn Quận/Huyện."; // Thêm validate Quận/Huyện
     if (!selectedWard) newErrors.xaPhuong = "Vui lòng chọn Xã/Phường.";
-  
+   if (!newCustomer.address.diaChiChiTiet.trim()) {
+      newErrors.diaChiChiTiet = "Vui lòng nhập địa chỉ chi tiết.";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -347,7 +349,17 @@ function AddCustomerDialog({ open, onClose, onCustomerAdded, showNotification })
             />
           )}
         />
-
+<TextField
+  label="Địa chỉ chi tiết"
+  name="diaChiChiTiet"
+  fullWidth
+  margin="normal"
+  placeholder="Số nhà, tên đường, thôn, xóm..."
+  value={newCustomer.address.diaChiChiTiet}
+  onChange={handleChange}
+  error={!!errors.diaChiChiTiet}
+  helperText={errors.diaChiChiTiet}
+/>
       
         {/* =================================================== */}
       </DialogContent>

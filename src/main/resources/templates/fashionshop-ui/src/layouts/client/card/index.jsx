@@ -12,6 +12,7 @@ import {
   FormControlLabel,
   Tabs,
   Tab,
+  TextField,
 } from "@mui/material";
 import Footer from "../components/footer";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -25,7 +26,7 @@ import axios from "axios";
 import logoImg from "assets/images/logo4.png";
 import OrderListTab from "./OrderListTab";
 import OrderHistoryTab from "./OrderHistoryTab";
-
+import { toast } from "react-toastify"; 
 // --- Styled ---
 const CartBlock = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(2.2),
@@ -232,6 +233,7 @@ export default function CartPage() {
   const changeQty = async (id, val) => {
     const item = cart.find((i) => i.id === id);
     if (!item) return;
+     const originalQty = item.qty;
     const newQty = Math.max(1, item.qty + val);
     try {
       let res;
@@ -257,11 +259,77 @@ export default function CartPage() {
         updateCartBadge(next);
         return next;
       });
-    } catch (err) {
-      // Hiển thị lỗi nếu cần
+  } catch (err) {
+      // --- XỬ LÝ LỖI Ở ĐÂY ---
+      const errorMessage = err.response?.data?.message || "Cập nhật số lượng thất bại!";
+      toast.error(errorMessage); // <-- Hiển thị toast lỗi
+
+      // Khôi phục lại số lượng ban đầu trên giao diện vì API đã thất bại
+      setCart((prev) => {
+        const next = prev.map((item) => (item.id === id ? { ...item, qty: originalQty } : item));
+        updateCartBadge(next);
+        return next;
+      });
     }
   };
+const handleQtyInputChange = (id, value) => {
+  // Chuyển giá trị nhập vào thành số, nếu rỗng thì coi là 0
+  const newQty = value === "" ? 0 : parseInt(value, 10);
 
+  // Chỉ cập nhật nếu là số hợp lệ
+  if (!isNaN(newQty)) {
+    setCart((prev) => {
+      const next = prev.map((item) =>
+        item.id === id ? { ...item, qty: newQty } : item
+      );
+      // Không cần gọi updateCartBadge ở đây để tránh giật lag, sẽ gọi khi blur
+      return next;
+    });
+  }
+};
+
+// Gửi yêu cầu API để cập nhật số lượng khi người dùng hoàn tất việc nhập (blur)
+const handleQtyUpdateOnBlur = async (id) => {
+  const item = cart.find((i) => i.id === id);
+  if (!item) return;
+
+  // Validate: số lượng phải ít nhất là 1
+  const finalQty = Math.max(1, item.qty || 1);
+
+  try {
+    let res;
+    if (user && user.id && user.role) {
+      // DB API
+      res = await axios.put(
+        `http://localhost:8080/api/v1/cart/db/update-quantity?idNguoiDung=${user.id}&loaiNguoiDung=${user.role}`,
+        { chiTietSanPhamId: id, soLuong: finalQty },
+        { withCredentials: true }
+      );
+    } else {
+      // Redis API
+      res = await axios.put(`http://localhost:8080/api/v1/cart/update-quantity`, {
+        cartId: cartId,
+        chiTietSanPhamId: id,
+        soLuong: finalQty,
+      });
+    }
+
+    const actualQty =
+      res.data && typeof res.data.soLuong === "number" ? res.data.soLuong : finalQty;
+
+    // Cập nhật lại state với số lượng chính xác từ server (hoặc số lượng đã validate)
+    setCart((prev) => {
+      const next = prev.map((item) =>
+        item.id === id ? { ...item, qty: actualQty } : item
+      );
+      updateCartBadge(next); // Cập nhật badge ở đây
+      return next;
+    });
+  } catch (err) {
+    // Xử lý lỗi nếu cần, ví dụ: hiển thị lại số lượng cũ
+    console.error("Failed to update quantity:", err);
+  }
+};
   // Listen to realtime cart badge update event (from other tabs/windows)
   useEffect(() => {
     function handleCartUpdated(e) {
@@ -555,22 +623,47 @@ export default function CartPage() {
                       >
                         <RemoveIcon fontSize="small" />
                       </IconButton>
-                      <Typography
-                        sx={{
-                          width: 32,
-                          textAlign: "center",
-                          fontWeight: 700,
-                          fontSize: 16,
-                          mx: 0.5,
-                          color: "#1976d2",
-                          bgcolor: "#fff",
-                          border: "1.5px solid #bde0fe",
-                          borderRadius: 1.2,
-                          lineHeight: "36px",
-                        }}
-                      >
-                        {item.qty}
-                      </Typography>
+                     <TextField
+  type="number"
+  value={item.qty}
+  onChange={(e) => handleQtyInputChange(item.id, e.target.value)}
+  onBlur={() => handleQtyUpdateOnBlur(item.id)}
+  size="small"
+  inputProps={{
+    min: 1,
+    style: {
+      textAlign: "center",
+      fontWeight: 700,
+      color: "#1976d2",
+      padding: "8px 0", // Điều chỉnh padding cho cân đối
+    },
+  }}
+  sx={{
+    width: 60, // Tăng nhẹ chiều rộng để vừa vặn hơn
+    mx: 0.5,
+    "& .MuiOutlinedInput-root": {
+      borderRadius: 1.2,
+      background: "#fff",
+      "& fieldset": {
+        borderColor: "#bde0fe",
+        borderWidth: "1.5px",
+      },
+      "&:hover fieldset": {
+        borderColor: "#1976d2",
+      },
+      "&.Mui-focused fieldset": {
+        borderColor: "#1976d2",
+      },
+    },
+    // Ẩn các nút tăng/giảm mặc định của trình duyệt
+    "& input::-webkit-outer-spin-button, & input::-webkit-inner-spin-button": {
+      display: "none",
+    },
+    "& input[type=number]": {
+      MozAppearance: "textfield",
+    },
+  }}
+/>
                       <IconButton
                         size="small"
                         sx={{

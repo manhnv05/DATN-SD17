@@ -96,6 +96,8 @@ function ShippingForm({ initialCustomer, initialAddress, onOpenAddressModal, onF
     setDistricts([]);
     setWards([]);
   }, [selectedProvince]);
+  
+  
 
   // 3. Lấy danh sách Phường/Xã khi một Quận/Huyện được chọn
   useEffect(() => {
@@ -126,7 +128,7 @@ function ShippingForm({ initialCustomer, initialAddress, onOpenAddressModal, onF
       setPhone(initialCustomer.sdt || "");
     }
     if (initialAddress && provinces.length > 0) {
-        setDetailedAddress(initialAddress.diaChiChiTiet || "");
+         setDetailedAddress(initialAddress.diaChiCuThe || "");
 
         const provinceToSet = provinces.find(p => p.ProvinceName === initialAddress.tinhThanhPho);
         if (provinceToSet) {
@@ -261,6 +263,7 @@ ShippingForm.propTypes = {
     tinhThanhPho: PropTypes.string,
     quanHuyen: PropTypes.string, // Thêm quận huyện
     xaPhuong: PropTypes.string,
+    diaChiCuThe:PropTypes.string
   }),
   onFormChange: PropTypes.func.isRequired,
 };
