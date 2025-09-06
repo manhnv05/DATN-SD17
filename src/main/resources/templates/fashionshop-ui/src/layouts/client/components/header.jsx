@@ -65,31 +65,77 @@ export default function Header() {
     const [cartCount, setCartCount] = useState(0);
 
     // Lấy user info qua localStorage (KHÔNG dùng API /me)
-    useEffect(() => {
-        const role = localStorage.getItem("role");
-        const username = localStorage.getItem("username");
-        const email = localStorage.getItem("email");
-        const avatar = localStorage.getItem("avatar") || "";
-        const userId = localStorage.getItem("userId") || localStorage.getItem("id");
-        let loadedUser = null;
-        let isLogged = false;
-        let isAdm = false;
-        if (role && username) {
-            loadedUser = {
-                id: userId,
-                username,
-                role,
-                email,
-                avatar
-            };
-            isLogged = true;
-            isAdm = role === "NHANVIEN" || role === "QUANLY" || role === "QUANTRIVIEN";
-        }
-        setUser(loadedUser);
-        setIsLoggedIn(isLogged);
-        setIsAdmin(isAdm);
-    }, []);
+  useEffect(() => {
+    // --- BƯỚC 1: Tải thông tin ban đầu từ localStorage để UI hiển thị ngay lập tức ---
+    const localRole = localStorage.getItem("role");
+    const localUsername = localStorage.getItem("username");
+    const localEmail = localStorage.getItem("email");
+    const localAvatar = localStorage.getItem("avatar") || "";
+    const localUserId = localStorage.getItem("userId") || localStorage.getItem("id");
 
+    // Chỉ thực hiện nếu có thông tin đăng nhập trong localStorage
+    if (localRole && localUsername) {
+        // Set state ban đầu với dữ liệu từ localStorage
+        const initialUser = {
+            id: localUserId,
+            username: localUsername,
+            role: localRole,
+            email: localEmail,
+            avatar: localAvatar,
+        };
+        setUser(initialUser);
+        setIsLoggedIn(true);
+        setIsAdmin(localRole === "NHANVIEN" || localRole === "QUANLY" || localRole === "QUANTRIVIEN");
+
+        // --- BƯỚC 2: Gọi API trong nền để cập nhật lại TÊN và AVATAR mới nhất ---
+        const fetchLatestUserData = async () => {
+            try {
+                const response = await fetch("http://localhost:8080/api/auth/me", {
+                    credentials: "include",
+                });
+
+                if (response.ok) {
+            const data = await response.json();
+
+            // ✅ BẮT ĐẦU LOGIC MỚI DỰA TRÊN ROLE
+            let latestUsername;
+            // Giả sử biến localRole đã có sẵn ở scope bên ngoài của hàm này
+            
+            if (localRole === "KHACHHANG") {
+                // Nếu là khách hàng, ưu tiên lấy 'tenKh', nếu không có thì giữ lại tên cũ
+                latestUsername = data.tenKh || localUsername; 
+            } else if (localRole === "NHANVIEN") {
+                // Nếu là nhân viên, ưu tiên lấy 'tenNhanVien'
+                latestUsername = data.tenNhanVien || localUsername;
+            } else {
+                // Các role còn lại (QUANLY, QUANTRIVIEN, etc.) sẽ hiển thị là Admin
+                latestUsername = "Admin";
+            }
+            // KẾT THÚC LOGIC MỚI
+
+            const latestAvatar = data.hinhAnh || localAvatar;
+
+            // --- BƯỚC 3: Cập nhật state, nhưng GIỮ NGUYÊN ROLE từ localStorage ---
+            setUser(currentUser => ({
+                ...currentUser,
+                username: latestUsername,
+                avatar: latestAvatar,
+            }));
+        }
+            } catch (error) {
+                console.error("Lỗi khi làm mới thông tin người dùng:", error);
+            }
+        };
+
+        fetchLatestUserData();
+        
+    } else {
+        // Nếu không có gì trong localStorage, xác định là người dùng chưa đăng nhập
+        setUser(null);
+        setIsLoggedIn(false);
+        setIsAdmin(false);
+    }
+}, []);
     // Hàm fetch số lượng sản phẩm giỏ hàng theo user hoặc guest
     const fetchCartCount = async (userObj = user) => {
         let count = 0;
@@ -414,7 +460,23 @@ export default function Header() {
                         </Stack>
                     )}
                     <Stack direction="row" spacing={1.1} alignItems="center" minWidth={isMobile ? 0 : 180}>
-                      
+                          {!isMobile && isLoggedIn && user && (
+                            <Typography
+                                sx={{
+                                    fontWeight: 600,
+                                    fontSize: 15,
+                                    color: "#1a237e",
+                                    bgcolor: "#e3f0fa",
+                                    px: 1.5,
+                                    py: 0.7,
+                                    borderRadius: 2,
+                                    border: "1px solid #bde0fe",
+                                    whiteSpace: 'nowrap'
+                                }}
+                            >
+                                Chào, {user.username}
+                            </Typography>
+                        )}
                         {!isLoggedIn ? (
                             <>
                                 <IconButton

@@ -170,6 +170,49 @@ export default function CartPage() {
     };
   }, [cartId, user, tab]);
 
+
+useEffect(() => {
+    // Chỉ chạy khi có sản phẩm trong giỏ và chúng chưa có thông tin tồn kho
+    if (cart.length === 0 || cart[0].soLuongTon !== undefined) {
+        return;
+    }
+
+    const fetchInventory = async () => {
+        try {
+            console.log("Đang gọi API để lấy số lượng tồn kho...");
+            const inventoryResponse = await axios.get("http://localhost:8080/api/hoa-don/get-all-so-luong-ton-kho");
+            const inventoryData = inventoryResponse.data?.data || [];
+
+            // Tạo một Map để tra cứu tồn kho nhanh
+            const inventoryMap = new Map(
+                inventoryData.map(item => [item.idChitietSanPham, item.soLuongTonKho])
+            );
+
+            // Cập nhật lại state 'cart' với thông tin tồn kho mới
+            setCart(currentCart =>
+                currentCart.map(cartItem => ({
+                    ...cartItem,
+                    // Gán số lượng tồn từ Map, nếu không tìm thấy thì mặc định là 0
+                    soLuongTon: inventoryMap.get(cartItem.id) || 0,
+                }))
+            );
+
+        } catch (err) {
+            console.error("Lỗi khi tải dữ liệu tồn kho:", err);
+            // Nếu lỗi, gán tạm tồn kho là 0 cho tất cả
+            setCart(currentCart =>
+                currentCart.map(cartItem => ({
+                    ...cartItem,
+                    soLuongTon: 0,
+                }))
+            );
+        }
+    };
+
+    fetchInventory();
+
+}, [cart]);
+
   // Khi cart thay đổi, chỉ setSelected khi cart thực sự thay đổi (KHÔNG set cả selectAll ở đây)
   useEffect(() => {
     setSelected(cart.map((item) => item.id));
@@ -235,6 +278,10 @@ export default function CartPage() {
     if (!item) return;
      const originalQty = item.qty;
     const newQty = Math.max(1, item.qty + val);
+    if (val > 0 && (item.qty + val) > item.soLuongTon) {
+        toast.warn(`Số lượng đã đạt tối đa là ${item.soLuongTon}!`);
+        return; // Dừng lại nếu vượt quá tồn kho
+    }
     try {
       let res;
       if (user && user.id && user.role) {
@@ -294,8 +341,11 @@ const handleQtyUpdateOnBlur = async (id) => {
   if (!item) return;
 
   // Validate: số lượng phải ít nhất là 1
-  const finalQty = Math.max(1, item.qty || 1);
-
+  let  finalQty = Math.max(1, item.qty || 1);
+if (finalQty > item.soLuongTon) {
+        toast.warn(`Số lượng đã được điều chỉnh về mức tối đa là ${item.soLuongTon}.`);
+        finalQty = item.soLuongTon; // Giới hạn số lượng bằng số lượng tồn
+    }
   try {
     let res;
     if (user && user.id && user.role) {
@@ -639,7 +689,7 @@ const handleQtyUpdateOnBlur = async (id) => {
     },
   }}
   sx={{
-    width: 60, // Tăng nhẹ chiều rộng để vừa vặn hơn
+    width: 100, // Tăng nhẹ chiều rộng để vừa vặn hơn
     mx: 0.5,
     "& .MuiOutlinedInput-root": {
       borderRadius: 1.2,
@@ -673,13 +723,14 @@ const handleQtyUpdateOnBlur = async (id) => {
                           "&:hover": { bgcolor: "#d1eaff", borderColor: "#1976d2" },
                         }}
                         onClick={() => changeQty(item.id, 1)}
+                        disabled={item.qty >= item.soLuongTon}
                       >
+                        
                         <AddIcon fontSize="small" />
                       </IconButton>
                     </Stack>
-                    <Typography color="#777" fontSize={13}>
-                      SL
-                    </Typography>
+                   
+                   
                     <IconButton
                       color="error"
                       onClick={() => handleRemove(item.id)}
@@ -694,6 +745,11 @@ const handleQtyUpdateOnBlur = async (id) => {
                       <DeleteIcon />
                     </IconButton>
                   </Stack>
+                  {item.soLuongTon !== undefined && (
+        <Typography color="#777" fontSize={13}>
+            (Kho : {item.soLuongTon})
+        </Typography>
+    )}
                 </CartBlock>
               ))}
               <Divider sx={{ my: 4 }} />

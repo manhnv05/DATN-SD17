@@ -138,7 +138,7 @@ function AddressFormSection({ open, onClose, onSubmit, initialData, isEdit }) {
     const [selectedProvince, setSelectedProvince] = useState(null);
     const [selectedDistrict, setSelectedDistrict] = useState(null);
     const [selectedWard, setSelectedWard] = useState(null);
-    const [diaChiChiTiet, setDiaChiChiTiet] = useState("");
+    const [diaChiCuThe, setdiaChiCuThe] = useState("");
     const [isDefault, setIsDefault] = useState(false);
 
     // UI State
@@ -191,14 +191,14 @@ function AddressFormSection({ open, onClose, onSubmit, initialData, isEdit }) {
         if (open && isEdit && initialData && provinces.length > 0) {
             const province = provinces.find(p => p.ProvinceName === initialData.tinhThanhPho);
             if (province) setSelectedProvince(province);
-
+setdiaChiCuThe(initialData.diaChiCuThe || "");
             setIsDefault(initialData.trangThai === 1);
         } else if (open && !isEdit) {
             // Reset form when opening in "add new" mode
             setSelectedProvince(null);
             setSelectedDistrict(null);
             setSelectedWard(null);
-            setDiaChiChiTiet("");
+            setdiaChiCuThe("");
             setIsDefault(false);
             setErrors({});
         }
@@ -217,7 +217,7 @@ function AddressFormSection({ open, onClose, onSubmit, initialData, isEdit }) {
         if (!selectedProvince) newErrors.province = "Vui lòng chọn Tỉnh/Thành phố";
         if (!selectedDistrict) newErrors.district = "Vui lòng chọn Quận/Huyện";
         if (!selectedWard) newErrors.ward = "Vui lòng chọn Phường/Xã";
-
+ if (!diaChiCuThe.trim()) newErrors.diaChiCuThe = "Vui lòng nhập địa chỉ cụ thể";
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -250,7 +250,7 @@ function AddressFormSection({ open, onClose, onSubmit, initialData, isEdit }) {
             tinhThanhPho: selectedProvince.ProvinceName,
             quanHuyen: selectedDistrict.DistrictName,
             xaPhuong: selectedWard.WardName,
-            diaChiChiTiet: diaChiChiTiet,
+            diaChiCuThe: diaChiCuThe,
             trangThai: isDefault ? 1 : 0,
         };
         if (isEdit && initialData?.id) {
@@ -277,7 +277,16 @@ function AddressFormSection({ open, onClose, onSubmit, initialData, isEdit }) {
                 <Grid item xs={12} sm={6}>
                     <Autocomplete options={wards} getOptionLabel={(o) => o.WardName || ""} value={selectedWard} disabled={!selectedDistrict} isOptionEqualToValue={(option, value) => option.WardCode === value.WardCode} onChange={(e, v) => setSelectedWard(v)} renderInput={(params) => <TextField {...params} label="Phường/Xã" fullWidth error={!!errors.ward} helperText={errors.ward} />} />
                 </Grid>
-
+<Grid item xs={12}>
+        <TextField
+            label="Địa chỉ cụ thể (Số nhà, tên đường)"
+            fullWidth
+            value={diaChiCuThe}
+            onChange={(e) => setdiaChiCuThe(e.target.value)}
+            error={!!errors.diaChiCuThe}
+            helperText={errors.diaChiCuThe}
+        />
+    </Grid>
             </Grid>
             {!isEdit && (
                 <Box display="flex" alignItems="center" gap={1} mt={2}>
@@ -301,6 +310,7 @@ AddressFormSection.propTypes = {
     onSubmit: PropTypes.func.isRequired,
     initialData: PropTypes.shape({
         tinhThanhPho: PropTypes.string,
+          diaChiCuThe: PropTypes.string,
         xaPhuong: PropTypes.string,
         trangThai: PropTypes.number,
         id: PropTypes.number
@@ -691,7 +701,7 @@ export default function AddressManager({ customerId }) {
                                 </Box>
                             </Box>
                             <Typography fontWeight={600} fontSize={15.5} color="#333">
-                                {`${address.tinhThanhPho}, ${address.quanHuyen}, ${address.xaPhuong}`}
+                               {`${address.diaChiCuThe}, ${address.xaPhuong}, ${address.quanHuyen}, ${address.tinhThanhPho}`}
                             </Typography>
                         </AnimatedCard>
                     ))}

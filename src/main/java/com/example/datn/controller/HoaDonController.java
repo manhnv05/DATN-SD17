@@ -24,6 +24,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpHeaders;
@@ -218,15 +219,17 @@ public class HoaDonController {
         List<HoaDonChiTietSanPhamDTO> hoaDonChiTietResponseList = hoaDonService.findChiTietHoaDon(idHoaDon);
         return ResponseHelper.success("", hoaDonChiTietResponseList);
     }
+    @Transactional
     @PutMapping("/update_hoadon")
     public ResponseEntity<ApiResponse<HoaDonDTO>> updateHoadon(@RequestBody HoaDonRequestUpdateVO hoaDonRequestUpdateVO) {
         return ResponseHelper.success("", hoaDonService.updateHoaDon(hoaDonRequestUpdateVO));
     }
+    @Transactional
     @PutMapping("/update-hoa-don-da-luu")
     public ResponseEntity<ApiResponse<HoaDonDTO>> updateHoadonDetail(@RequestBody HoaDonRequestUpdateVO hoaDonRequestUpdateVO) {
         return ResponseHelper.success("", hoaDonService.updateHoaDonDetail(hoaDonRequestUpdateVO));
     }
-
+    @Transactional
     @PostMapping("/luu-hoa-don-online-chua-dang-nhap")
     public ResponseEntity<ApiResponse<HoaDonDTO>> saveHoaDonOnlineChuaDangNhap(@RequestBody HoaDonOnlineRequest hoaDonOnlineRequest ,@RequestParam String email) {
         HoaDonDTO hoaDonDTO = hoaDonService.saveHoaDonOnlineChuaDangNhap(hoaDonOnlineRequest,email);
@@ -237,7 +240,7 @@ public class HoaDonController {
                 .build();
         return ResponseEntity.ok(apiResponse);
     }
-
+    @Transactional
     @PostMapping("/luu-hoa-don-online")
     public ResponseEntity<ApiResponse<HoaDonDTO>> saveHoaDonOnline(@RequestBody HoaDonOnlineRequest hoaDonOnlineRequest) {
         HoaDonDTO hoaDonDTO = hoaDonService.saveHoaDonOnline(hoaDonOnlineRequest);
@@ -289,7 +292,7 @@ public class HoaDonController {
         HoaDonDTOMess result = hoaDonService.capnhatPGGVaoHoaDon(capNhatPGG);
         return ResponseHelper.success(result.getMess(), result.getPhieuGiamGiaDTO());
     }
-
+    @Transactional
     @GetMapping("/luu-hoa-don-online-chua-dang-nhap")
     public void guimail(@RequestParam Integer idHoaDon, @RequestParam String email){
         hoaDonService.sendMailHoaDonToKhachHang(idHoaDon, email);

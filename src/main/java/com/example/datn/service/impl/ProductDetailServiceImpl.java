@@ -29,11 +29,18 @@ public class ProductDetailServiceImpl implements ProductDetailService {
 
     @Override
     public ProductDetailDTO getProductDetail(Integer id) {
-        SanPham sp = sanPhamRepository.findById(id).orElse(null);
-        if (sp == null) return null;
+        SanPham sp = sanPhamRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại"));
 
-        List<ChiTietSanPham> ctspList = chiTietSanPhamRepository.findBySanPhamId(sp.getId());
-        if (ctspList.isEmpty()) return null;
+        if (sp.getTrangThai() != 1) {
+            throw new RuntimeException("Sản phẩm đã ngừng kinh doanh");
+        }
+
+        List<ChiTietSanPham> ctspList = chiTietSanPhamRepository.findBySanPhamIdAndTrangThai(sp.getId(), 1);
+        if (ctspList.isEmpty()) {
+            // Có thể trả về null hoặc throw exception tùy vào logic nghiệp vụ
+            return null;
+        }
 
         // Giá min/max là GIÁ GỐC của các variant (không tính giảm giá)
         List<Integer> giaGocList = ctspList.stream()

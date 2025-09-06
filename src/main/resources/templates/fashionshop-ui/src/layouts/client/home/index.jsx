@@ -24,7 +24,9 @@ import FavoriteIcon from "@mui/icons-material/Favorite";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-
+import VoucherList from"./VoucherList"
+import "slick-carousel/slick/slick.css"; 
+import "slick-carousel/slick/slick-theme.css";
 function useCountdown(targetDate) {
     const calculateTimeLeft = () => {
         const now = new Date();
@@ -124,99 +126,10 @@ export default function HomePage() {
                 <Typography variant="h4" fontWeight={900} sx={{ mb: 2.3, color: "#171b22", letterSpacing: 1.1 }}>
                     Mã khuyến mãi
                 </Typography>
-                <Paper
-                    elevation={0}
-                    sx={{
-                        display: "flex",
-                        alignItems: "stretch",
-                        bgcolor: "#fff",
-                        borderRadius: 3,
-                        minWidth: 340,
-                        maxWidth: 470,
-                        boxShadow: "0 4px 22px 0 #bde0fe26",
-                        overflow: "hidden",
-                        border: "1.5px solid #e3f0fa"
-                    }}
-                >
-                    <Box
-                        sx={{
-                            bgcolor: "#ffa750",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            minWidth: 92,
-                            px: 1,
-                            py: 3,
-                            flexDirection: "column",
-                            gap: 1.5
-                        }}
-                    >
-                        <CardGiftcardIcon sx={{ color: "#fff", fontSize: 44 }} />
-                    </Box>
-                    <Divider
-                        orientation="vertical"
-                        flexItem
-                        sx={{
-                            borderRight: "2px dashed #ececec"
-                        }}
-                    />
-                    <Box
-                        sx={{
-                            flex: 1,
-                            px: 2.5,
-                            py: 2.5,
-                            display: "flex",
-                            flexDirection: "column",
-                            justifyContent: "center"
-                        }}
-                    >
-                        <Typography sx={{ fontSize: 21, fontWeight: 900, mb: 0.6, color: "#191b23", letterSpacing: 1.2 }}>
-                            Giảm 2%
-                        </Typography>
-                        <Typography sx={{ fontSize: 15.5, color: "#434343", mb: 0.2 }}>
-                            Cho đơn hàng tối thiểu 12 sản phẩm
-                        </Typography>
-                        <Typography sx={{ fontSize: 14.2, color: "#e53935", mb: 0.8, fontWeight: 700 }}>
-                            Hết hạn trong {couponExpireDays} ngày
-                        </Typography>
-                        <Stack direction="row" spacing={2} mt={1.2}>
-                            <Button
-                                variant="text"
-                                sx={{
-                                    color: "#1976d2",
-                                    fontWeight: 700,
-                                    fontSize: 15.5,
-                                    minWidth: 0,
-                                    px: 0,
-                                    textTransform: "none"
-                                }}
-                            >
-                                Chi tiết
-                            </Button>
-                            <Button
-                                variant="contained"
-                                sx={{
-                                    bgcolor: "#191b23",
-                                    color: "#fff",
-                                    fontWeight: 700,
-                                    fontSize: 17,
-                                    px: 3,
-                                    borderRadius: 2,
-                                    boxShadow: "0 2px 10px 0 #191b2316",
-                                    textTransform: "none",
-                                    "&:hover": {
-                                        bgcolor: "#23252c"
-                                    }
-                                }}
-                                onClick={() => {
-                                    navigator.clipboard.writeText("SALE2%12SP");
-                                }}
-                            >
-                                Sao chép
-                            </Button>
-                        </Stack>
-                    </Box>
-                </Paper>
+                
+              <Box sx={{ width: '100%', maxWidth: '470px' }}> {/* Bọc VoucherList lại */}
+    <VoucherList/>
+</Box>
             </Box>
             {/* Best selling products */}
             <Box sx={{
@@ -249,24 +162,24 @@ export default function HomePage() {
                             <Grid item xs={12} sm={6} md={3} key={index}>
                                 <Paper
                                     elevation={4}
-                                    sx={{
-                                        p: 2.2,
-                                        textAlign: "center",
-                                        borderRadius: 5,
-                                        bgcolor: "#fcfcfc",
-                                        height: 420,
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        alignItems: "center",
-                                        justifyContent: "flex-start",
-                                        transition: "box-shadow 0.22s, transform 0.19s",
-                                        position: "relative",
-                                        cursor: "pointer",
-                                        "&:hover": {
-                                            boxShadow: "0 12px 48px 0 #ffe60033",
-                                            transform: "translateY(-8px) scale(1.03)"
-                                        }
-                                    }}
+                                   sx={{
+                                                p: 2.2,
+                                                textAlign: "center",
+                                                borderRadius: 6,
+                                                bgcolor: "#fff",
+                                                height: "100%",
+                                                display: "flex",
+                                                flexDirection: "column",
+                                                alignItems: "center",
+                                                position: "relative",
+                                                border: "1.5px solid #e3f0fa",
+                                                transition: "box-shadow 0.22s, transform 0.18s",
+                                                "&:hover": {
+                                                    boxShadow: "0 10px 36px 0 #bde0fe44",
+                                                    border: "1.5px solid #1976d2",
+                                                    transform: "translateY(-8px) scale(1.03)"
+                                                }
+                                            }}
                                     onClick={() => navigate(`/shop/detail/${item.id}`)}
                                 >
                                     {item.discountPercent && (
@@ -340,13 +253,7 @@ export default function HomePage() {
                                     <Typography fontWeight={800} sx={{ fontSize: 18, mb: 0.5, color: "#205072", letterSpacing: 0.5 }}>
                                         {item.name}
                                     </Typography>
-                                    <Rating
-                                        size="small"
-                                        precision={0.5}
-                                        value={ratings[index]}
-                                        sx={{ mb: 0.5 }}
-                                        onChange={(_, value) => handleChangeRating(index, value)}
-                                    />
+                                  
                                     <Stack
                                         direction="row"
                                         spacing={1.2}
@@ -376,43 +283,22 @@ export default function HomePage() {
                                         )}
                                     </Stack>
                                     <Stack direction="row" justifyContent="center" spacing={2}>
-                                        <Tooltip title={favoriteIndexes.includes(index) ? "Bỏ yêu thích" : "Yêu thích"}>
-                                            <IconButton
-                                                sx={{
-                                                    color: favoriteIndexes.includes(index) ? "#e53935" : "#bbb",
-                                                    border: favoriteIndexes.includes(index) ? "2px solid #e53935" : "2px solid #ececec",
-                                                    bgcolor: "#fff",
-                                                    borderRadius: "50%",
-                                                    boxShadow: favoriteIndexes.includes(index) ? "0 4px 16px #ffe6e6" : "none",
-                                                    "&:hover": {
-                                                        color: "#e53935",
-                                                        border: "2px solid #e53935",
-                                                        background: "#ffe6e6"
-                                                    },
-                                                    transition: "all 0.15s"
-                                                }}
-                                                onClick={e => {
-                                                    e.stopPropagation();
-                                                    handleToggleFavorite(index);
-                                                }}
-                                            >
-                                                {favoriteIndexes.includes(index) ? <FavoriteIcon /> : <FavoriteBorderIcon />}
-                                            </IconButton>
-                                        </Tooltip>
+                                        
                                         <Tooltip title="Mua ngay">
                                             <Button
                                                 variant="contained"
-                                                color="primary"
-                                                startIcon={<ShoppingCartIcon />}
-                                                sx={{
-                                                    fontWeight: 700,
-                                                    borderRadius: 3,
-                                                    px: 2.2,
-                                                    fontSize: 15,
-                                                    boxShadow: "0 2px 8px 0 #bde0fe33",
-                                                    background: "#6cacec",
-                                                    "&:hover": { background: "#205072" }
-                                                }}
+                                                            color="primary"
+                                                            startIcon={<ShoppingCartIcon />}
+                                                            sx={{
+                                                                fontWeight: 700,
+                                                                borderRadius: 3,
+                                                                px: 2.2,
+                                                                fontSize: 12,
+                                                                boxShadow: "0 2px 8px 0 #bde0fe33",
+                                                                background: "#6cacec",
+                                                                 color: '#fff',
+                                                                "&:hover": { background: "#49a3f1" }
+                                                            }}
                                                 onClick={e => {
                                                     e.stopPropagation();
                                                     handleAddToCart(item); // chuyển sang trang chi tiết sản phẩm cha

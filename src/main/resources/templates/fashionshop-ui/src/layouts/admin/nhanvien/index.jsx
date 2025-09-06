@@ -183,8 +183,7 @@ function NhanVienTable() {
             if (genderFilter !== "") params.gioiTinh = genderFilter;
             if (statusFilter !== "") params.trangThai = statusFilter;
             if (filterRole) params.idVaiTro = filterRole;
-            if (minAge) params.minAge = minAge;
-            if (maxAge) params.maxAge = maxAge;
+          
 
             axios
                 .get(API_BASE_URL, { params, withCredentials: true })

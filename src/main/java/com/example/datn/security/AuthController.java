@@ -135,6 +135,12 @@ public class AuthController {
     /**
      * API đăng ký tài khoản khách hàng.
      */
+    private String generateMaKhachHang() {
+        Random random = new Random();
+        // Tạo một số ngẫu nhiên trong khoảng từ 10,000,000 đến 99,999,999
+        int randomNumber = 10000000 + random.nextInt(90000000);
+        return "KH" + randomNumber;
+    }
     @PostMapping("/register")
     public ResponseEntity<?> registerKhachHang(@RequestBody RegisterKhachHangDTO request) {
         logger.info("Yêu cầu đăng ký tài khoản cho khách hàng: {}", request.getEmail());
@@ -159,6 +165,8 @@ public class AuthController {
         kh.setMatKhau(passwordEncoder.encode(request.getMatKhau()));
         kh.setTenKhachHang(request.getTenKhachHang());
         kh.setSdt(request.getSdt());
+        kh.setMaKhachHang(generateMaKhachHang());
+        kh.setTrangThai(1);
         // Thiết lập các trường khác nếu cần
 
         khachHangRepository.save(kh);
@@ -309,6 +317,7 @@ public class AuthController {
             res.put("username", nv.getEmail());
             res.put("maNhanVien", nv.getMaNhanVien());
             res.put("tenNhanVien", nv.getHoVaTen());
+            res.put("hinhAnh", nv.getHinhAnh());
             res.put("role", "NHANVIEN");
             return ResponseEntity.ok(res);
         }

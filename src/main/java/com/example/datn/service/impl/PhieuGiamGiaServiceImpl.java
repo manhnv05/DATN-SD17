@@ -19,12 +19,15 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class PhieuGiamGiaServiceImpl implements PhieuGiamGiaService {
@@ -149,6 +152,38 @@ public class PhieuGiamGiaServiceImpl implements PhieuGiamGiaService {
         phieuGiamGia.setSoLuong(soLuongConLai);
         phieuGiamGiaRepository.save(phieuGiamGia);
         return "Giảm số lượng thành công";
+    }
+
+    @Override
+    public List<PhieuGiamGiaDTO> getPublicAndActiveVouchers() {
+        // Gọi phương thức repository với thời gian hiện tại
+        List<PhieuGiamGia> entities = phieuGiamGiaRepository.findActivePublicVouchers(LocalDateTime.now());
+
+        // Chuyển đổi danh sách entity sang danh sách DTO
+        return entities.stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+
+    // Hàm tiện ích để chuyển đổi từ Entity sang DTO
+    private PhieuGiamGiaDTO convertToDto(PhieuGiamGia entity) {
+        PhieuGiamGiaDTO dto = new PhieuGiamGiaDTO();
+        dto.setId(entity.getId());
+        dto.setMaPhieuGiamGia(entity.getMaPhieuGiamGia());
+        dto.setDieuKienGiam(entity.getDieuKienGiam());
+        dto.setTenPhieu(entity.getTenPhieu());
+        dto.setLoaiPhieu(entity.getLoaiPhieu());
+        dto.setPhamTramGiamGia(entity.getPhamTramGiamGia());
+        dto.setSoTienGiam(entity.getSoTienGiam());
+        dto.setGiamToiDa(entity.getGiamToiDa());
+        dto.setNgayBatDau(entity.getNgayBatDau());
+        dto.setNgayKetThuc(entity.getNgayKetThuc());
+        dto.setNgayTao(entity.getNgayTao());
+        dto.setNgayCapNhat(entity.getNgayCapNhat());
+        dto.setGhiChu(entity.getGhiChu());
+        dto.setTrangThai(entity.getTrangThai());
+        dto.setSoLuong(entity.getSoLuong());
+        return dto;
     }
 
     private String buildHtmlBody(PhieuGiamGia info) {

@@ -58,7 +58,7 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const handleOpenHistoryModal = () => setIsHistoryModalOpen(true);
   const handleCloseHistoryModal = () => setIsHistoryModalOpen(false);
-
+  const [currentUser, setCurrentUser] = useState(null);
   const [productsInOrder, setProductsInOrder] = useState([]);
   const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
   // === CÁC HÀM HELPER (Lấy từ OrderLookup) ===\
@@ -225,9 +225,9 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
       if (!orderData?.id) return;
       try {
         const payload = {
-          
           idHoaDon: orderData.id,
           noiDungThayDoi: actionDetail,
+          nguoiThucHien: `Khách hàng: ${currentUser?.tenKh} `|| "Khách hàng",
         };
         // THAY ĐÚNG ENDPOINT API LƯU LOG CỦA BẠN
         await axios.post(`${BASE_SERVER_URL}api/lich-su-hoa-don/log`, payload, {
@@ -385,6 +385,7 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
       credentials: "include", // <-- Thêm dòng này!
     });
     const result = await loadKhachHang.json();
+    setCurrentUser(result);
     const data = {
       khachHang: result.id,
       tongTienHoaDon: tongtien,
@@ -401,6 +402,22 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
     return pggkhres;
   };
 
+
+    useEffect(() => {
+        const fetchCurrentUser = async () => {
+            try {
+                const response = await axios.get(`${BASE_SERVER_URL}api/auth/me`, { withCredentials: true });
+                setCurrentUser(response.data);
+            } catch (error) {
+                console.error("Lỗi khi fetch /api/auth/me:", error);
+                // Không cần toast ở đây để tránh làm phiền người dùng
+            }
+        };
+
+        if (open) {
+            fetchCurrentUser();
+        }
+    }, [open]);
   // === CÁC HÀM RENDER (Chuyển đổi từ Bootstrap sang MUI Grid và Paper) ===
   const renderTimeline = () => {
     const history = orderData?.lichSuHoaDon || [];
@@ -466,6 +483,7 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
     tenKhachHang: "",
     sdt: "",
     diaChi: "",
+    ghiChu: "",
   });
 
   // Khi orderData có giá trị, cập nhật recipient
@@ -475,6 +493,8 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
         tenKhachHang: orderData.tenKhachHang || "",
         sdt: orderData.sdt || "",
         diaChi: orderData.diaChi || "",
+        phiVanChuyen: orderData.phiVanChuyen || 0,
+        ghiChu: orderData.ghiChu || "",
       });
     }
   }, [orderData]);
@@ -492,9 +512,10 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
     // Payload này chỉ chứa những trường cần cập nhật
     const payload = {
       tenKhachHang: recipient.tenKhachHang, // Dùng 'recipient'
-        sdt: recipient.sdt,                   // Dùng 'recipient'
-        diaChi: recipient.diaChi,             // Dùng 'recipient'
-        phiVanChuyen: newShippingFee,    // Modal con đã trả về địa chỉ đầy đủ
+      sdt: recipient.sdt, // Dùng 'recipient'
+      diaChi: recipient.diaChi,
+      ghiChu: recipient.ghiChu, // Dùng 'recipient'
+      phiVanChuyen: newShippingFee, // Modal con đã trả về địa chỉ đầy đủ
     };
 
     try {
@@ -503,7 +524,7 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
       await axios.put(backendApiUrl, payload, { withCredentials: true });
 
       toast.success("Cập nhật thông tin người nhận thành công!");
-       await recordHistoryLog(logMessage);
+      await recordHistoryLog(logMessage);
       handleCloseEditRecipient(); // Đóng modal
       fetchOrderDetails(orderCode); // Tải lại dữ liệu để hiển thị thông tin mới
     } catch (error) {
