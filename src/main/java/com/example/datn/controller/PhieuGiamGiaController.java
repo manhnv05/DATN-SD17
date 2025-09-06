@@ -14,6 +14,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/phieu_giam_gia")
 public class PhieuGiamGiaController {
@@ -80,4 +82,10 @@ public class PhieuGiamGiaController {
             @RequestParam Integer soLuong) {
         return ResponseHelper.success("",phieuGiamGiaService.tangSoluongPhieuGiamGia(id,soLuong));
     }
+    @GetMapping("/public")
+    public ResponseEntity<List<PhieuGiamGiaDTO>> getPublicVouchers() {
+        List<PhieuGiamGiaDTO> vouchers = phieuGiamGiaService.getPublicAndActiveVouchers();
+        return ResponseEntity.ok(vouchers);
+    }
+
 }

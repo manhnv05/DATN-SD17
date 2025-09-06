@@ -1,5 +1,6 @@
 package com.example.datn.repository;
 
+import com.example.datn.entity.DanhMuc;
 import com.example.datn.entity.SanPham;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
@@ -60,4 +61,5 @@ public interface SanPhamRepository extends JpaRepository<SanPham, Integer>, JpaS
             @Param("priceMax") Integer priceMax,
             Pageable pageable
     );
+    List<SanPham> findByDanhMucAndIdNot(DanhMuc danhMuc, Integer id, Pageable pageable);
 }

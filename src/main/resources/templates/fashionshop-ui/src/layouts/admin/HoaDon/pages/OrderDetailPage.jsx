@@ -27,7 +27,7 @@ import { useAuth } from "../../BanHangTaiQuay/AuthProvider.jsx";
 import { toast } from "react-toastify";
 import InHoaDon from "../InHoaDon/InHoaDon.jsx";
 import PropTypes from "prop-types";
-
+import ConfirmationDialog from "../OrderDetail/ConfirmationDialog"
 const statusMap = {
   HOAN_THANH: "Hoàn thành",
   CHO_XAC_NHAN: "Chờ xác nhận",
@@ -70,6 +70,26 @@ const OrderDetailPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const currentInvoiceId = orderId;
   const [isCancelModalOpen, setCancelModalOpen] = useState(false);
+
+const [confirmation, setConfirmation] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: () => {},
+    isLoading: false,
+});
+const confirmStatus = () => {
+    setConfirmation({
+        isOpen: true,
+        title: "Xác nhận chuyển trạng thái",
+        message: "Bạn có chắc chắn muốn chuyển đơn hàng sang trạng thái tiếp theo không?",
+        onConfirm: executeStatusChange, // Gán hành động sẽ thực thi
+        isLoading: false,
+    });
+};
+const handleCloseConfirmation = () => {
+    setConfirmation((prev) => ({ ...prev, isOpen: false }));
+};
 
   const handleOpenCancelModal = () => {
     setCancelModalOpen(true);
@@ -185,7 +205,13 @@ const OrderDetailPage = () => {
     }
   };
 
-  const handleConfirmStatus = async () => {
+ const executeStatusChange = async () => {
+    // Bật trạng thái loading trên hộp thoại xác nhận
+    setConfirmation((prev) => ({ ...prev, isLoading: true }));
+    setActionLoading(true);
+    setActionError(null);
+
+    // --- Bắt đầu logic gốc từ hàm handleConfirmStatus của bạn ---
     if (orderData?.trangThaiGoc === "DANG_VAN_CHUYEN") {
       try {
         const response = await fetch(
@@ -202,16 +228,23 @@ const OrderDetailPage = () => {
         }
         if (totalPaid < orderData.totalAmount) {
           toast.error("Đơn hàng chưa được thanh toán đủ. Không thể hoàn thành.");
+          
+          // Đóng dialog và dừng thực thi
+          handleCloseConfirmation(); 
+          setActionLoading(false);
           return;
         }
       } catch (err) {
         toast.error(err.message || "Không thể xác thực trạng thái thanh toán.");
+        
+        // Đóng dialog và dừng thực thi
+        handleCloseConfirmation(); 
+        setActionLoading(false);
         return;
       }
     }
     const originalStatus = orderData?.trangThaiGoc;
-    setActionLoading(true);
-    setActionError(null);
+    
     try {
       const payload = {
         ghiChu: "Chuyển trạng thái tự động",
@@ -242,8 +275,23 @@ const OrderDetailPage = () => {
       setActionError(err.message || "Có lỗi xảy ra khi chuyển trạng thái. Vui lòng thử lại.");
     } finally {
       setActionLoading(false);
+      // Đóng hộp thoại xác nhận sau khi hoàn tất
+      handleCloseConfirmation(); 
     }
-  };
+    // --- Kết thúc logic gốc ---
+};
+
+// 2. HÀM MỚI ĐỂ MỞ HỘP THOẠI XÁC NHẬN
+// Hàm này sẽ được gọi khi nhấn nút "Xác nhận (Trạng thái tiếp theo)".
+const handleConfirmStatus = () => {
+    setConfirmation({
+        isOpen: true,
+        title: "Xác nhận chuyển trạng thái",
+        message: "Bạn có chắc chắn muốn chuyển đơn hàng sang trạng thái tiếp theo không?",
+        onConfirm: executeStatusChange, // Gán hành động sẽ thực thi khi nhấn "Có"
+        isLoading: false,
+    });
+};
 
   // Derived state
   const isConfirmButtonDisabled =
@@ -527,7 +575,14 @@ const OrderDetailPage = () => {
           onConfirmCancel={handleConfirmCancellation}
           isLoading={isCancelling}
         />
-
+<ConfirmationDialog
+    open={confirmation.isOpen}
+    onClose={handleCloseConfirmation}
+    onConfirm={confirmation.onConfirm}
+    title={confirmation.title}
+    message={confirmation.message}
+    isLoading={confirmation.isLoading}
+/>
         {showUpdateModal && orderData && (
           <UpdateOrderInfo
             show={showUpdateModal}

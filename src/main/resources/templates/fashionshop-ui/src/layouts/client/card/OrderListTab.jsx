@@ -314,7 +314,7 @@ export default function OrderListTab({ user }) {
                   sx={{ fontWeight: 700, fontSize: 14, color: "white" }}
                 />
                 <Typography ml="auto" color="#888" fontSize={15}>
-                  Ngày đặt: {order.ngayTao}
+                  Ngày đặt: {formatDate(order.ngayTao) }
                 </Typography>
               </Stack>
               <Divider sx={{ my: 1.5 }} />

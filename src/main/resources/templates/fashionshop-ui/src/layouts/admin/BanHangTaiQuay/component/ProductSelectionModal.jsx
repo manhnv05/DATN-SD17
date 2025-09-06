@@ -35,7 +35,7 @@ import SoftBox from "../../../../components/SoftBox";
 import SoftTypography from "../../../../components/SoftTypography";
 
 // URL API của bạn
-const API_URL = "http://localhost:8080/chiTietSanPham/allctspgiamgia";
+const API_URL = "http://localhost:8080/chiTietSanPham/allctspgiamgia"; 
 const BASE_IMAGE_URL = "http://localhost:8080/";
 
 // Hàm format tiền tệ
@@ -372,7 +372,7 @@ const [products, setProducts] = useState([]);
                 ) : (
                     <TableContainer component={Paper} sx={{ maxHeight: 500, overflowX: 'auto' }}>
                         <Table stickyHeader aria-label="sticky product table" sx={{ tableLayout: 'fixed', minWidth: 1500 }}>
-                            <TableHead>
+                            
                                 <TableRow>
                                     <TableCell align="center" sx={{ width: 120, fontWeight: 'bold' }}>Ảnh</TableCell>
                                     <TableCell align="center" sx={{ minWidth: 150, fontWeight: 'bold' }}>Tên</TableCell>
@@ -388,7 +388,7 @@ const [products, setProducts] = useState([]);
                                     <TableCell align="center" sx={{ minWidth: 120, fontWeight: 'bold' }}>Số lượng</TableCell>
                                     <TableCell align="center" sx={{ minWidth: 120, fontWeight: 'bold' }}>Thao tác</TableCell>
                                 </TableRow>
-                            </TableHead>
+                        
                             <TableBody>
                                 {filteredProducts.length > 0 ? (
                                     filteredProducts.map((product) => (

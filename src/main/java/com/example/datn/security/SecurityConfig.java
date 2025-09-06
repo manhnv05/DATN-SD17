@@ -73,7 +73,11 @@ public class SecurityConfig {
                                 "/api/public/**",
                                 "/oauth2/**",
                                 "/login/**",
+                                "/api/auth/forgot-password",
+                                "/api/home/**",
+                                 "/api/auth/reset-password",
                                 "/api/auth/login",
+                                "/phieu_giam_gia/public",
                                 "/api/auth/register",
                                 "/ws/**",
                                 "/PhieuGiamGiaKhachHang/query",
@@ -85,9 +89,9 @@ public class SecurityConfig {
                                 "/api/v1/**",
                                 "/api/outlet/**",
                                 "/api/hoa-don/luu-hoa-don-online-chua-dang-nhap",
-
                                 "/chiTietThanhToan",
-                                "/api/hoa-don/tra-cuu-hoa-don/**"
+                                "/api/hoa-don/tra-cuu-hoa-don/**",
+                                "/api/hoa-don/get-all-so-luong-ton-kho"
 
 
                         ).permitAll()

@@ -441,7 +441,7 @@ if (existingProduct) {
               <p className={styles["product-info"]}>x{product.soLuong}</p>
             </div>
 
-            {(orderStatus === "CHO_XAC_NHAN" || orderStatus === "DA_XAC_NHAN") && (
+            {(orderStatus === "CHO_XAC_NHAN" ) && (
               <div className={styles["product-quantity-control"]}>
                 <button
                   onClick={() =>
@@ -476,9 +476,15 @@ if (existingProduct) {
                 </button>
               </div>
             )}
-            <div className={styles["product-total-price"]}>
-              {((product.gia || 0) * (product.soLuong || 0)).toLocaleString("vi-VN")} VND
-            </div>
+           <div className={styles["product-total-price"]}>
+  {/* DÒNG THÊM VÀO */}
+  <p className={styles["total-price-label"]}>Thành tiền</p>
+
+  {/* Dòng giá tiền gốc của bạn */}
+  <span>
+    {((product.gia || 0) * (product.soLuong || 0)).toLocaleString("vi-VN")} VND
+  </span>
+</div>
           </div>
         ))
       )}

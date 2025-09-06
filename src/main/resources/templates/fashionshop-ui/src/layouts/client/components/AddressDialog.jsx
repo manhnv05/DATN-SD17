@@ -218,7 +218,7 @@ function AddressFormSection({ open, onClose, onSubmit, initialData, isEdit }) {
         if (!selectedProvince) newErrors.province = "Vui lòng chọn Tỉnh/Thành phố";
         if (!selectedDistrict) newErrors.district = "Vui lòng chọn Quận/Huyện";
         if (!selectedWard) newErrors.ward = "Vui lòng chọn Phường/Xã";
- if (!diaChiCuThe.trim()) newErrors.diaChiCuThe = "Vui lòng nhập địa chỉ chi tiết";
+ if (!diaChiCuThe.trim()) newErrors.diaChiCuThe = "Vui lòng nhập địa chỉ cụ thể"; // Dòng code thêm vào
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -251,7 +251,7 @@ function AddressFormSection({ open, onClose, onSubmit, initialData, isEdit }) {
             tinhThanhPho: selectedProvince.ProvinceName,
             quanHuyen: selectedDistrict.DistrictName,
             xaPhuong: selectedWard.WardName,
-            diaChiCuThe: diaChiCuThe,
+             diaChiCuThe: diaChiCuThe.trim(), 
             trangThai: isDefault ? 1 : 0,
         };
         if (isEdit && initialData?.id) {
@@ -312,6 +312,7 @@ AddressFormSection.propTypes = {
     initialData: PropTypes.shape({
         tinhThanhPho: PropTypes.string,
         xaPhuong: PropTypes.string,
+         diaChiCuThe: PropTypes.string,
           diaChiCuThe: PropTypes.string,
         trangThai: PropTypes.number,
         id: PropTypes.number

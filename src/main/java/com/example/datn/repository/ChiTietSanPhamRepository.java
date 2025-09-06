@@ -77,4 +77,5 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
                                 @Param("idKichThuoc") Integer idKichThuoc);
     @Query("SELECT MAX(ctsp.gia) FROM ChiTietSanPham ctsp WHERE ctsp.trangThai = 1")
     Double findMaxPriceFromChiTiet();
+    List<ChiTietSanPham> findBySanPhamIdAndTrangThai(Integer sanPhamId, int trangThai);
 }

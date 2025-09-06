@@ -79,7 +79,7 @@ public class KhachHangController {
             @RequestParam(required = false) String email,
             @RequestParam(required = false) Integer gioiTinh, // Integer (0-Nữ, 1-Nam, 2-Khác)
             @RequestParam(required = false) String sdt,
-            @RequestParam(required = false) String ngaySinh,
+
             @RequestParam(required = false) String hinhAnh,
             @RequestParam(required = false) Integer trangThai,
             @RequestParam(required = false) Integer minAge,   // Thêm nếu filter khoảng tuổi
@@ -97,16 +97,7 @@ public class KhachHangController {
 
         vO.setSdt(sdt);
 
-        // Xử lý ngày sinh
-        if (ngaySinh != null && !ngaySinh.isEmpty()) {
-            try {
-                vO.setNgaySinh(java.sql.Date.valueOf(ngaySinh));
-            } catch (Exception ignored) {
-                vO.setNgaySinh(null);
-            }
-        } else {
-            vO.setNgaySinh(null);
-        }
+
 
         vO.setHinhAnh(hinhAnh);
         vO.setTrangThai(trangThai);

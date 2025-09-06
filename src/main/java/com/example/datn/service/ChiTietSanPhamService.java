@@ -387,7 +387,15 @@ public class ChiTietSanPhamService {
         ctsp.setTayAo(c.getTayAo().getTenTayAo());
         ctsp.setGia(c.getGia());
         ctsp.setPhanTramGiam(pggLonNhat);
-
+        List<String> listUrl = new ArrayList<>();
+        // Truy vấn danh sách các đối tượng liên kết ảnh từ ID chi tiết sản phẩm
+        List<SpctHinhAnh> listspctHinhAnh = spctHinhAnhRepository.findByChiTietSanPham_Id(c.getId());
+        // Duyệt qua danh sách và lấy đường dẫn ảnh
+        for (SpctHinhAnh ctspHA : listspctHinhAnh) {
+            listUrl.add(ctspHA.getHinhAnh().getDuongDanAnh());
+        }
+        // Gán danh sách URL ảnh vào DTO
+        ctsp.setListUrlImage(listUrl);
         // Tính giá sau khi giảm
         BigDecimal originalPrice = BigDecimal.valueOf(c.getGia());
         BigDecimal discountAmount = originalPrice.multiply(BigDecimal.valueOf(pggLonNhat)).divide(BigDecimal.valueOf(100));
