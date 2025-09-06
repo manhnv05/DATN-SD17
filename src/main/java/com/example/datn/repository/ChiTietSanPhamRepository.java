@@ -66,7 +66,7 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
 
     @Query("""
         SELECT ctsp FROM ChiTietSanPham ctsp
-        WHERE ctsp.soLuong > 0 AND ctsp.trangThai = 1
+        WHERE ctsp.soLuong > 0 AND ctsp.trangThai = 1 AND ctsp.sanPham.trangThai = 1
         ORDER BY ctsp.id desc
     """)
     List<ChiTietSanPham> getChiTietSanPhamTrangThai();
