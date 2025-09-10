@@ -4,6 +4,7 @@ import com.example.datn.dto.SanPhamOutletDTO;
 import com.example.datn.entity.*;
 import com.example.datn.repository.*;
 import com.example.datn.service.SanPhamOutletService;
+import com.example.datn.vo.clientVO.ShopProductVO;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
@@ -16,7 +17,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class SanPhamOutletServiceImpl implements SanPhamOutletService {
-
+    @Autowired
+    private SanPhamRepository sanPhamRepository;
     @Autowired
     private ChiTietDotGiamGiaRepository chiTietDotGiamGiaRepository;
     @Autowired
@@ -135,4 +137,84 @@ public class SanPhamOutletServiceImpl implements SanPhamOutletService {
 
         return new PageImpl<>(pagedList, pageable, voList.size());
     }
+
+    @Override
+    public List<ShopProductVO> findRelatedProducts(Integer productId, int limit) {
+        // Bước 1: Tìm sản phẩm gốc để xác định danh mục
+        SanPham sanPhamGoc = sanPhamRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm với ID: " + productId));
+
+        DanhMuc danhMuc = sanPhamGoc.getDanhMuc();
+        if (danhMuc == null) {
+            return Collections.emptyList(); // Trả về danh sách rỗng nếu sản phẩm không có danh mục
+        }
+
+        // Bước 2: Lấy các sản phẩm cùng danh mục từ DB
+        Pageable pageable = PageRequest.of(0, limit);
+        List<SanPham> relatedEntities = sanPhamRepository.findByDanhMucAndIdNot(danhMuc, productId, pageable);
+
+        // Bước 3: Ánh xạ danh sách entity sang danh sách VO, sử dụng logic bạn đã cung cấp
+        return relatedEntities.stream()
+                .map(this::convertToShopProductVO)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+    private ShopProductVO convertToShopProductVO(SanPham sp) {
+        List<ChiTietSanPham> ctspList = sp.getChiTietSanPhams();
+        if (ctspList == null || ctspList.isEmpty()) {
+            return null; // Bỏ qua sản phẩm không có biến thể
+        }
+
+        // Tính toán giá min/max từ tất cả các biến thể
+        int minPrice = ctspList.stream().mapToInt(ChiTietSanPham::getGia).min().orElse(0);
+        int maxPrice = ctspList.stream().mapToInt(ChiTietSanPham::getGia).max().orElse(0);
+
+        // Lấy biến thể đầu tiên làm đại diện để hiển thị
+        ChiTietSanPham ctsp = ctspList.get(0);
+
+        // Logic tìm giá và giá sale
+        Integer price = ctsp.getGia();
+        Integer salePrice = null;
+        String discountPercent = "";
+        List<ChiTietDotGiamGia> giamGias = chiTietDotGiamGiaRepository.findByChiTietSanPhamId(ctsp.getId());
+        for (ChiTietDotGiamGia dgg : giamGias) {
+            DotGiamGia dot = dgg.getDotGiamGia();
+            if (dot.getTrangThai() == 1) { // Giả sử 1 là trạng thái "đang hoạt động"
+                salePrice = dgg.getGiaSauKhiGiam();
+                int percent = (int) Math.round(100.0 * (price - salePrice) / price);
+                discountPercent = percent > 0 ? "-" + percent + "%" : "";
+                break;
+            }
+        }
+
+        // Logic tìm hình ảnh
+        String imageUrl = "";
+        List<HinhAnh> imgList = hinhAnhRepository.findBySpctHinhAnhs_ChiTietSanPham_Id(ctsp.getId());
+        if (!imgList.isEmpty()) {
+            Optional<HinhAnh> defaultImg = imgList.stream()
+                    .filter(i -> i.getAnhMacDinh() != null && i.getAnhMacDinh() == 1)
+                    .findFirst();
+            imageUrl = defaultImg.map(HinhAnh::getDuongDanAnh).orElse(imgList.get(0).getDuongDanAnh());
+        }
+
+        // Xây dựng đối tượng VO để trả về
+        return ShopProductVO.builder()
+                .id(sp.getId())
+                .name(sp.getTenSanPham())
+                .code(sp.getMaSanPham())
+                .imageUrl(imageUrl)
+                .price(price)
+                .salePrice(salePrice)
+                .discountPercent(discountPercent)
+                .rating(4.0 + Math.random()) // Có thể thay bằng rating thật từ DB nếu có
+                .priceMin(minPrice)
+                .priceMax(maxPrice)
+                .colorName(ctsp.getMauSac() != null ? ctsp.getMauSac().getTenMauSac() : null)
+                .colorCode(ctsp.getMauSac() != null ? ctsp.getMauSac().getMaMau() : null)
+                .sizeName(ctsp.getKichThuoc() != null ? ctsp.getKichThuoc().getTenKichCo() : null)
+                .categoryName(sp.getDanhMuc() != null ? sp.getDanhMuc().getTenDanhMuc() : null)
+                .build();
+    }
+
+
 }

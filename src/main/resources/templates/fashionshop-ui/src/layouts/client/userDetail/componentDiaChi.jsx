@@ -85,7 +85,6 @@ const AnimatedCard = styled(Paper)(({ theme }) => ({
     borderRadius: 8,
     padding: "14px 18px",
     marginBottom: 10,
-    cursor: "pointer", // Thêm cursor pointer để hiển thị rằng có thể click
     "&.fade-in": {
         animation: "fadeIn 0.5s"
     },
@@ -139,7 +138,7 @@ function AddressFormSection({ open, onClose, onSubmit, initialData, isEdit }) {
     const [selectedProvince, setSelectedProvince] = useState(null);
     const [selectedDistrict, setSelectedDistrict] = useState(null);
     const [selectedWard, setSelectedWard] = useState(null);
-    const [diaChiCuThe, setDiaChiCuThe] = useState("");
+    const [diaChiCuThe, setdiaChiCuThe] = useState("");
     const [isDefault, setIsDefault] = useState(false);
 
     // UI State
@@ -192,14 +191,14 @@ function AddressFormSection({ open, onClose, onSubmit, initialData, isEdit }) {
         if (open && isEdit && initialData && provinces.length > 0) {
             const province = provinces.find(p => p.ProvinceName === initialData.tinhThanhPho);
             if (province) setSelectedProvince(province);
-              setDiaChiCuThe(initialData.diaChiCuThe || ""); 
+setdiaChiCuThe(initialData.diaChiCuThe || "");
             setIsDefault(initialData.trangThai === 1);
         } else if (open && !isEdit) {
             // Reset form when opening in "add new" mode
             setSelectedProvince(null);
             setSelectedDistrict(null);
             setSelectedWard(null);
-            setDiaChiCuThe("");
+            setdiaChiCuThe("");
             setIsDefault(false);
             setErrors({});
         }
@@ -218,7 +217,7 @@ function AddressFormSection({ open, onClose, onSubmit, initialData, isEdit }) {
         if (!selectedProvince) newErrors.province = "Vui lòng chọn Tỉnh/Thành phố";
         if (!selectedDistrict) newErrors.district = "Vui lòng chọn Quận/Huyện";
         if (!selectedWard) newErrors.ward = "Vui lòng chọn Phường/Xã";
- if (!diaChiCuThe.trim()) newErrors.diaChiCuThe = "Vui lòng nhập địa chỉ cụ thể"; // Dòng code thêm vào
+ if (!diaChiCuThe.trim()) newErrors.diaChiCuThe = "Vui lòng nhập địa chỉ cụ thể";
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -251,7 +250,7 @@ function AddressFormSection({ open, onClose, onSubmit, initialData, isEdit }) {
             tinhThanhPho: selectedProvince.ProvinceName,
             quanHuyen: selectedDistrict.DistrictName,
             xaPhuong: selectedWard.WardName,
-             diaChiCuThe: diaChiCuThe.trim(), 
+            diaChiCuThe: diaChiCuThe,
             trangThai: isDefault ? 1 : 0,
         };
         if (isEdit && initialData?.id) {
@@ -278,16 +277,16 @@ function AddressFormSection({ open, onClose, onSubmit, initialData, isEdit }) {
                 <Grid item xs={12} sm={6}>
                     <Autocomplete options={wards} getOptionLabel={(o) => o.WardName || ""} value={selectedWard} disabled={!selectedDistrict} isOptionEqualToValue={(option, value) => option.WardCode === value.WardCode} onChange={(e, v) => setSelectedWard(v)} renderInput={(params) => <TextField {...params} label="Phường/Xã" fullWidth error={!!errors.ward} helperText={errors.ward} />} />
                 </Grid>
- <Grid item xs={12}>
-                    <TextField
-                        label="Địa chỉ chi tiết (Số nhà, tên đường)"
-                        fullWidth
-                        value={diaChiCuThe}
-                        onChange={(e) => setDiaChiCuThe(e.target.value)}
-                        error={!!errors.diaChiCuThe}
-                        helperText={errors.diaChiCuThe}
-                    />
-                </Grid>
+<Grid item xs={12}>
+        <TextField
+            label="Địa chỉ cụ thể (Số nhà, tên đường)"
+            fullWidth
+            value={diaChiCuThe}
+            onChange={(e) => setdiaChiCuThe(e.target.value)}
+            error={!!errors.diaChiCuThe}
+            helperText={errors.diaChiCuThe}
+        />
+    </Grid>
             </Grid>
             {!isEdit && (
                 <Box display="flex" alignItems="center" gap={1} mt={2}>
@@ -311,16 +310,15 @@ AddressFormSection.propTypes = {
     onSubmit: PropTypes.func.isRequired,
     initialData: PropTypes.shape({
         tinhThanhPho: PropTypes.string,
-        xaPhuong: PropTypes.string,
-         diaChiCuThe: PropTypes.string,
           diaChiCuThe: PropTypes.string,
+        xaPhuong: PropTypes.string,
         trangThai: PropTypes.number,
         id: PropTypes.number
     }),
     isEdit: PropTypes.bool
 };
 
-function AddressDialogClient({ customerId, open, onClose, onAddressSelect }) {
+export default function AddressManager({ customerId }) {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [confirmDelete, setConfirmDelete] = useState(null);
@@ -343,21 +341,16 @@ function AddressDialogClient({ customerId, open, onClose, onAddressSelect }) {
     });
 
     useEffect(() => {
-        if (open && customerId) initialize();
+        console.log(customerId)
+        if (customerId) {
+            initialize()
+        };
         // eslint-disable-next-line
-    }, [open, customerId]);
- console.log("State 'addresses' TRƯỚC KHI RENDER:", addresses);
-    const chonDiaChi = async (address) => {
-        console.log('Địa chỉ được chọn:', address);
+    }, []);
 
-        // Gọi callback function để truyền địa chỉ được chọn về component cha
-        if (onAddressSelect) {
-            onAddressSelect(address);
-        }
-
-        // Đóng modal
-        onClose();
-    };
+    const chonDiaChi = async (event) => {
+        console.log(event);
+    }
 
     const initialize = async () => {
         setLoading(true);
@@ -365,7 +358,6 @@ function AddressDialogClient({ customerId, open, onClose, onAddressSelect }) {
         try {
             const response = await axios.get(`${API_BASE_URL}/khachHang/${customerId}`, { withCredentials: true });
             const customerRes = response?.data?.data || response?.data;
-             console.log("Dữ liệu địa chỉ nhận được KHI MỞ DIALOG:", customerRes?.diaChis);
             setCustomerInfo(customerRes);
             setAddresses(sortAddressesWithDefaultFirst(customerRes?.diaChis || []));
         } catch (e) {
@@ -388,7 +380,6 @@ function AddressDialogClient({ customerId, open, onClose, onAddressSelect }) {
         setError(null);
         try {
             const res = await axios.get(`${API_BASE_URL}/khachHang/${customerId}/diaChis`, { withCredentials: true });
-             console.log("Dữ liệu địa chỉ nhận được từ API:", res.data.data);
             setAddresses(sortAddressesWithDefaultFirst(res.data.data || []));
         } catch (e) {
             toast.error("Không thể tải danh sách địa chỉ của khách hàng.");
@@ -423,13 +414,12 @@ function AddressDialogClient({ customerId, open, onClose, onAddressSelect }) {
     };
 
     const openDeleteConfirm = (address) => {
-         const fullAddress = `${address.diaChiCuThe}, ${address.xaPhuong}, ${address.quanHuyen}, ${address.tinhThanhPho}`;
         if (addresses.length === 1) {
             setConfirmDialog({
                 open: true,
                 type: "delete",
                 title: "Xác nhận xóa địa chỉ",
-                message: `Bạn có chắc chắn muốn xóa địa chỉ "${fullAddress}"? Đây là địa chỉ duy nhất của khách hàng.`,
+                message: `Bạn có chắc chắn muốn xóa địa chỉ "${address.tinhThanhPho}, ${address.xaPhuong}"? Đây là địa chỉ duy nhất của khách hàng.`,
                 confirmText: "Xóa địa chỉ",
                 cancelText: "Hủy bỏ",
                 confirmColor: "error",
@@ -531,241 +521,203 @@ function AddressDialogClient({ customerId, open, onClose, onAddressSelect }) {
         setFormSectionData(null);
     };
 
-    // Hàm xử lý sự kiện click trên card, ngăn chặn việc kích hoạt khi click vào các nút action
-    const handleAddressCardClick = (address, event) => {
-        // Kiểm tra xem click có phải trên button action không
-        const isActionButton = event.target.closest('.MuiIconButton-root');
-        const isTooltip = event.target.closest('.MuiTooltip-tooltip');
-
-        if (!isActionButton && !isTooltip) {
-            chonDiaChi(address);
-        }
-    };
-
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                <Box
+        <Box sx={{ maxWidth: "800px", width: "100%", margin: "0 auto", padding: "1rem" }}>
+            {/* Header Section */}
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    marginBottom: "1rem",
+                    gap: "0.375rem",
+                    textAlign: { xs: "center", sm: "left" },
+                    fontFamily:
+                        'ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
+                    color: "hsl(222.2, 84%, 4.9%)"
+                }}
+            >
+                <Typography
+                    variant="h2"
                     sx={{
                         display: "flex",
-                        flexDirection: "row",
-                        justifyContent: "space-between",
-                        marginBottom: "1rem",
-                        gap: "0.375rem",
-                        textAlign: { xs: "center", sm: "left" },
+                        alignItems: "center",
+                        gap: "0.5rem",
+                        fontSize: "1.25rem",
+                        fontWeight: 600,
+                        letterSpacing: "-0.025em",
+                        color: "hsl(222.2, 84%, 4.9%)",
+                        fontFamily: "ui-sans-serif, system-ui, sans-serif"
+                    }}
+                >
+                    <MapPin
+                        size={20}
+                        color="hsl(210, 100%, 47%)"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        fill="none"
+                        style={{ marginRight: "0.5rem" }}
+                    />
+                    Danh sách địa chỉ của {customerInfo?.tenKhachHang}
+                </Typography>
+            </Box>
+
+            {/* Actions Section */}
+            <Box
+                sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: 2,
+                    fontFamily: "ui-sans-serif, system-ui, sans-serif",
+                    color: "hsl(222.2, 84%, 4.9%)"
+                }}
+            >
+                <Typography
+                    variant="h3"
+                    sx={{
                         fontFamily:
                             'ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
-                        color: "hsl(222.2, 84%, 4.9%)"
+                        fontWeight: 500,
+                        fontSize: "1.125rem",
+                        lineHeight: "1.75rem",
+                        color: "hsl(222.2, 84%, 4.9%)",
+                        margin: 0
                     }}
                 >
-                    <Typography
-                        variant="h2"
-                        sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "0.5rem",
-                            fontSize: "1.25rem",
-                            fontWeight: 600,
-                            letterSpacing: "-0.025em",
-                            color: "hsl(222.2, 84%, 4.9%)",
-                            fontFamily: "ui-sans-serif, system-ui, sans-serif"
-                        }}
-                    >
-                        <MapPin
-                            size={20}
-                            color="hsl(210, 100%, 47%)"
-                            strokeWidth={2}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            fill="none"
-                            style={{ marginRight: "0.5rem" }}
-                        />
-                        Danh sách địa chỉ của {customerInfo?.tenKhachHang} (Mã KH: {customerInfo?.maKhachHang})
+                    Địa chỉ ({addresses.length}/5)
+                </Typography>
+                <AddAddressButton
+                    onClick={handleAddClick}
+                    startIcon={<Plus size={16} />}
+                    disabled={addresses.length >= 5}
+                >
+                    Thêm địa chỉ
+                </AddAddressButton>
+            </Box>
+
+            {/* Main Content */}
+            {loading ? (
+                <Box display="flex" justifyContent="center" alignItems="center" minHeight={120}>
+                    <CircularProgress color="primary" size={28} />
+                    <Typography ml={2} color={SOFT_PRIMARY} fontSize={15}>
+                        Đang tải...
                     </Typography>
-                    <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-                        <IconButton
-                            onClick={onClose}
-                            aria-label="Đóng"
-                            sx={{
-                                width: 28,
-                                height: 28,
-                                padding: "2px",
-                                opacity: 0.7,
-                                transition: "opacity 0.2s, box-shadow 0.2s, border-color 0.2s",
-                                border: "2px solid transparent",
-                                borderRadius: "8px",
-                                boxShadow: "none",
-                                "&:hover": {
-                                    opacity: 1
-                                },
-                                "&:focus-visible, &:active": {
-                                    borderColor: "#2563eb",
-                                    boxShadow: "0 0 0 0px #2563eb",
-                                    outline: "none",
-                                    opacity: 1,
-                                    backgroundColor: "#f8fafc"
-                                }
-                            }}
-                            tabIndex={0}
-                        >
-                            <X size={15} color="#2563eb" />
-                        </IconButton>
-                    </Box>
                 </Box>
-                <Box
+            ) : error ? (
+                <Typography color="error">{error}</Typography>
+            ) : addresses.length === 0 ? (
+                <AnimatedCard
+                    elevation={0}
+                    className="fade-in"
                     sx={{
+                        border: `2px dashed ${SOFT_PRIMARY}`,
+                        background: SOFT_BG,
+                        p: 5,
                         display: "flex",
-                        justifyContent: "space-between",
+                        flexDirection: "column",
                         alignItems: "center",
-                        mb: 2,
-                        fontFamily: "ui-sans-serif, system-ui, sans-serif",
-                        color: "hsl(222.2, 84%, 4.9%)"
+                        justifyContent: "center"
                     }}
                 >
-                    <Typography
-                        variant="h3"
-                        sx={{
-                            fontFamily:
-                                'ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"',
-                            fontWeight: 500,
-                            fontSize: "1.125rem",
-                            lineHeight: "1.75rem",
-                            color: "hsl(222.2, 84%, 4.9%)",
-                            margin: 0
-                        }}
-                    >
-                        Địa chỉ ({addresses.length}/5) - Click để chọn địa chỉ
+                    <PlaceIcon sx={{ fontSize: 48, color: SOFT_PRIMARY, mb: 2 }} />
+                    <Typography color="text.secondary" fontSize={16} textAlign="center">
+                        Chưa có địa chỉ nào. Nhấn Thêm địa chỉ để bắt đầu.
                     </Typography>
-                    <AddAddressButton
-                        onClick={handleAddClick}
-                        startIcon={<Plus size={16} />}
-                        disabled={addresses.length >= 5}
-                    >
-                        Thêm địa chỉ
-                    </AddAddressButton>
-                </Box>
-                {loading ? (
-                    <Box display="flex" justifyContent="center" alignItems="center" minHeight={120}>
-                        <CircularProgress color="primary" size={28} />
-                        <Typography ml={2} color={SOFT_PRIMARY} fontSize={15}>
-                            Đang tải...
-                        </Typography>
-                    </Box>
-                ) : error ? (
-                    <Typography color="error">{error}</Typography>
-                ) : addresses.length === 0 ? (
-                    <AnimatedCard
-                        elevation={0}
-                        className="fade-in"
-                        sx={{
-                            border: `2px dashed ${SOFT_PRIMARY}`,
-                            background: SOFT_BG,
-                            p: 5,
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            justifyContent: "center"
-                        }}
-                    >
-                        <PlaceIcon sx={{ fontSize: 48, color: SOFT_PRIMARY, mb: 2 }} />
-                        <Typography color="text.secondary" fontSize={16} textAlign="center">
-                            Chưa có địa chỉ nào. Nhấn Thêm địa chỉ để bắt đầu.
-                        </Typography>
-                    </AnimatedCard>
-                ) : (
-                    <Box display="flex" flexDirection="column" gap={1.5} mt={1}>
-                        {addresses.map((address, idx) => (
-                            <AnimatedCard
-                                onClick={(event) => handleAddressCardClick(address, event)}
-                                key={address.id}
-                                elevation={address.trangThai === 1 ? 3 : 0}
-                                className="fade-in"
-                                sx={{
-                                    border:
-                                        address.trangThai === 1
-                                            ? `1.5px solid #16a34a`
-                                            : `1.5px solid #e2e8f0`,
-                                    background: address.trangThai === 1 ? "#f0fdf4" : "#fff",
-                                    transition: "all 0.2s ease-in-out",
-                                    "&:hover": {
-                                        transform: "translateY(-2px)",
-                                        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)"
-                                    }
-                                }}
-                            >
-                                <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.5}>
-                                    <Box display="flex" alignItems="center" gap={1}>
-                                        <Typography
-                                            fontWeight={700}
-                                            fontSize={13.5}
-                                            color={address.trangThai === 1 ? "#16a34a" : "#333"}
-                                        >
-                                            Địa chỉ {idx + 1}
-                                        </Typography>
-                                        {address.trangThai === 1 && (
-                                            <GreenBadge
-                                                icon={<StarIcon sx={{ fontSize: 14, color: "#16a34a", mr: 0.5 }} />}
-                                                label="Mặc định"
-                                                color="primary"
-                                                size="small"
-                                                sx={{ ml: 1 }}
-                                            />
-                                        )}
-                                    </Box>
-                                    <Box display="flex" alignItems="center" gap={1.5}>
-                                        {address.trangThai !== 1 && (
-                                            <Tooltip title="Đặt làm mặc định">
-                                                <span>
-                                                    <SmallActionIconButton
-                                                        edge="end"
-                                                        color="primary"
-                                                        aria-label="Đặt làm mặc định"
-                                                        onClick={() => openSetDefaultConfirm(address)}
-                                                        className="set-default"
-                                                    >
-                                                        <StarBorderIcon sx={{ fontSize: 17 }} />
-                                                    </SmallActionIconButton>
-                                                </span>
-                                            </Tooltip>
-                                        )}
-                                        <Tooltip title="Chỉnh sửa">
-                                            <SmallActionIconButton
-                                                edge="end"
-                                                aria-label="Chỉnh sửa"
-                                                className="edit"
-                                                onClick={() => handleEdit(address)}
-                                            >
-                                                <EditOutlinedIcon sx={{ fontSize: 17 }} />
-                                            </SmallActionIconButton>
-                                        </Tooltip>
-                                        <Tooltip title="Xóa địa chỉ">
-                                            <SmallActionIconButton
-                                                edge="end"
-                                                color="error"
-                                                aria-label="Xóa"
-                                                className="delete"
-                                                onClick={() => openDeleteConfirm(address)}
-                                            >
-                                                <DeleteIcon sx={{ fontSize: 17 }} />
-                                            </SmallActionIconButton>
-                                        </Tooltip>
-                                    </Box>
+                </AnimatedCard>
+            ) : (
+                <Box display="flex" flexDirection="column" gap={1.5} mt={1}>
+                    {addresses.map((address, idx) => (
+                        <AnimatedCard
+                            onClick={() => chonDiaChi(address)}
+                            key={address.id}
+                            elevation={address.trangThai === 1 ? 3 : 0}
+                            className="fade-in"
+                            sx={{
+                                border:
+                                    address.trangThai === 1
+                                        ? `1.5px solid #16a34a`
+                                        : `1.5px solid #e2e8f0`,
+                                background: address.trangThai === 1 ? "#f0fdf4" : "#fff"
+                            }}
+                        >
+                            <Box display="flex" alignItems="center" justifyContent="space-between" mb={0.5}>
+                                <Box display="flex" alignItems="center" gap={1}>
+                                    <Typography
+                                        fontWeight={700}
+                                        fontSize={13.5}
+                                        color={address.trangThai === 1 ? "#16a34a" : "#333"}
+                                    >
+                                        Địa chỉ {idx + 1}
+                                    </Typography>
+                                    {address.trangThai === 1 && (
+                                        <GreenBadge
+                                            icon={<StarIcon sx={{ fontSize: 14, color: "#16a34a", mr: 0.5 }} />}
+                                            label="Mặc định"
+                                            color="primary"
+                                            size="small"
+                                            sx={{ ml: 1 }}
+                                        />
+                                    )}
                                 </Box>
-                                <Typography fontWeight={600} fontSize={15.5} color="#333">
-                                     {`${address.diaChiCuThe}, ${address.xaPhuong}, ${address.quanHuyen}, ${address.tinhThanhPho}`}
-                                </Typography>
-                            </AnimatedCard>
-                        ))}
-                    </Box>
-                )}
-                <AddressFormSection
-                    open={formSectionOpen}
-                    onClose={handleFormClose}
-                    onSubmit={formSectionEdit ? handleEditAddress : handleAddAddress}
-                    initialData={formSectionData}
-                    isEdit={formSectionEdit}
-                />
-            </DialogContent>
+                                <Box display="flex" alignItems="center" gap={1.5}>
+                                    {address.trangThai !== 1 && (
+                                        <Tooltip title="Đặt làm mặc định">
+                                            <span>
+                                                <SmallActionIconButton
+                                                    edge="end"
+                                                    color="primary"
+                                                    aria-label="Đặt làm mặc định"
+                                                    onClick={() => openSetDefaultConfirm(address)}
+                                                    className="set-default"
+                                                >
+                                                    <StarBorderIcon sx={{ fontSize: 17 }} />
+                                                </SmallActionIconButton>
+                                            </span>
+                                        </Tooltip>
+                                    )}
+                                    <Tooltip title="Chỉnh sửa">
+                                        <SmallActionIconButton
+                                            edge="end"
+                                            aria-label="Chỉnh sửa"
+                                            className="edit"
+                                            onClick={() => handleEdit(address)}
+                                        >
+                                            <EditOutlinedIcon sx={{ fontSize: 17 }} />
+                                        </SmallActionIconButton>
+                                    </Tooltip>
+                                    <Tooltip title="Xóa địa chỉ">
+                                        <SmallActionIconButton
+                                            edge="end"
+                                            color="error"
+                                            aria-label="Xóa"
+                                            className="delete"
+                                            onClick={() => openDeleteConfirm(address)}
+                                        >
+                                            <DeleteIcon sx={{ fontSize: 17 }} />
+                                        </SmallActionIconButton>
+                                    </Tooltip>
+                                </Box>
+                            </Box>
+                            <Typography fontWeight={600} fontSize={15.5} color="#333">
+                               {`${address.diaChiCuThe}, ${address.xaPhuong}, ${address.quanHuyen}, ${address.tinhThanhPho}`}
+                            </Typography>
+                        </AnimatedCard>
+                    ))}
+                </Box>
+            )}
+
+            {/* Form Section */}
+            <AddressFormSection
+                open={formSectionOpen}
+                onClose={handleFormClose}
+                onSubmit={formSectionEdit ? handleEditAddress : handleAddAddress}
+                initialData={formSectionData}
+                isEdit={formSectionEdit}
+            />
+
+            {/* Confirm Delete Default Address Dialog */}
             {confirmDelete && confirmDelete.isDefault && addresses.length > 1 && (
                 <Dialog open onClose={() => setConfirmDelete(null)} maxWidth="sm" fullWidth>
                     <DialogTitle
@@ -824,7 +776,7 @@ function AddressDialogClient({ customerId, open, onClose, onAddressSelect }) {
                                                     Địa chỉ {index + 1}
                                                 </Typography>
                                                 <Typography variant="body2" sx={{ color: "#666", mt: 0.5, fontSize: "0.875rem" }}>
-                                                     {address.diaChiCuThe}, {address.xaPhuong}, {address.quanHuyen}, {address.tinhThanhPho}
+                                                    {address.tinhThanhPho}, {address.xaPhuong}
                                                 </Typography>
                                             </Box>
                                             {selectDefaultId === address.id && (
@@ -881,6 +833,8 @@ function AddressDialogClient({ customerId, open, onClose, onAddressSelect }) {
                     </DialogActions>
                 </Dialog>
             )}
+
+            {/* Confirm Delete Non-Default Address Dialog */}
             {confirmDelete && !confirmDelete.isDefault && (
                 <Dialog open onClose={() => setConfirmDelete(null)}>
                     <DialogTitle>Xác nhận xóa địa chỉ</DialogTitle>
@@ -914,6 +868,8 @@ function AddressDialogClient({ customerId, open, onClose, onAddressSelect }) {
                     </DialogActions>
                 </Dialog>
             )}
+
+            {/* General Confirm Dialog */}
             {confirmDialog.open && (
                 <Dialog open onClose={closeConfirmDialog} maxWidth="sm" fullWidth>
                     <DialogTitle
@@ -957,14 +913,10 @@ function AddressDialogClient({ customerId, open, onClose, onAddressSelect }) {
                     </DialogActions>
                 </Dialog>
             )}
-        </Dialog>
+        </Box>
     );
 }
 
-AddressDialogClient.propTypes = {
-  customerId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-  open: PropTypes.bool.isRequired,
-  onClose: PropTypes.func.isRequired,
-  onAddressSelect: PropTypes.func // Prop mới
+AddressManager.propTypes = {
+    customerId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired
 };
-export default AddressDialogClient;

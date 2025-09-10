@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect ,useCallback ,useMemo} from "react";
 import {
   Box,
   Grid,
@@ -67,7 +67,7 @@ const formatCurrency = (amount) => `${Number(amount).toLocaleString("vi-VN")}₫
 export default function OrderForm() {
   const location = useLocation();
   const navigate = useNavigate();
-const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const selectedItems = location.state?.selectedItems || [];
   useEffect(() => {
     if (!selectedItems.length) {
@@ -80,6 +80,7 @@ const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 
   // Lấy user từ API /me thay vì localStorage!
   const [user, setUser] = useState(null);
+   const cartId = useMemo(() => localStorage.getItem("cartId"), []);
   useEffect(() => {
     async function fetchUser() {
       try {
@@ -296,7 +297,7 @@ const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
     (sum, item) => sum + (item.price || item.salePrice) * (item.qty || 1),
     0
   );
-  
+
   useEffect(() => {
     const fetchVouchers = async () => {
       if (itemSubtotal <= 0) {
@@ -318,7 +319,7 @@ const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
         setVouchers(response.data?.data?.content || []);
       } catch (e) {
         setVouchers([]);
-    
+
       }
     };
     fetchVouchers();
@@ -381,7 +382,7 @@ const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
     }
   }, [form.district, form.ward]);
 
-useEffect(() => {
+  useEffect(() => {
     if (!selectedVoucher) {
       setDiscountAmount(0);
       return;
@@ -391,17 +392,17 @@ useEffect(() => {
 
     // THEO ĐÚNG QUY ƯỚC: loaiPhieu 1 = Giảm %, loaiPhieu 0 = Giảm tiền
     if (selectedVoucher.loaiPhieu === 1 && selectedVoucher.phamTramGiamGia > 0) {
-        // Trường hợp giảm theo %
-        calculatedDiscount = itemSubtotal * (selectedVoucher.phamTramGiamGia / 100);
-        
-        // Áp dụng mức giảm tối đa nếu có
-        if (selectedVoucher.giamToiDa > 0) {
-            calculatedDiscount = Math.min(calculatedDiscount, selectedVoucher.giamToiDa);
-        }
+      // Trường hợp giảm theo %
+      calculatedDiscount = itemSubtotal * (selectedVoucher.phamTramGiamGia / 100);
+
+      // Áp dụng mức giảm tối đa nếu có
+      if (selectedVoucher.giamToiDa > 0) {
+        calculatedDiscount = Math.min(calculatedDiscount, selectedVoucher.giamToiDa);
+      }
 
     } else if (selectedVoucher.loaiPhieu === 0 && selectedVoucher.soTienGiam > 0) {
-        // Trường hợp giảm thẳng tiền
-        calculatedDiscount = selectedVoucher.soTienGiam;
+      // Trường hợp giảm thẳng tiền
+      calculatedDiscount = selectedVoucher.soTienGiam;
     }
 
     // Đảm bảo số tiền giảm không vượt quá tổng tiền hàng
@@ -409,7 +410,7 @@ useEffect(() => {
 
     setDiscountAmount(finalDiscount);
 
-}, [selectedVoucher, itemSubtotal]);
+  }, [selectedVoucher, itemSubtotal]);
 
   // Form Handlers
   const handleChange = (e) => {
@@ -447,11 +448,52 @@ useEffect(() => {
     setSelectedVoucher(coupon);
     setCouponModalOpen(false);
   };
+ // Hàm này sẽ chịu trách nhiệm xóa các sản phẩm đã mua khỏi giỏ hàng
+    const clearPurchasedItemsFromCart = useCallback(async () => {
+        if (!cartItems || cartItems.length === 0) {
+            return; 
+        }
 
+        console.log("Bắt đầu xóa các sản phẩm đã mua khỏi giỏ hàng...");
+
+        const deletePromises = cartItems.map(item => {
+            const itemId = item.id;
+            let deleteUrl = '';
+            let config = {};
+
+            if (user?.id && user?.role) {
+                // API cho người dùng đã đăng nhập (lưu trong DB)
+                deleteUrl = `http://localhost:8080/api/v1/cart/db/items/${itemId}?idNguoiDung=${user.id}&loaiNguoiDung=${user.role}`;
+                config = { withCredentials: true };
+            } else if (cartId) {
+                // API cho khách (lưu trong Redis)
+                deleteUrl = `http://localhost:8080/api/v1/cart/${cartId}/items/${itemId}`;
+            }
+
+            if (deleteUrl) {
+                return axios.delete(deleteUrl, config).catch(err => {
+                    // Ghi lại lỗi nếu có nhưng không làm dừng vòng lặp
+                    console.warn(`Lỗi khi xóa sản phẩm ${itemId} khỏi giỏ hàng:`, err.response?.data || err.message);
+                });
+            }
+            return Promise.resolve();
+        });
+
+        try {
+            await Promise.allSettled(deletePromises);
+            console.log("Đã hoàn tất quá trình xóa giỏ hàng.");
+
+            // Gửi sự kiện để cập nhật lại icon giỏ hàng ở header
+            // Giả sử giỏ hàng trống sau khi mua, nếu không bạn cần tính lại số lượng
+            window.dispatchEvent(new CustomEvent("cart-updated", { detail: { count: 0 } }));
+        } catch (error) {
+            console.error("Lỗi không mong muốn khi xóa giỏ hàng:", error);
+        }
+    }, [cartItems, user, cartId]);
   // Main submit
   const handleConfirmOrder = async (event) => {
     event.preventDefault();
- setConfirmDialogOpen(false);
+    setConfirmDialogOpen(false);
     if (
       !form.name ||
       !form.phone ||
@@ -468,7 +510,36 @@ useEffect(() => {
       toast.warn("Giỏ hàng đang trống!");
       return;
     }
+try {
+        console.log("Kiểm tra tồn kho lần cuối trước khi đặt hàng...");
+        const inventoryResponse = await axios.get("http://localhost:8080/api/hoa-don/get-all-so-luong-ton-kho");
+        const inventoryData = inventoryResponse.data?.data || [];
+        const inventoryMap = new Map(
+            inventoryData.map(item => [item.idChitietSanPham, item.soLuongTonKho])
+        );
 
+        // Tìm sản phẩm đầu tiên trong giỏ hàng không đủ tồn kho
+        const outOfStockItem = cartItems.find(item => {
+            const currentStock = inventoryMap.get(item.id) || 0;
+            return item.qty > currentStock;
+        });
+        
+        // Nếu có sản phẩm không đủ, hiển thị lỗi và dừng lại
+        if (outOfStockItem) {
+            toast.error(
+              `Sản phẩm "${outOfStockItem.name}" (${outOfStockItem.size}/${outOfStockItem.tenMauSac}) không đủ số lượng. Vui lòng kiểm tra lại giỏ hàng.`
+            );
+            
+            // Tùy chọn: Tự động điều hướng về giỏ hàng để người dùng sửa
+            setTimeout(() => navigate("/card"), 3000); 
+            return;
+        }
+
+    } catch (err) {
+        toast.error("Không thể xác thực số lượng tồn kho. Vui lòng thử lại.");
+        console.error("Lỗi khi kiểm tra tồn kho lần cuối:", err);
+        return;
+    }
     const addressParts = [
       form.address, // Địa chỉ cụ thể (số nhà, tên đường)
       form.ward?.WardName, // Tên Phường/Xã
@@ -478,63 +549,63 @@ useEffect(() => {
 
     // 2. Lọc bỏ các phần rỗng và nối chúng lại bằng dấu phẩy
     const fullAddress = addressParts.filter((part) => part).join(", ");
-   const baseRequest = {
-        tenKhachHang: form.name,
-        sdt: form.phone,
-        // email sẽ được xử lý riêng
-        diaChi: fullAddress,
-        tenTinh: form.province?.ProvinceName || "",
-        tenHuyen: form.district?.DistrictName || "",
-        tenXa: form.ward?.WardName || "",
-        ghiChu: form.note,
-        loaiHoaDon: "online",
-        phiVanChuyen: shippingFee,
-        phieuGiamGia: selectedVoucher ? selectedVoucher.id : null,
-        danhSachSanPham: cartItems.map((item) => ({
-            id: item.id,
-            soLuong: item.qty || 1,
-            donGia: item.price || item.salePrice,
-        })),
+    const baseRequest = {
+      tenKhachHang: form.name,
+      sdt: form.phone,
+      // email sẽ được xử lý riêng
+      diaChi: fullAddress,
+      tenTinh: form.province?.ProvinceName || "",
+      tenHuyen: form.district?.DistrictName || "",
+      tenXa: form.ward?.WardName || "",
+      ghiChu: form.note,
+      loaiHoaDon: "online",
+      phiVanChuyen: shippingFee,
+      phieuGiamGia: selectedVoucher ? selectedVoucher.id : null,
+      danhSachSanPham: cartItems.map((item) => ({
+        id: item.id,
+        soLuong: item.qty || 1,
+        donGia: item.price || item.salePrice,
+      })),
     };
 
-     try {
-        let resHoaDon;
+    try {
+      let resHoaDon;
 
-        if (user && user.id) {
-            // --- TRƯỜNG HỢP ĐÃ ĐĂNG NHẬP ---
-            const loggedInRequest = { ...baseRequest };
-            let apiUrl = "http://localhost:8080/api/hoa-don/luu-hoa-don-online";
+      if (user && user.id) {
+        // --- TRƯỜNG HỢP ĐÃ ĐĂNG NHẬP ---
+        const loggedInRequest = { ...baseRequest };
+        let apiUrl = "http://localhost:8080/api/hoa-don/luu-hoa-don-online";
 
-            if (user.role === "KHACHHANG") {
-                loggedInRequest.idKhachHang = Number(user.id);
-            } else if (user.role === "NHANVIEN" || user.role === "ADMIN") {
-                loggedInRequest.idNhanVien = Number(user.id);
-            }
-
-            // Email của user đã đăng nhập được lấy ở backend, không cần gửi từ FE
-            resHoaDon = await axios.post(apiUrl, loggedInRequest, {
-                headers: { "Content-Type": "application/json" },
-                withCredentials: true,
-            });
-
-        } else {
-            // --- TRƯỜNG HỢP CHƯA ĐĂNG NHẬP (KHÁCH VÃNG LAI) ---
-            const guestRequest = { ...baseRequest };
-            const apiUrl = "http://localhost:8080/api/hoa-don/luu-hoa-don-online-chua-dang-nhap";
-
-            // axios sẽ tự động thêm email vào URL dưới dạng ?email=...
-            resHoaDon = await axios.post(
-                apiUrl, 
-                guestRequest, // Request Body
-                { 
-                    // Gửi email qua Query Param
-                    params: { email: form.email }, 
-                    
-                    headers: { "Content-Type": "application/json" },
-                    withCredentials: true, // Giữ lại nếu cần cho các logic khác
-                }
-            );
+        if (user.role === "KHACHHANG") {
+          loggedInRequest.idKhachHang = Number(user.id);
+        } else if (user.role === "NHANVIEN" || user.role === "ADMIN") {
+          loggedInRequest.idNhanVien = Number(user.id);
         }
+
+        // Email của user đã đăng nhập được lấy ở backend, không cần gửi từ FE
+        resHoaDon = await axios.post(apiUrl, loggedInRequest, {
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true,
+        });
+
+      } else {
+        // --- TRƯỜNG HỢP CHƯA ĐĂNG NHẬP (KHÁCH VÃNG LAI) ---
+        const guestRequest = { ...baseRequest };
+        const apiUrl = "http://localhost:8080/api/hoa-don/luu-hoa-don-online-chua-dang-nhap";
+
+        // axios sẽ tự động thêm email vào URL dưới dạng ?email=...
+        resHoaDon = await axios.post(
+          apiUrl,
+          guestRequest, // Request Body
+          {
+            // Gửi email qua Query Param
+            params: { email: form.email },
+
+            headers: { "Content-Type": "application/json" },
+            withCredentials: true, // Giữ lại nếu cần cho các logic khác
+          }
+        );
+      }
 
       if (!(resHoaDon.data && resHoaDon.data.code === 1000)) {
         toast.error(resHoaDon.data?.message || "Không tạo được hóa đơn!");
@@ -545,15 +616,14 @@ useEffect(() => {
         toast.error("Không lấy được id hóa đơn từ BE!");
         return;
       }
-
+     await clearPurchasedItemsFromCart(); 
       if (form.payment === "cod") {
         // 2. Lưu chi tiết thanh toán (COD)
         setSuccess(true);
         toast.success("Đặt hàng thành công!");
-        setTimeout(() => {
-          setSuccess(false);
-          navigate("/success");
-        }, 2000);
+       setTimeout(() => {
+        navigate("/thank-you");
+      }, 2000);
       } else if (form.payment === "vnpay") {
         // 2. Gửi sang VNPAY, KHÔNG lưu chi tiết thanh toán ở FE
         const payload = {
@@ -586,23 +656,23 @@ useEffect(() => {
       toast.error("Lỗi khi xử lý đơn hàng!");
     }
   };
-const handleSubmit = (event) => {
+  const handleSubmit = (event) => {
     event.preventDefault();
     // Kiểm tra sơ bộ trước khi mở dialog
     if (!form.name || !form.phone || !form.address || !form.province || !form.district || !form.ward) {
-        toast.warn("Vui lòng nhập đầy đủ thông tin giao hàng!");
-        return;
+      toast.warn("Vui lòng nhập đầy đủ thông tin giao hàng!");
+      return;
     }
     setConfirmDialogOpen(true); // Chỉ mở dialog
-};
+  };
   const handleCartQuantityChange = (type, idx) => {
     setCartItems((prev) =>
       prev.map((item, i) =>
         i === idx
           ? {
-              ...item,
-              qty: type === "increment" ? (item.qty || 1) + 1 : Math.max(1, (item.qty || 1) - 1),
-            }
+            ...item,
+            qty: type === "increment" ? (item.qty || 1) + 1 : Math.max(1, (item.qty || 1) - 1),
+          }
           : item
       )
     );
@@ -1057,7 +1127,9 @@ const handleSubmit = (event) => {
                       </Box>
                     </Stack>
                     <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 2, mb: 1 }}>
-                     
+                          <Typography sx={{ color: "#666", fontSize: 14 }}>
+                    Số lượng: <b style={{ color: "#222" }}>{item.qty || 1}</b>
+                  </Typography>
                     </Stack>
                     {idx < cartItems.length - 1 && (
                       <Divider sx={{ my: 1.1, borderStyle: "dashed" }} />
@@ -1101,7 +1173,7 @@ const handleSubmit = (event) => {
                   >
                     {form.coupon
                       ? vouchers.find((c) => c.maPhieuGiamGia === form.coupon)?.tenPhieu ||
-                        form.coupon
+                      form.coupon
                       : "Chọn mã"}
                   </Typography>
                   <ChevronRightIcon sx={{ color: "#bbb", fontSize: 22 }} />
@@ -1146,8 +1218,8 @@ const handleSubmit = (event) => {
                 <ModalCouponContent
                   onClose={() => setCouponModalOpen(false)}
                   handleQuickCouponSelect={handleQuickCouponSelect}
-                  itemSubtotal={itemSubtotal} 
-    user={user}
+                  itemSubtotal={itemSubtotal}
+                  user={user}
                 />
               </Modal>
             </Paper>
@@ -1197,7 +1269,7 @@ const handleSubmit = (event) => {
                   "&:hover": { bgcolor: "#1762ac" },
                 }}
                 startIcon={<ShoppingCartIcon />}
-               onClick={handleSubmit}
+                onClick={handleSubmit}
                 disabled={isCalculatingFee || (shippingFee === 0 && form.ward !== null)}
               >
                 {isCalculatingFee ? "Đang tính phí..." : "Đặt hàng"}
@@ -1219,76 +1291,76 @@ const handleSubmit = (event) => {
         onAddressSelect={addressSelect}
       />
       <Dialog
-    open={confirmDialogOpen}
-    onClose={() => setConfirmDialogOpen(false)}
-    PaperProps={{
-        sx: {
+        open={confirmDialogOpen}
+        onClose={() => setConfirmDialogOpen(false)}
+        PaperProps={{
+          sx: {
             borderRadius: "16px", // Bo góc dialog
             width: "100%",
             maxWidth: "400px",
-        },
-    }}
->
-    <DialogTitle sx={{ p: 2.5, pb: 0 }}>
-        <Stack direction="row" alignItems="center" spacing={1.5}>
+          },
+        }}
+      >
+        <DialogTitle sx={{ p: 2.5, pb: 0 }}>
+          <Stack direction="row" alignItems="center" spacing={1.5}>
             <HelpOutlineIcon sx={{ color: "primary.main", fontSize: "28px" }} />
             <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                Xác nhận đơn hàng
+              Xác nhận đơn hàng
             </Typography>
-        </Stack>
-    </DialogTitle>
-    <DialogContent sx={{ p: 2.5 }}>
-        <DialogContentText sx={{ fontSize: "1rem", color: "#424242" }}>
+          </Stack>
+        </DialogTitle>
+        <DialogContent sx={{ p: 2.5 }}>
+          <DialogContentText sx={{ fontSize: "1rem", color: "#424242" }}>
             Hệ thống sẽ tiến hành tạo đơn hàng của bạn. Bạn có chắc chắn muốn tiếp tục không?
-        </DialogContentText>
-    </DialogContent>
-    <DialogActions sx={{ p: 2.5, pt: 1 }}>
-        <Stack direction="row" spacing={1.5} sx={{ width: "100%" }}>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5, pt: 1 }}>
+          <Stack direction="row" spacing={1.5} sx={{ width: "100%" }}>
             <Button
-                onClick={() => setConfirmDialogOpen(false)}
-                variant="outlined"
-                color="secondary"
-                fullWidth
-               sx={{
-                    borderRadius: 2,
-                    fontWeight: 600,
-                    textTransform: 'none',
-                    fontSize: '1rem',
-                    // Đặt màu cụ thể để dễ đọc hơn
-                    color: "grey.800",
-                    borderColor: "grey.400",
-                    '&:hover': {
-                        borderColor: "grey.800",
-                        bgcolor: "grey.100"
-                    }
-                }}
+              onClick={() => setConfirmDialogOpen(false)}
+              variant="outlined"
+              color="secondary"
+              fullWidth
+              sx={{
+                borderRadius: 2,
+                fontWeight: 600,
+                textTransform: 'none',
+                fontSize: '1rem',
+                // Đặt màu cụ thể để dễ đọc hơn
+                color: "grey.800",
+                borderColor: "grey.400",
+                '&:hover': {
+                  borderColor: "grey.800",
+                  bgcolor: "grey.100"
+                }
+              }}
             >
-                Xem lại
+              Xem lại
             </Button>
             <Button
-                onClick={handleConfirmOrder}
-                variant="contained"
-              
-                fullWidth
-               sx={{
-                    borderRadius: 2,
-                    fontWeight: 600,
-                    textTransform: 'none',
-                    fontSize: '1rem',
-                   color: 'white !important',
-                    // Ghi đè màu nền để đồng bộ với icon
-                    bgcolor: '#1976d2', // Xanh đậm
-                    '&:hover': {
-                        bgcolor: '#1565c0' // Đậm hơn một chút khi hover
-                    },
-                    boxShadow: 'none'
-                }}
+              onClick={handleConfirmOrder}
+              variant="contained"
+
+              fullWidth
+              sx={{
+                borderRadius: 2,
+                fontWeight: 600,
+                textTransform: 'none',
+                fontSize: '1rem',
+                color: 'white !important',
+                // Ghi đè màu nền để đồng bộ với icon
+                bgcolor: '#1976d2', // Xanh đậm
+                '&:hover': {
+                  bgcolor: '#1565c0' // Đậm hơn một chút khi hover
+                },
+                boxShadow: 'none'
+              }}
             >
-                Xác nhận
+              Xác nhận
             </Button>
-        </Stack>
-    </DialogActions>
-</Dialog>
+          </Stack>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

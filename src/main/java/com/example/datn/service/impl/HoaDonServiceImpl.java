@@ -1422,51 +1422,9 @@ public class HoaDonServiceImpl implements HoaDonService {
         // 7. Cập nhật trạng thái hóa đơn dựa trên thanh toán và loại đơn
         Integer tongTienDaTraRaw = chiTietThanhToanRepository.sumSoTienThanhToanByIdHoaDon(hoaDon.getId());
         int tongTienDaTra = (tongTienDaTraRaw != null) ? tongTienDaTraRaw : 0;
-        boolean laDonGiaoHang = StringUtils.isNotEmpty(request.getDiaChi());
-        if (!laDonGiaoHang) { // Đơn tại quầy
-            if (tongTienDaTra >= hoaDon.getTongTien()) {
-                hoaDon.setTrangThai(TrangThai.HOAN_THANH);
-            } else {
-                // Với đơn tại quầy, nếu bấm lưu/thanh toán thì phải trả đủ tiền
-                // Bạn có thể giữ hoặc bỏ Exception này tùy nghiệp vụ
-                throw new AppException(ErrorCode.NOT_YET_PAID);
-            }
-        } else { // Đơn giao hàng
-            // Với đơn giao hàng, có thể chưa thanh toán hết (COD)
-            if (tongTienDaTra >= hoaDon.getTongTien()) {
-                hoaDon.setTrangThai(TrangThai.HOAN_THANH);
-            } else {
-                hoaDon.setTrangThai(TrangThai.DA_XAC_NHAN); // hoặc trạng thái phù hợp khác
-            }
-            hoaDon.setNgayGiaoDuKien(LocalDate.now().plusDays(3).atStartOfDay());
-        }
+
         // 8. Lưu hóa đơn vào DB
         HoaDon hoaDonDaLuu = hoaDonRepository.save(hoaDon);
-        // 9. Ghi nhận lịch sử hoạt động
-        String nguoiThucHienCapNhat = "Hệ thống"; // Hoặc lấy từ security context
-        String noiDungLichSu;
-        switch (hoaDonDaLuu.getTrangThai()) {
-            case HOAN_THANH:
-                noiDungLichSu = "Hóa đơn đã được thanh toán và hoàn thành.";
-                break;
-            case DA_XAC_NHAN:
-                noiDungLichSu = "Đơn hàng đã được xác nhận và đang chờ giao.";
-                break;
-            case HUY:
-                noiDungLichSu = "Hóa đơn đã bị hủy.";
-                break;
-            default:
-                noiDungLichSu = "Hóa đơn được cập nhật trạng thái thành: " + hoaDonDaLuu.getTrangThai().name();
-                break;
-        }
-        lichSuHoaDonService.ghiNhanLichSuHoaDon(
-                hoaDonDaLuu,
-                noiDungLichSu,
-                nguoiThucHienCapNhat,
-                request.getGhiChu(),
-                hoaDonDaLuu.getTrangThai()
-        );
-        // 10. Trả về DTO cho client
         return HoaDonUpdateMapper.INSTANCE.toResponseDTO(hoaDonDaLuu);
     }
 

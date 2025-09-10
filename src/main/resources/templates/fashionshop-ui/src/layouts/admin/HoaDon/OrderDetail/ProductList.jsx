@@ -7,7 +7,7 @@ import ProductSlideshow from "../../BanHangTaiQuay/component/ProductSlideshow.js
 import ProductSelectionModalOrderDetail from "./ProductSelectionModalOrderDetail";
 import axios from "axios";
 import { toast } from "react-toastify";
-
+// import { useAuth } from "../../BanHangTaiQuay/AuthProvider.jsx";
 const BASE_SERVER_URL = "http://localhost:8080/";
 
 const ProductList = ({ orderId, orderStatus, onProductChange }) => {
@@ -17,11 +17,52 @@ const ProductList = ({ orderId, orderStatus, onProductChange }) => {
   const [loading, setLoading] = useState(false);
   const [quantityInput, setQuantityInput] = useState({});
   const [stockData, setStockData] = useState({});
+  const [isPaid, setIsPaid] = useState(false);
+// const { user } = useAuth();
+  const logChange = async (orderId, message) => {
+    try {
+      
+      const nguoiThucHien = "Admin";
 
+      const logPayload = {
+        idHoaDon: orderId,
+        noiDungThayDoi: message,
+        nguoiThucHien: nguoiThucHien,
+        ghiChu: "Cập nhật số lượng sản phẩm",
+      };
+
+      await axios.post(`${BASE_SERVER_URL}api/lich-su-hoa-don/log`, logPayload, {
+        withCredentials: true,
+      });
+      console.log("Ghi log thành công:", message);
+    } catch (error) {
+      console.error("Lỗi khi ghi log:", error);
+      // Không cần thông báo lỗi này cho người dùng, chỉ cần log ra console
+    }
+  };
+const checkPaymentStatus = useCallback(async (id) => {
+    if (!id) {
+      setIsPaid(false); // Reset trạng thái nếu không có orderId
+      return;
+    }
+    try {
+      const response = await axios.get(
+        `${BASE_SERVER_URL}chiTietThanhToan/lich-su-thanh-toan/${id}`,
+        { withCredentials: true }
+      );
+      const paymentHistory = response.data?.data || [];
+      setIsPaid(paymentHistory.length > 0); // Set true nếu có lịch sử, ngược lại false
+    } catch (error) {
+      console.error("Lỗi khi kiểm tra lịch sử thanh toán:", error);
+      // Mặc định là chưa thanh toán nếu có lỗi
+      setIsPaid(false);
+    }
+  }, []);
   const fetchAllStock = useCallback(async () => {
     try {
-      const response = await axios.get(`${BASE_SERVER_URL}api/hoa-don/get-all-so-luong-ton-kho`,
-        { withCredentials: true });
+      const response = await axios.get(`${BASE_SERVER_URL}api/hoa-don/get-all-so-luong-ton-kho`, {
+        withCredentials: true,
+      });
       const stockList = response.data?.data || [];
       // Chuyển đổi mảng thành một object để tra cứu nhanh hơn (dạng {id: soLuong})
       const stockMap = stockList.reduce((map, item) => {
@@ -53,7 +94,6 @@ const ProductList = ({ orderId, orderStatus, onProductChange }) => {
       const fetchedProducts = fetchedOrder.danhSachChiTiet || [];
       setOrderData(fetchedOrder);
       setProductsInOrder(fetchedProducts);
-
 
       const initialQuantities = {};
       fetchedProducts.forEach((product) => {
@@ -144,16 +184,28 @@ const ProductList = ({ orderId, orderStatus, onProductChange }) => {
   useEffect(() => {
     fetchListProductOrder();
     fetchAllStock();
-  }, [fetchListProductOrder, fetchAllStock]);
+     if (orderId) {
+      checkPaymentStatus(orderId);
+    }
+  }, [fetchListProductOrder, fetchAllStock,checkPaymentStatus, orderId]);
   // Hàm xử lý khi người dùng thay đổi số lượng
   const handleUpdateQuantity = async (productId, newQuantity) => {
     const parsedQuantity = parseInt(newQuantity, 10);
     const productToUpdate = productsInOrder.find((p) => p.idSanPhamChiTiet === productId);
+    let logMessage = "";
+    const productName = `${productToUpdate.tenSanPham} (${productToUpdate.maSanPhamChiTiet})   ${productToUpdate.tenMauSac}-Size:${productToUpdate.tenKichThuoc}` ;
+
+    
     if (!productToUpdate) return;
     const currentQuantity = productToUpdate.soLuong;
-
-    if (isNaN(parsedQuantity) || parsedQuantity < 0 || parsedQuantity === currentQuantity) return;
-
+    const oldQuantity = productToUpdate.soLuong;
+    // Chỉ thực hiện khi số lượng thực sự thay đổi và hợp lệ
+    if (isNaN(parsedQuantity) || parsedQuantity < 0 || parsedQuantity === oldQuantity) {
+      // Nếu số lượng không hợp lệ hoặc không đổi thì không làm gì cả
+      // và khôi phục lại giá trị input về số lượng cũ
+      setQuantityInput((prev) => ({ ...prev, [productId]: oldQuantity }));
+      return;
+    }
     const soLuongTonKho = stockData[productId] || 0;
     const effectiveStock = soLuongTonKho + currentQuantity;
     if (parsedQuantity > effectiveStock) {
@@ -164,21 +216,35 @@ const ProductList = ({ orderId, orderStatus, onProductChange }) => {
       toast.warn("Không thể xóa sản phẩm cuối cùng.");
       return;
     }
-    console.log(parsedQuantity, productToUpdate)
+    
+if (parsedQuantity > oldQuantity) {
+      logMessage = `Tăng số lượng sản phẩm "${productName}" từ ${oldQuantity} lên ${parsedQuantity}.`;
+    } else if (parsedQuantity < oldQuantity && parsedQuantity > 0) {
+      logMessage = `Giảm số lượng sản phẩm "${productName}" từ ${oldQuantity} xuống ${parsedQuantity}.`;
+    } else if (parsedQuantity === 0) {
+      logMessage = `Xóa sản phẩm "${productName}" (số lượng từ ${oldQuantity} về 0).`;
+    }
+    // Gọi hàm ghi log NẾU có sự thay đổi
+    if (logMessage) {
+      await logChange(orderId, logMessage);
+    }
+    console.log(parsedQuantity, productToUpdate);
     setLoading(true);
     try {
       // BƯỚC 1: CẬP NHẬT TỒN KHO
       const chenhLech = parsedQuantity - currentQuantity;
       if (chenhLech > 0) {
         await axios.put(
-          `${BASE_SERVER_URL}api/hoa-don/giam-so-luong-san-pham/${productId}?soLuong=${chenhLech}`, {},
+          `${BASE_SERVER_URL}api/hoa-don/giam-so-luong-san-pham/${productId}?soLuong=${chenhLech}`,
+          {},
           { withCredentials: true }
         );
       } else {
         await axios.put(
           `${BASE_SERVER_URL}api/hoa-don/tang-so-luong-san-pham/${productId}?soLuong=${Math.abs(
             chenhLech
-          )}`, {},
+          )}`,
+          {},
           { withCredentials: true }
         );
       }
@@ -248,6 +314,7 @@ const ProductList = ({ orderId, orderStatus, onProductChange }) => {
 
   // Hàm xử lý khi thêm sản phẩm từ modal
   const handleAddProduct = async (productToAdd) => {
+    console.log("Sản phẩm được chọn để thêm:", productToAdd);
     setLoading(true);
     try {
       const { idChiTietSanPham, quantity, soLuongTonKho } = productToAdd;
@@ -258,24 +325,38 @@ const ProductList = ({ orderId, orderStatus, onProductChange }) => {
 
       // BƯỚC 1: CẬP NHẬT TỒN KHO
       await axios.put(
-        `${BASE_SERVER_URL}api/hoa-don/giam-so-luong-san-pham/${idChiTietSanPham}?soLuong=${quantity}`, {},
+        `${BASE_SERVER_URL}api/hoa-don/giam-so-luong-san-pham/${idChiTietSanPham}?soLuong=${quantity}`,
+        {},
         { withCredentials: true }
       );
 
       // BƯỚC 2: CẬP NHẬT HÓA ĐƠN
       const existingProduct = productsInOrder.find((p) => p.idSanPhamChiTiet === idChiTietSanPham);
+     const productName = `${productToAdd.tenSanPham} (${productToAdd.maSanPham}) - ${productToAdd.mauSac} - Size: ${productToAdd.kichThuoc}`;
       let updatedProducts;
+       let logMessage = ""; 
+if (existingProduct) {
+        // Trường hợp sản phẩm đã có -> Tăng số lượng
+        const oldQuantity = existingProduct.soLuong;
+        const newQuantity = oldQuantity + quantity;
+        logMessage = `Tăng số lượng sản phẩm "${productName}" từ ${oldQuantity} lên ${newQuantity}.`;
+      } else {
+        // Trường hợp sản phẩm chưa có -> Thêm mới
+        logMessage = `Thêm sản phẩm mới "${productName}" vào đơn hàng với số lượng ${quantity}.`;
+      }
 
+      // Gọi hàm ghi log
+      await logChange(orderId, logMessage);
       if (existingProduct) {
         const newQuantity = existingProduct.soLuong + quantity;
         updatedProducts = productsInOrder.map((p) =>
           p.idSanPhamChiTiet === idChiTietSanPham ? { ...p, soLuong: newQuantity } : p
         );
-        console.log(newQuantity, idChiTietSanPham)
+        console.log(newQuantity, idChiTietSanPham);
       } else {
         const price =
           productToAdd.giaTienSauKhiGiam !== null &&
-            productToAdd.giaTienSauKhiGiam < productToAdd.gia
+          productToAdd.giaTienSauKhiGiam < productToAdd.gia
             ? productToAdd.giaTienSauKhiGiam
             : productToAdd.gia;
         const newProduct = {
@@ -286,12 +367,12 @@ const ProductList = ({ orderId, orderStatus, onProductChange }) => {
           gia: price,
         };
         updatedProducts = [...productsInOrder, newProduct];
-        console.log(quantity, idChiTietSanPham)
+        console.log(quantity, idChiTietSanPham);
       }
       // handleUpdateQuantity(,newQuantity )
       await updateOrderDetails(updatedProducts); // Gọi hàm helper
       toast.success("Thêm sản phẩm thành công!");
-      fetchListProductOrder()
+      fetchListProductOrder();
     } catch (error) {
       console.error("Lỗi khi thêm sản phẩm:", error);
       toast.error(error.response?.data?.message || "Thêm sản phẩm thất bại.");
@@ -313,7 +394,7 @@ const ProductList = ({ orderId, orderStatus, onProductChange }) => {
 
   return (
     <div className={styles["product-list"]}>
-      {(orderStatus === "CHO_XAC_NHAN" || orderStatus === "DA_XAC_NHAN") && (
+      {(orderStatus === "CHO_XAC_NHAN" &&!isPaid) && (
         <div className={styles["product-list-header"]}>
           <button
             className={`${styles.btn} ${styles.btnConfirm}`}
@@ -360,7 +441,7 @@ const ProductList = ({ orderId, orderStatus, onProductChange }) => {
               <p className={styles["product-info"]}>x{product.soLuong}</p>
             </div>
 
-            {(orderStatus === "CHO_XAC_NHAN" || orderStatus === "DA_XAC_NHAN") && (
+            {(orderStatus === "CHO_XAC_NHAN" ) && (
               <div className={styles["product-quantity-control"]}>
                 <button
                   onClick={() =>
@@ -395,9 +476,15 @@ const ProductList = ({ orderId, orderStatus, onProductChange }) => {
                 </button>
               </div>
             )}
-            <div className={styles["product-total-price"]}>
-              {((product.gia || 0) * (product.soLuong || 0)).toLocaleString("vi-VN")} VND
-            </div>
+           <div className={styles["product-total-price"]}>
+  {/* DÒNG THÊM VÀO */}
+  <p className={styles["total-price-label"]}>Thành tiền</p>
+
+  {/* Dòng giá tiền gốc của bạn */}
+  <span>
+    {((product.gia || 0) * (product.soLuong || 0)).toLocaleString("vi-VN")} VND
+  </span>
+</div>
           </div>
         ))
       )}

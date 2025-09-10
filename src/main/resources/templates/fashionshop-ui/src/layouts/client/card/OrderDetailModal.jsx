@@ -15,7 +15,10 @@ import {
   Typography,
   CircularProgress,
   Grid,
+  TextField,
   Paper,
+  MenuItem,
+  Select,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
@@ -23,6 +26,7 @@ import CloseIcon from "@mui/icons-material/Close";
 // TẠO MỘT FILE OrderDetailModal.module.css VÀ COPY CSS TỪ FILE CŨ SANG
 import styles from "./OrderDetailModal.module.css";
 import { toast } from "react-toastify"; // Đảm bảo bạn đã cài đặt react-toastify
+import styles2 from "./ProductList.module.css";
 
 // Import các ảnh trạng thái (hãy chắc chắn đường dẫn là chính xác)
 import tao_hoa_don_img from "../../../assets/images/tao_hoa_don.png";
@@ -33,22 +37,42 @@ import check from "../../../assets/images/check.png";
 import dang_giao_hang from "../../../assets/images/dang_giao_hang.png";
 import hoan_thanh from "../../../assets/images/hoan_thanh.png";
 import Huy from "../../../assets/images/Huy.png";
- import ProductSlideshow from "../../admin/BanHangTaiQuay/component/ProductSlideshow";
+import ProductSlideshow from "../../admin/BanHangTaiQuay/component/ProductSlideshow";
+import OrderHistoryModal from "../../admin/HoaDon/OrderHistoryModal/OrderHistoryModal";
+import { Add, Remove } from "@mui/icons-material";
+import EditRecipientModal from "./EditRecipientModal";
 
+import ProductSelectionModalOrderDetail from "layouts/admin/HoaDon/OrderDetail/ProductSelectionModalOrderDetail";
+
+const BASE_SERVER_URL = "http://localhost:8080/";
 
 export default function OrderDetailModal({ open, onClose, orderCode }) {
   const [orderData, setOrderData] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // === CÁC HÀM HELPER (Lấy từ OrderLookup) ===
+  const [selectedPGG, setSelectedPGG] = useState(""); // hoặc null
+  const [listPGGKH, setListPGGKH] = useState([]);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading2, setLoading2] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const handleOpenHistoryModal = () => setIsHistoryModalOpen(true);
+  const handleCloseHistoryModal = () => setIsHistoryModalOpen(false);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [productsInOrder, setProductsInOrder] = useState([]);
+  const [isEditRecipientOpen, setIsEditRecipientOpen] = useState(false);
+  // === CÁC HÀM HELPER (Lấy từ OrderLookup) ===\
+
   const formatDateTime = useCallback((isoString) => {
     if (!isoString) return "Chưa cập nhật";
     const date = new Date(isoString);
-    return `${String(date.getHours()).padStart(2, "0")}:${String(
-      date.getMinutes()
-    ).padStart(2, "0")} - ${String(date.getDate()).padStart(2, "0")}/${String(
-      date.getMonth() + 1
-    ).padStart(2, "0")}/${date.getFullYear()}`;
+    return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(
+      2,
+      "0"
+    )} - ${String(date.getDate()).padStart(2, "0")}/${String(date.getMonth() + 1).padStart(
+      2,
+      "0"
+    )}/${date.getFullYear()}`;
   }, []);
 
   const formatCurrency = useCallback((amount) => {
@@ -126,7 +150,96 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
         return styles.badgeSecondary;
     }
   };
+  const fetchAllStock = useCallback(async () => {
+    try {
+      const response = await axios.get(`${BASE_SERVER_URL}api/hoa-don/get-all-so-luong-ton-kho`, {
+        withCredentials: true,
+      });
+      const stockList = response.data?.data || [];
+      // Chuyển đổi mảng thành một object để tra cứu nhanh hơn (dạng {id: soLuong})
+      const stockMap = stockList.reduce((map, item) => {
+        map[item.idChitietSanPham] = item.soLuongTonKho;
+        return map;
+      }, {});
+      setStockData(stockMap);
+    } catch (error) {
+      console.error("Lỗi khi tải danh sách tồn kho:", error);
+      toast.error("Không thể tải dữ liệu tồn kho.");
+    }
+  }, []);
 
+  const updateOrderDetails = async (updatedProducts) => {
+    const subTotal = updatedProducts.reduce(
+      (total, product) => total + product.gia * product.soLuong,
+      0
+    );
+    const phiVanChuyen = orderData?.phiVanChuyen || 0;
+    const tongTienHoaDon = subTotal;
+
+    let bestCouponId = null;
+    if (tongTienHoaDon > 0) {
+      try {
+        const couponResponse = await axios.post(`${BASE_SERVER_URL}PhieuGiamGiaKhachHang/query`, {
+          khachHang: orderData?.khachHang?.id || null,
+          tongTienHoaDon: tongTienHoaDon,
+        });
+        if (couponResponse.data?.data?.content?.length > 0) {
+          bestCouponId = couponResponse.data.data.content[0].id;
+        }
+      } catch (couponError) {
+        console.error("Lỗi khi tìm phiếu giảm giá:", couponError);
+      }
+    }
+
+    const payload = {
+      idHoaDon: orderData.id,
+      phieuGiamGia: bestCouponId ? String(bestCouponId) : null,
+      danhSachSanPham: updatedProducts.map((p) => ({
+        id: p.idSanPhamChiTiet,
+        soLuong: p.soLuong,
+        donGia: p.gia,
+      })),
+      phiVanChuyen: orderData.phiVanChuyen,
+      ghiChu: orderData?.ghiChu,
+      tenKhachHang: orderData?.tenKhachHang,
+      sdt: orderData?.sdt,
+      diaChi: orderData?.diaChi,
+      khachHang: orderData?.idKhachHang ? String(orderData.idKhachHang) : null,
+      nhanVien: orderData?.idNhanVien ? String(orderData.idNhanVien) : null,
+    };
+
+    await axios.put(`${BASE_SERVER_URL}api/hoa-don/update-hoa-don-da-luu`, payload, {
+      withCredentials: true,
+    });
+  };
+
+  const getpggd = (pggd) => {
+    if (pggd.phamTramGiamGia) {
+      return pggd.maPhieuGiamGia + " - " + pggd.phamTramGiamGia + " %";
+    } else {
+      return pggd.maPhieuGiamGia + " - " + pggd.soTienGiam + " VNĐ";
+    }
+  };
+  const recordHistoryLog = useCallback(
+    async (actionDetail) => {
+      if (!orderData?.id) return;
+      try {
+        const payload = {
+          idHoaDon: orderData.id,
+          noiDungThayDoi: actionDetail,
+          nguoiThucHien: `Khách hàng: ${currentUser?.tenKh} `|| "Khách hàng",
+        };
+        // THAY ĐÚNG ENDPOINT API LƯU LOG CỦA BẠN
+        await axios.post(`${BASE_SERVER_URL}api/lich-su-hoa-don/log`, payload, {
+          withCredentials: true,
+        });
+      } catch (error) {
+        console.error("Lỗi khi ghi log lịch sử:", error);
+        toast.error("Không thể ghi lại lịch sử thay đổi.");
+      }
+    },
+    [orderData]
+  );
   // === LOGIC GỌI API ===
   useEffect(() => {
     if (open && orderCode) {
@@ -135,8 +248,8 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
         setOrderData(null); // Xóa dữ liệu cũ
         try {
           const response = await axios.get(
-            `http://localhost:8080/api/hoa-don/tra-cuu-hoa-don/${orderCode}`
-            ,{ withCredentials: true }
+            `http://localhost:8080/api/hoa-don/tra-cuu-hoa-don/${orderCode}`,
+            { withCredentials: true }
           );
           if (response.data) {
             if (response.data.lichSuHoaDon) {
@@ -145,6 +258,10 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
               );
             }
             setOrderData(response.data);
+            setSelectedPGG(response.data.phieuGiamGia.maPhieu);
+            const res = await loadPggKh(response.data.tongTienBanDau);
+            console.log(res.data.content);
+            setListPGGKH(res.data.content);
           } else {
             throw new Error("Không tìm thấy đơn hàng.");
           }
@@ -152,6 +269,7 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
           const errorMessage =
             error.response?.data?.message || "Không tìm thấy đơn hàng hoặc có lỗi xảy ra.";
           toast.error(errorMessage);
+          console.log(error);
           onClose(); // Đóng modal nếu có lỗi
         } finally {
           setLoading(false);
@@ -161,6 +279,145 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
     }
   }, [open, orderCode, onClose]);
 
+  const handleChangePGG = (event) => {
+    const selectedId = event.target.value;
+    setSelectedPGG(selectedId);
+
+    const selectedVoucher = listPGGKH.find((pgg) => pgg.id === selectedId);
+    if (selectedVoucher) {
+      setTienGiam(selectedVoucher.giaTri); // hoặc cập nhật orderData.giamGia tùy theo logic
+    }
+  };
+
+  const handleAddProduct = async (productToAdd) => {
+    setLoading(true);
+    try {
+      const { idChiTietSanPham, quantity, soLuongTonKho } = productToAdd;
+      if (quantity > soLuongTonKho) {
+        toast.warn(`Số lượng tồn kho chỉ còn ${soLuongTonKho}.`);
+        return;
+      }
+
+      // BƯỚC 1: CẬP NHẬT TỒN KHO
+      await axios.put(
+        `${BASE_SERVER_URL}api/hoa-don/giam-so-luong-san-pham/${idChiTietSanPham}?soLuong=${quantity}`,
+        {},
+        { withCredentials: true }
+      );
+
+      // BƯỚC 2: CẬP NHẬT HÓA ĐƠN
+      const existingProduct = productsInOrder.find((p) => p.idSanPhamChiTiet === idChiTietSanPham);
+      let updatedProducts;
+
+      if (existingProduct) {
+        const newQuantity = existingProduct.soLuong + quantity;
+        updatedProducts = productsInOrder.map((p) =>
+          p.idSanPhamChiTiet === idChiTietSanPham ? { ...p, soLuong: newQuantity } : p
+        );
+        console.log(newQuantity, idChiTietSanPham);
+      } else {
+        const price =
+          productToAdd.giaTienSauKhiGiam !== null &&
+          productToAdd.giaTienSauKhiGiam < productToAdd.gia
+            ? productToAdd.giaTienSauKhiGiam
+            : productToAdd.gia;
+        const newProduct = {
+          ...productToAdd,
+          id: null,
+          idSanPhamChiTiet: idChiTietSanPham,
+          soLuong: quantity,
+          gia: price,
+        };
+        updatedProducts = [...productsInOrder, newProduct];
+        console.log(quantity, idChiTietSanPham);
+      }
+      // handleUpdateQuantity(,newQuantity )
+      await updateOrderDetails(updatedProducts); // Gọi hàm helper
+      toast.success("Thêm sản phẩm thành công!");
+      fetchListProductOrder();
+    } catch (error) {
+      console.error("Lỗi khi thêm sản phẩm:", error);
+      toast.error(error.response?.data?.message || "Thêm sản phẩm thất bại.");
+    } finally {
+      await fetchListProductOrder();
+      await fetchAllStock();
+    }
+  };
+
+  const fetchListProductOrder = useCallback(async () => {
+    if (!orderData) {
+      console.log("DEBUG: fetchListProductOrder dừng vì không có orderId.");
+      setProductsInOrder([]);
+      setOrderData(null);
+      return;
+    }
+    setLoading(true);
+    console.log(`DEBUG: Bắt đầu fetchListProductOrder cho orderId: ${orderData.id}`);
+    try {
+      // API này cần trả về đầy đủ thông tin hóa đơn, bao gồm cả list sản phẩm
+      const response = await axios.get(`${BASE_SERVER_URL}api/hoa-don/${orderData.id}`, {
+        withCredentials: true,
+      });
+      const fetchedOrder = response.data || {};
+      const fetchedProducts = fetchedOrder.danhSachChiTiet || [];
+      setOrderData(fetchedOrder);
+      setProductsInOrder(fetchedProducts);
+
+      const initialQuantities = {};
+      fetchedProducts.forEach((product) => {
+        initialQuantities[product.idSanPhamChiTiet] = product.soLuong;
+      });
+      setQuantityInput(initialQuantities);
+    } catch (error) {
+      console.error("Không thể fetch dữ liệu:", error);
+      toast.error("Không thể tải dữ liệu hóa đơn.");
+    } finally {
+      setLoading(false);
+    }
+  }, [orderData]);
+
+  const loadPggKh = async (tongtien) => {
+    const loadKhachHang = await fetch(`http://localhost:8080/api/auth/me`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include", // <-- Thêm dòng này!
+    });
+    const result = await loadKhachHang.json();
+    setCurrentUser(result);
+    const data = {
+      khachHang: result.id,
+      tongTienHoaDon: tongtien,
+    };
+    const pggkh = await fetch(`http://localhost:8080/PhieuGiamGiaKhachHang/query`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+      credentials: "include", // <-- Thêm dòng này!
+    });
+    const pggkhres = await pggkh.json();
+    return pggkhres;
+  };
+
+
+    useEffect(() => {
+        const fetchCurrentUser = async () => {
+            try {
+                const response = await axios.get(`${BASE_SERVER_URL}api/auth/me`, { withCredentials: true });
+                setCurrentUser(response.data);
+            } catch (error) {
+                console.error("Lỗi khi fetch /api/auth/me:", error);
+                // Không cần toast ở đây để tránh làm phiền người dùng
+            }
+        };
+
+        if (open) {
+            fetchCurrentUser();
+        }
+    }, [open]);
   // === CÁC HÀM RENDER (Chuyển đổi từ Bootstrap sang MUI Grid và Paper) ===
   const renderTimeline = () => {
     const history = orderData?.lichSuHoaDon || [];
@@ -169,23 +426,23 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
         <Typography sx={{ textAlign: "center", p: 3 }}>Chưa có lịch sử trạng thái.</Typography>
       );
 
-     const uniqueStatusHistory = [];
+    const uniqueStatusHistory = [];
     const seenStatuses = new Set();
 
     for (const item of history) {
-        const statusDetails = getStatusDetails(item.trangThaiHoaDon);
-        const statusText = statusDetails.text; // Lấy ra text chuẩn hóa (ví dụ: "Chờ xác nhận")
+      const statusDetails = getStatusDetails(item.trangThaiHoaDon);
+      const statusText = statusDetails.text; // Lấy ra text chuẩn hóa (ví dụ: "Chờ xác nhận")
 
-        if (!seenStatuses.has(statusText)) {
-            uniqueStatusHistory.push(item);
-            seenStatuses.add(statusText);
-        }
+      if (!seenStatuses.has(statusText)) {
+        uniqueStatusHistory.push(item);
+        seenStatuses.add(statusText);
+      }
     }
-    
+
     // Sử dụng mảng đã được lọc để render
     const transformedData = uniqueStatusHistory.map((item) => ({
-        ...getStatusDetails(item.trangThaiHoaDon),
-        formattedDate: formatDateTime(item.thoiGian),
+      ...getStatusDetails(item.trangThaiHoaDon),
+      formattedDate: formatDateTime(item.thoiGian),
     }));
     const totalItems = transformedData.length;
     const activeItems = transformedData.length;
@@ -222,11 +479,107 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
     );
   };
 
+  const [recipient, setRecipient] = useState({
+    tenKhachHang: "",
+    sdt: "",
+    diaChi: "",
+    ghiChu: "",
+  });
+
+  // Khi orderData có giá trị, cập nhật recipient
+  useEffect(() => {
+    if (orderData) {
+      setRecipient({
+        tenKhachHang: orderData.tenKhachHang || "",
+        sdt: orderData.sdt || "",
+        diaChi: orderData.diaChi || "",
+        phiVanChuyen: orderData.phiVanChuyen || 0,
+        ghiChu: orderData.ghiChu || "",
+      });
+    }
+  }, [orderData]);
+
+  const handleOpen = () => setOpenEdit(true);
+  const handleClose = () => setOpenEdit(false);
+  // Sửa lại tên hàm cho đúng với state
+  const handleOpenEditRecipient = () => setIsEditRecipientOpen(true);
+  const handleCloseEditRecipient = () => setIsEditRecipientOpen(false);
+
+  // Hàm này sẽ được truyền vào prop `onSave` của modal con
+  const handleSaveRecipient = async (dataFromModal) => {
+    if (!orderData) return;
+    const { recipient, newShippingFee, logMessage } = dataFromModal;
+    // Payload này chỉ chứa những trường cần cập nhật
+    const payload = {
+      tenKhachHang: recipient.tenKhachHang, // Dùng 'recipient'
+      sdt: recipient.sdt, // Dùng 'recipient'
+      diaChi: recipient.diaChi,
+      ghiChu: recipient.ghiChu, // Dùng 'recipient'
+      phiVanChuyen: newShippingFee, // Modal con đã trả về địa chỉ đầy đủ
+    };
+
+    try {
+      // API endpoint để cập nhật thông tin người nhận
+      const backendApiUrl = `${BASE_SERVER_URL}api/hoa-don/cap-nhat-thong-tin/${orderData.id}`;
+      await axios.put(backendApiUrl, payload, { withCredentials: true });
+
+      toast.success("Cập nhật thông tin người nhận thành công!");
+      await recordHistoryLog(logMessage);
+      handleCloseEditRecipient(); // Đóng modal
+      fetchOrderDetails(orderCode); // Tải lại dữ liệu để hiển thị thông tin mới
+    } catch (error) {
+      console.error("Lỗi khi cập nhật thông tin người nhận:", error);
+      toast.error(`Lỗi: ${error.response?.data?.message || "Không thể cập nhật thông tin."}`);
+    }
+  };
+  const fetchOrderDetails = useCallback(
+    async (code) => {
+      if (!code) return;
+      setLoading(true);
+      try {
+        const response = await axios.get(`${BASE_SERVER_URL}api/hoa-don/tra-cuu-hoa-don/${code}`, {
+          withCredentials: true,
+        });
+        if (response.data) {
+          if (response.data.lichSuHoaDon) {
+            response.data.lichSuHoaDon.sort((a, b) => new Date(a.thoiGian) - new Date(b.thoiGian));
+          }
+          setOrderData(response.data);
+          // ... (các logic set state khác)
+        } else {
+          throw new Error("Không tìm thấy đơn hàng.");
+        }
+      } catch (error) {
+        const errorMessage = error.response?.data?.message || "Lỗi khi tải đơn hàng.";
+        toast.error(errorMessage);
+        onClose();
+      } finally {
+        setLoading(false);
+      }
+    },
+    [onClose]
+  );
+  const handleSave = (updated) => {
+    setRecipient(updated);
+    console.log(updated, orderData.id);
+    // gọi API cập nhật nếu cần
+  };
+
   const renderOrderInfo = () => (
     <Paper elevation={2} sx={{ p: 2.5, mb: 3 }}>
-      <Typography variant="h6" fontWeight="bold" sx={{ color: "#49a3f1", mb: 2 }}>
-        Thông tin hóa đơn
-      </Typography>
+      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+        <Typography variant="h6" fontWeight="bold" sx={{ color: "#49a3f1" }}>
+          Thông tin hóa đơn
+        </Typography>
+        <Button
+          variant="text"
+          sx={{ color: "#49a3f1" }}
+          size="small"
+          onClick={handleOpenHistoryModal}
+        >
+          Xem lịch sử
+        </Button>
+      </Box>
       <Grid container spacing={2}>
         <Grid item xs={12} sm={6}>
           <Typography>
@@ -248,9 +601,34 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
         </Grid>
       </Grid>
       <hr style={{ margin: "16px 0" }} />
-      <Typography variant="h6" fontWeight="bold" sx={{ color: "#49a3f1", mb: 2 }}>
-        Thông tin người nhận
-      </Typography>
+      <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+        <Typography variant="h6" fontWeight="bold" sx={{ color: "#49a3f1" }}>
+          Thông tin người nhận
+        </Typography>
+        {orderData && getStatusDetails(orderData.trangThai).text === "Chờ xác nhận" && (
+          // SỬA LẠI onClick CHO ĐÚNG HÀM
+          <Button
+            variant="outlined"
+            size="medium"
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              fontWeight: 400,
+              color: "#49a3f1",
+              borderColor: "#49a3f1",
+              boxShadow: "none",
+              "&:hover": {
+                borderColor: "#1769aa",
+                background: "#f0f6fd",
+                color: "#1769aa",
+              },
+            }}
+            onClick={handleOpenEditRecipient}
+          >
+            Sửa thông tin
+          </Button>
+        )}
+      </Box>
       <Grid container spacing={1}>
         <Grid item xs={12} sm={6}>
           <Typography>
@@ -268,36 +646,147 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
           </Typography>
         </Grid>
       </Grid>
+      {/* Modal nằm ở đây nhưng không phá vỡ renderOrderInfo */}
+      {isEditRecipientOpen && orderData && (
+        <EditRecipientModal
+          open={isEditRecipientOpen}
+          onClose={handleCloseEditRecipient}
+          recipientData={recipient}
+          onSave={handleSaveRecipient}
+        />
+      )}
     </Paper>
   );
 
   const renderProductList = () => (
-    <Paper elevation={2} sx={{ p: 2.5 }}>
-      <Typography variant="h6" fontWeight="bold" sx={{ color: "#49a3f1", mb: 2 }}>
-        Sản phẩm đã đặt
-      </Typography>
+    <Paper elevation={2} sx={{ p: { xs: 1.5, md: 3 } }}>
+      {/* === TIÊU ĐỀ CÁC CỘT === */}
+      <Grid
+        container
+        spacing={2}
+        sx={{ borderBottom: "1px solid #e0e0e0", pb: 1.5, display: { xs: "none", md: "flex" } }}
+      >
+        <Grid item md={6}>
+          <Typography
+            variant="subtitle2"
+            fontWeight="bold"
+            color="text.secondary"
+            sx={{ color: "#49a3f1" }}
+          >
+            Sản phẩm
+          </Typography>
+        </Grid>
+        <Grid item md={3} sx={{ textAlign: "center" }}>
+          <Typography
+            variant="subtitle2"
+            fontWeight="bold"
+            color="text.secondary"
+            sx={{ color: "#49a3f1" }}
+          >
+            Số lượng
+          </Typography>
+        </Grid>
+        <Grid item md={3} sx={{ textAlign: "right" }}>
+          <Typography
+            variant="subtitle2"
+            fontWeight="bold"
+            color="text.secondary "
+            sx={{ color: "#49a3f1" }}
+          >
+            Thành tiền
+          </Typography>
+        </Grid>
+      </Grid>
+
+      {/* === DANH SÁCH SẢN PHẨM === */}
       {(orderData.danhSachChiTiet || []).map((product, index) => (
-        <Box key={index} className={styles.productItem}>
-          <Box className={styles.productImageContainer}>
-            <ProductSlideshow
-              product={{
-                ...product,
-                listUrlImage: product.duongDanAnh ? [product.duongDanAnh] : [],
-              }}
-            />
-          </Box>
-          <div className={styles.productDetails}>
-            <p className={styles.productName}>{product.tenSanPham}</p>
-            <p className={styles.productAttrs}>
-              Màu: {product.tenMauSac} - Size: {product.tenKichThuoc}
-            </p>
-            <p className={styles.productPrice}>
-              {formatCurrency(product.gia)} x {product.soLuong}
-            </p>
-          </div>
-          <div className={styles.productTotal}>{formatCurrency(product.thanhTien)}</div>
-        </Box>
+        <Grid
+          container
+          key={index}
+          spacing={2}
+          alignItems="center"
+          sx={{ py: 2.5, borderBottom: "1px solid #f0f0f0" }}
+        >
+          {/* --- Cột Sản phẩm --- */}
+          <Grid item xs={12} md={6}>
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              {/* === PHẦN HIỂN THỊ ẢNH TỪ CODE CŨ CỦA BẠN === */}
+              <Box
+                sx={{
+                  width: 80,
+                  height: 80,
+                  marginRight: "1.5rem",
+                  flexShrink: 0,
+                  overflow: "hidden",
+                  borderRadius: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <ProductSlideshow
+                  product={{
+                    ...product,
+                    listUrlImage: product.duongDanAnh ? [product.duongDanAnh] : [],
+                  }}
+                  className="productImage"
+                />
+              </Box>
+              {/* ============================================== */}
+
+              <Box>
+                <Typography variant="body1" fontWeight="bold">
+                  {product.tenSanPham}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {" "}
+                  {product.tenMauSac}
+                </Typography>
+                <Typography variant="body2" color="#e53935" fontWeight="bold">
+                  {" "}
+                  Giá: {formatCurrency(product.gia)}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Size: {product.tenKichThuoc}
+                </Typography>
+              </Box>
+            </Box>
+          </Grid>
+
+          {/* --- Cột Số lượng --- */}
+          <Grid item xs={6} md={3} sx={{ textAlign: "center" }}>
+            <Typography variant="body1" fontWeight="bold">
+              x {product.soLuong}
+            </Typography>
+          </Grid>
+
+          {/* --- Cột Thành tiền --- */}
+          <Grid item xs={6} md={3}>
+            <Typography variant="body1" fontWeight="bold" sx={{ textAlign: "right" }}>
+              {formatCurrency(product.thanhTien)}
+            </Typography>
+          </Grid>
+        </Grid>
       ))}
+
+      {/* === TỔNG TIỀN === */}
+      <Box
+        sx={{
+          borderTop: "1px solid #ddd",
+          mt: 2,
+          pt: 2,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Typography variant="body1" fontWeight="bold">
+          Tổng tiền sản phẩm
+        </Typography>
+        <Typography variant="body1" fontWeight="bold" color="error">
+          {formatCurrency(orderData.tongTienBanDau)}
+        </Typography>
+      </Box>
     </Paper>
   );
 
@@ -318,9 +807,9 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
             <Typography>{formatCurrency(orderData.phiVanChuyen)}</Typography>
           </Box>
           {tienGiam > 0 && (
-            <Box display="flex" justifyContent="space-between" mb={1} color="error.main">
-              <Typography color="inherit">Giảm giá</Typography>
-              <Typography color="inherit">- {formatCurrency(tienGiam)}</Typography>
+            <Box display="flex" justifyContent="space-between" mb={1}>
+              <Typography>Giảm giá</Typography>
+              <Typography sx={{ color: "#e53935" }}>- {formatCurrency(tienGiam)}</Typography>
             </Box>
           )}
           <hr />
@@ -333,6 +822,10 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
             </Typography>
           </Box>
         </Box>
+        {isHistoryModalOpen && orderData?.maHoaDon && (
+          <OrderHistoryModal maHoaDon={orderData.maHoaDon} onClose={handleCloseHistoryModal} />
+        )}
+        {/* --- END: THÊM MỚI --- */}
       </Paper>
     );
   };
@@ -376,7 +869,23 @@ export default function OrderDetailModal({ open, onClose, orderCode }) {
         )}
       </DialogContent>
       <DialogActions>
-        <Button onClick={onClose} variant="outlined">
+        <Button
+          onClick={onClose}
+          size="large"
+          sx={{
+            borderRadius: 2,
+            textTransform: "none",
+            fontWeight: 400,
+            color: "#49a3f1",
+            borderColor: "#49a3f1",
+            boxShadow: "none",
+            "&:hover": {
+              borderColor: "#1769aa",
+              background: "#f0f6fd",
+              color: "#1769aa",
+            },
+          }}
+        >
           Đóng
         </Button>
       </DialogActions>

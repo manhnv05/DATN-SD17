@@ -77,6 +77,7 @@ public class DiaChiController {
     // Thêm địa chỉ cho khách hàng (FE dùng)
     @PostMapping("/khachHang/{customerId}/diaChi")
     public Map<String, Object> addDiaChi(@PathVariable Integer customerId, @RequestBody DiaChiVO vo) {
+        System.out.println("Dữ liệu nhận được từ FE: " + vo.toString());
         vo.setIdKhachHang(customerId);
         Integer id = diaChiService.save(vo);
         Map<String, Object> res = new HashMap<>();

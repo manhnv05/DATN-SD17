@@ -13,6 +13,10 @@ import {
   DialogTitle,
   DialogContent,
   IconButton,
+  DialogContentText, // Thêm import
+  DialogActions,
+  Stack,
+  CircularProgress
 } from "@mui/material";
 import axios from "axios";
 
@@ -35,6 +39,7 @@ import { InputAdornment } from "@mui/material";
 import { toast } from "react-toastify";
 import InHoaDon from "../../HoaDon/InHoaDon/InHoaDon";
 import PaymentIcon from "@mui/icons-material/Payment";
+
 // Hàm định dạng tiền tệ
 const formatCurrency = (amount) => {
   if (typeof amount !== "number" || isNaN(amount)) return "0 VND";
@@ -65,7 +70,7 @@ function Pay({
   const [suggestedVoucher, setSuggestedVoucher] = useState(null);
   const [bestidVoucher, setBestidVoucher] = useState(null);
   const [idHoaDonNew, setIdHoaDonNew] = useState(null);
-
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [customer, setCustomer] = useState({ id: null, tenKhachHang: "Khách lẻ" });
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [shippingFormData, setShippingFormData] = useState(null);
@@ -73,7 +78,7 @@ function Pay({
 
   const finalTotal = totalAmount + (isDelivery ? shippingFee : 0) - discountValue;
   const amountOwed = finalTotal - Number(customer || 0);
-  
+ const [isSubmitting, setIsSubmitting] = useState(false); 
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [addressList, setAddressList] = useState([]);
   const [isAddAddressModalOpen, setIsAddAddressModalOpen] = useState(false);
@@ -423,8 +428,6 @@ function Pay({
     }
   }, [customer, isDelivery, shippingFee, shippingFormData, onDataChange, paymentDetails]);
 
-  
-
   const handleSelectCustomer = async (selectedCustomer, addresses) => {
     setCustomer(selectedCustomer);
 
@@ -434,22 +437,22 @@ function Pay({
     setSuggestedVoucher(null);
     setDiscountValue(0);
 
-   if (addresses && addresses.length > 0) {
-    // Tìm địa chỉ có trangThai = 1 (mặc định), nếu không có thì lấy cái đầu tiên
-    const defaultAddress = addresses.find(addr => addr.trangThai === 1) || addresses[0];
-    setShippingAddress(defaultAddress);
-  } else {
-    // Nếu khách hàng không có địa chỉ nào
-    setShippingAddress(null);
-  }
-  
-  // Gọi API để tìm phiếu giảm giá tốt nhất cho khách hàng mới
-  if (totalAmount > 0) {
-    fetchBestVoucherForCustomer(selectedCustomer.id);
-  }
+    if (addresses && addresses.length > 0) {
+      // Tìm địa chỉ có trangThai = 1 (mặc định), nếu không có thì lấy cái đầu tiên
+      const defaultAddress = addresses.find((addr) => addr.trangThai === 1) || addresses[0];
+      setShippingAddress(defaultAddress);
+    } else {
+      // Nếu khách hàng không có địa chỉ nào
+      setShippingAddress(null);
+    }
 
-  // Đóng modal chọn khách hàng
-  setIsCustomerModalOpen(false);
+    // Gọi API để tìm phiếu giảm giá tốt nhất cho khách hàng mới
+    if (totalAmount > 0) {
+      fetchBestVoucherForCustomer(selectedCustomer.id);
+    }
+
+    // Đóng modal chọn khách hàng
+    setIsCustomerModalOpen(false);
 
     // Gọi API để tìm phiếu giảm giá tốt nhất cho khách hàng mới
     if (totalAmount > 0) {
@@ -458,8 +461,6 @@ function Pay({
 
     setIsCustomerModalOpen(false);
   };
-
-  
 
   const handleConfirmPayment = async (newPaymentsFromModal) => {
     if (!newPaymentsFromModal || newPaymentsFromModal.length === 0) {
@@ -486,6 +487,9 @@ function Pay({
   };
 
   const handleFinalSave = async () => {
+     setIsSubmitting(true); 
+   // setIsConfirmModalOpen(false); // Đóng hộp thoại xác nhận trước
+
     if (!isDelivery) {
       const totalPaid = paymentDetails.reduce((sum, p) => sum + p.soTienThanhToan, 0);
 
@@ -495,7 +499,7 @@ function Pay({
             finalTotal - totalPaid
           )}. Vui lòng hoàn tất thanh toán.`
         );
-
+setIsSubmitting(false);
         return;
       }
     }
@@ -515,64 +519,69 @@ function Pay({
 
       // --- LOGIC MỚI ĐỂ IN HÓA ĐƠN ---
       // Chỉ mở modal in nếu là thanh toán tại quầy
-      if (!isDelivery) {
-        setInvoiceToPrintId(hoaDonId); // Lưu lại ID hóa đơn vừa thanh toán
-        setIsInvoiceModalOpen(true); // Mở modal in
-      }
+
+      setInvoiceToPrintId(hoaDonId); // Lưu lại ID hóa đơn vừa thanh toán
+      setIsInvoiceModalOpen(true); // Mở modal in
+
       resetForm();
     } catch (error) {
       console.error("Lỗi khi lưu và in hóa đơn:", error);
       // Bạn có thể thêm toast thông báo lỗi ở đây nếu cần
+    
+    } finally {
+        // ✅ DÙ THÀNH CÔNG HAY THẤT BẠI, LUÔN TẮT LOADING VÀ ĐÓNG DIALOG
+        setIsSubmitting(false);
+        setIsConfirmModalOpen(false);
     }
 
     // resetForm(); // Bỏ comment dòng này nếu muốn reset sau khi lưu
   };
 
   const handleClearCustomer = async () => {
-  // Nếu không có hóa đơn đang hoạt động thì không làm gì cả
-  if (!hoaDonId) {
-    toast.warn("Chưa có hóa đơn nào được chọn.");
-    return;
-  }
-
-  try {
-    // 1. Chuẩn bị dữ liệu gửi đi
-    const payload = {
-      idHoaDon: hoaDonId,
-      idKhachHang: null, // Gán khách hàng về null
-    };
-
-    // 2. Gọi API để cập nhật khách hàng về null
-    await axios.put("http://localhost:8080/api/hoa-don/cap-nhat-khach-hang", payload, {
-      withCredentials: true, // Gửi kèm cookie/session nếu cần
-    });
-
-    // 3. Nếu API thành công, cập nhật state của giao diện
-    setCustomer({ id: null, tenKhachHang: "Khách lẻ" });
-    
-    // Reset voucher
-    setVoucherCode("");
-    setAppliedVoucher(null);
-    setSuggestedVoucher(null);
-    setDiscountValue(0);
-    
-    // Reset địa chỉ và phí vận chuyển
-    setShippingAddress(null);     // Reset địa chỉ đã chọn (chỉ cần 1 lần)
-    setShippingFormData(null);    // Reset dữ liệu form giao hàng
-    setShippingFee(0);            // Reset phí ship về 0
-    setShippingFeeInput("0");     // Reset ô nhập phí ship (đã thêm dấu ;)
-
-    toast.success("Đã bỏ chọn khách hàng.");
-
-    // Gọi API để tìm phiếu giảm giá cho khách lẻ (truyền vào null)
-    if (totalAmount > 0) {
-      await fetchBestVoucherForCustomer(null);
+    // Nếu không có hóa đơn đang hoạt động thì không làm gì cả
+    if (!hoaDonId) {
+      toast.warn("Chưa có hóa đơn nào được chọn.");
+      return;
     }
-  } catch (error) {
-    console.error("Lỗi khi bỏ chọn khách hàng:", error);
-    toast.error("Có lỗi xảy ra khi cố gắng bỏ chọn khách hàng. Vui lòng thử lại.");
-  }
-};
+
+    try {
+      // 1. Chuẩn bị dữ liệu gửi đi
+      const payload = {
+        idHoaDon: hoaDonId,
+        idKhachHang: null, // Gán khách hàng về null
+      };
+
+      // 2. Gọi API để cập nhật khách hàng về null
+      await axios.put("http://localhost:8080/api/hoa-don/cap-nhat-khach-hang", payload, {
+        withCredentials: true, // Gửi kèm cookie/session nếu cần
+      });
+
+      // 3. Nếu API thành công, cập nhật state của giao diện
+      setCustomer({ id: null, tenKhachHang: "Khách lẻ" });
+
+      // Reset voucher
+      setVoucherCode("");
+      setAppliedVoucher(null);
+      setSuggestedVoucher(null);
+      setDiscountValue(0);
+
+      // Reset địa chỉ và phí vận chuyển
+      setShippingAddress(null); // Reset địa chỉ đã chọn (chỉ cần 1 lần)
+      setShippingFormData(null); // Reset dữ liệu form giao hàng
+      setShippingFee(0); // Reset phí ship về 0
+      setShippingFeeInput("0"); // Reset ô nhập phí ship (đã thêm dấu ;)
+
+      toast.success("Đã bỏ chọn khách hàng.");
+
+      // Gọi API để tìm phiếu giảm giá cho khách lẻ (truyền vào null)
+      if (totalAmount > 0) {
+        await fetchBestVoucherForCustomer(null);
+      }
+    } catch (error) {
+      console.error("Lỗi khi bỏ chọn khách hàng:", error);
+      toast.error("Có lỗi xảy ra khi cố gắng bỏ chọn khách hàng. Vui lòng thử lại.");
+    }
+  };
 
   const handleOpenAddressModal = async () => {
     if (!customer || !customer.id) {
@@ -807,7 +816,7 @@ function Pay({
 
               {isDelivery ? (
                 <ShippingForm
-                 key={customer.id || "khach-le"}
+                  key={customer.id || "khach-le"}
                   initialCustomer={customer}
                   initialAddress={shippingAddress}
                   onOpenAddressModal={handleOpenAddressModal}
@@ -929,7 +938,7 @@ function Pay({
             }}
             fullWidth
             disabled={isDisabled}
-            onClick={handleFinalSave}
+            onClick={() => setIsConfirmModalOpen(true)}
           >
             <Typography variant="h6" color="#49a3f1" fontWeight="bold">
               {isDelivery ? " ĐẶT HÀNG" : " THANH TOÁN"}
@@ -943,7 +952,7 @@ function Pay({
         open={isCustomerModalOpen}
         onClose={() => setIsCustomerModalOpen(false)}
         fullWidth
-        maxWidth="lg"
+        maxWidth="xl"
       >
         <DialogTitle>
           <Box display="flex" justifyContent="space-between" alignItems="center">
@@ -999,6 +1008,44 @@ function Pay({
         onConfirm={handleConfirmPayment}
         hoaDonId={hoaDonId}
       />
+      {/* MODAL XÁC NHẬN THANH TOÁN / ĐẶT HÀNG MỚI THÊM */}
+      <Dialog
+        open={isConfirmModalOpen}
+        onClose={isSubmitting ? () => {} : () => setIsConfirmModalOpen(false)} 
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+       <DialogTitle id="alert-dialog-title">
+        {isSubmitting ? "Đang xử lý..." : (isDelivery ? "Xác nhận đặt hàng" : "Xác nhận thanh toán")}
+    </DialogTitle>
+        <DialogContent>
+        {isSubmitting ? (
+            // ✅ HIỂN THỊ VÒNG XOAY KHI ĐANG LOADING
+            <Stack alignItems="center" justifyContent="center" sx={{ p: 4 }}>
+                <CircularProgress />
+                <DialogContentText sx={{ mt: 2 }}>
+                    Vui lòng chờ trong giây lát...
+                </DialogContentText>
+            </Stack>
+        ) : (
+            // Nội dung cũ
+            <DialogContentText id="alert-dialog-description">
+                Bạn có chắc chắn muốn {isDelivery ? "đặt hàng" : "thanh toán"} cho hóa đơn này không?
+                <br />
+                Tổng tiền: <strong>{formatCurrency(finalTotal)}</strong>
+            </DialogContentText>
+        )}
+    </DialogContent>
+       <DialogActions>
+        {/* ✅ VÔ HIỆU HÓA CÁC NÚT KHI ĐANG SUBMIT */}
+        <SoftButton onClick={() => setIsConfirmModalOpen(false)} color="secondary" disabled={isSubmitting}>
+            Hủy
+        </SoftButton>
+        <SoftButton onClick={handleFinalSave} color="info" autoFocus disabled={isSubmitting}>
+            {isSubmitting ? "Đang xử lý..." : "Xác nhận"}
+        </SoftButton>
+    </DialogActions>
+      </Dialog>
       {invoiceToPrintId && (
         <InHoaDon
           isOpen={isInvoiceModalOpen}

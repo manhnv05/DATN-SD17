@@ -7,6 +7,8 @@ import com.example.datn.vo.phieuGiamGiaVO.PhieuGiamVOSearch;
 import com.example.datn.vo.phieuGiamGiaVO.SendMailRequestData;
 import org.springframework.data.domain.Page;
 
+import java.util.List;
+
 public interface PhieuGiamGiaService {
     Page<PhieuGiamGiaDTO> getAllPhieuGiamGia(int page, int size, PhieuGiamVOSearch search);
     PhieuGiamGiaDTO getPhieuGiamGiaById(int id);
@@ -17,4 +19,5 @@ public interface PhieuGiamGiaService {
     void sendMailToListCustomer(SendMailRequestData sendMailRequestData);
     String tangSoluongPhieuGiamGia(Integer idPhieuGiamGia, Integer soLuong);
     String giamSoluongPhieuGiamGia(Integer idPhieuGiamGia, Integer soLuong, Integer idKhachHang);
+    List<PhieuGiamGiaDTO> getPublicAndActiveVouchers();
 }

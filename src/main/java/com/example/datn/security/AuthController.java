@@ -3,10 +3,12 @@ package com.example.datn.security;
 import com.example.datn.dto.QuenMatKhauDTO;
 import com.example.datn.dto.RegisterKhachHangDTO;
 import com.example.datn.dto.ResetMatKhauDTO;
+import com.example.datn.dto.TaiKhoanResponseDTO;
 import com.example.datn.entity.KhachHang;
 import com.example.datn.entity.NhanVien;
 import com.example.datn.repository.KhachHangRepository;
 import com.example.datn.repository.NhanVienRepository;
+import com.example.datn.vo.clientVO.ChangePasswordDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -133,6 +135,12 @@ public class AuthController {
     /**
      * API đăng ký tài khoản khách hàng.
      */
+    private String generateMaKhachHang() {
+        Random random = new Random();
+        // Tạo một số ngẫu nhiên trong khoảng từ 10,000,000 đến 99,999,999
+        int randomNumber = 10000000 + random.nextInt(90000000);
+        return "KH" + randomNumber;
+    }
     @PostMapping("/register")
     public ResponseEntity<?> registerKhachHang(@RequestBody RegisterKhachHangDTO request) {
         logger.info("Yêu cầu đăng ký tài khoản cho khách hàng: {}", request.getEmail());
@@ -157,12 +165,41 @@ public class AuthController {
         kh.setMatKhau(passwordEncoder.encode(request.getMatKhau()));
         kh.setTenKhachHang(request.getTenKhachHang());
         kh.setSdt(request.getSdt());
+        kh.setMaKhachHang(generateMaKhachHang());
+        kh.setTrangThai(1);
         // Thiết lập các trường khác nếu cần
 
         khachHangRepository.save(kh);
 
         logger.info("Đăng ký thành công cho khách hàng: {}", request.getEmail());
         return ResponseEntity.ok("Đăng ký tài khoản thành công!");
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordDTO request) {
+        logger.info("Yêu cầu đổi mật khẩu cho khách hàng: {}", request.getEmail());
+
+        // Tìm khách hàng theo email
+        Optional<KhachHang> optionalKhachHang = khachHangRepository.findByEmail(request.getEmail());
+        if (optionalKhachHang.isEmpty()) {
+            logger.warn("Không tìm thấy khách hàng với email: {}", request.getEmail());
+            return ResponseEntity.badRequest().body("Email không tồn tại!");
+        }
+
+        KhachHang khachHang = optionalKhachHang.get();
+
+        // Kiểm tra mật khẩu cũ
+        if (!passwordEncoder.matches(request.getOldPassword(), khachHang.getMatKhau())) {
+            logger.warn("Mật khẩu cũ không đúng cho email: {}", request.getEmail());
+            return ResponseEntity.badRequest().body("Mật khẩu cũ không đúng!");
+        }
+
+        // Cập nhật mật khẩu mới
+        khachHang.setMatKhau(passwordEncoder.encode(request.getNewPassword()));
+        khachHangRepository.save(khachHang);
+
+        logger.info("Đổi mật khẩu thành công cho email: {}", request.getEmail());
+        return ResponseEntity.ok("Đổi mật khẩu thành công!");
     }
 
     /**
@@ -280,6 +317,7 @@ public class AuthController {
             res.put("username", nv.getEmail());
             res.put("maNhanVien", nv.getMaNhanVien());
             res.put("tenNhanVien", nv.getHoVaTen());
+            res.put("hinhAnh", nv.getHinhAnh());
             res.put("role", "NHANVIEN");
             return ResponseEntity.ok(res);
         }
@@ -292,10 +330,68 @@ public class AuthController {
             res.put("id", kh.getId()); // id khách hàng
             res.put("username", kh.getEmail());
             res.put("role", "KHACHHANG");
+            res.put("hinhAnh", kh.getHinhAnh());
+            res.put("sdt", kh.getSdt());
+            res.put("gioiTinh", kh.getGioiTinh());
+            res.put("tenKh", kh.getTenKhachHang());
+            res.put("maKh", kh.getMaKhachHang());
+            res.put("email", kh.getEmail());
             return ResponseEntity.ok(res);
         }
 
         // Không tìm thấy user
+        return ResponseEntity.status(HttpServletResponse.SC_UNAUTHORIZED)
+                .body(Collections.singletonMap("message", "Không tìm thấy thông tin người dùng"));
+    }
+    @GetMapping("/lay-thong-tin/nguoi-dung-hien-tai")
+    public ResponseEntity<?> getUser(Authentication authentication) {
+        // 1. Kiểm tra trạng thái đăng nhập
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpServletResponse.SC_UNAUTHORIZED)
+                    .body(Collections.singletonMap("message", "Chưa đăng nhập"));
+        }
+
+        String username = authentication.getName(); // Lấy email từ phiên đăng nhập
+
+        // 2. Ưu tiên tìm trong bảng Nhân Viên trước
+        Optional<NhanVien> nvOpt = nhanVienRepository.findByEmail(username);
+        if (nvOpt.isPresent()) {
+            NhanVien nv = nvOpt.get();
+            // Xác định vai trò dựa trên id_vai_tro
+            String vaiTro = (nv.getVaiTro().getId() == 2) ? "ADMIN" : "NHANVIEN";
+
+            // Tạo DTO hợp nhất từ thông tin Nhân Viên
+            TaiKhoanResponseDTO dto = new TaiKhoanResponseDTO(
+                    nv.getId(),
+                    nv.getMaNhanVien(),
+                    nv.getHoVaTen(),
+                    nv.getEmail(),
+                    nv.getHinhAnh(),
+                    vaiTro
+            );
+            // Trả về đối tượng DTO duy nhất
+            return ResponseEntity.ok(dto);
+        }
+
+        // 3. Nếu không phải Nhân Viên, tìm trong bảng Khách Hàng
+        Optional<KhachHang> khOpt = khachHangRepository.findByEmail(username);
+        if (khOpt.isPresent()) {
+            KhachHang kh = khOpt.get();
+
+            // Tạo DTO hợp nhất từ thông tin Khách Hàng
+            TaiKhoanResponseDTO dto = new TaiKhoanResponseDTO(
+                    kh.getId(),
+                    kh.getMaKhachHang(), // Giả sử khách hàng có mã
+                    kh.getTenKhachHang(),
+                    kh.getEmail(),
+                    kh.getHinhAnh(),
+                    "KHACHHANG"
+            );
+            // Trả về đối tượng DTO duy nhất
+            return ResponseEntity.ok(dto);
+        }
+
+        // 4. Nếu không tìm thấy thông tin ở cả 2 bảng
         return ResponseEntity.status(HttpServletResponse.SC_UNAUTHORIZED)
                 .body(Collections.singletonMap("message", "Không tìm thấy thông tin người dùng"));
     }

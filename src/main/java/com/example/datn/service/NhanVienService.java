@@ -9,6 +9,8 @@ import com.example.datn.repository.VaiTroRepository;
 import com.example.datn.vo.nhanVienVO.NhanVienQueryVO;
 import com.example.datn.vo.nhanVienVO.NhanVienUpdateVO;
 import com.example.datn.vo.nhanVienVO.NhanVienVO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -29,13 +31,14 @@ import java.util.stream.Collectors;
 
 @Service
 public class NhanVienService {
+    private static final Logger log = LoggerFactory.getLogger(NhanVienService.class);
 
     @Autowired
     private VaiTroRepository vaiTroRepository;
 
     private final NhanVienRepository nhanVienRepository;
 
-    @Autowired(required = false)
+    @Autowired
     @Qualifier("emailConfigService")
     private com.example.datn.config.EmailService emailConfigService;
 
@@ -58,12 +61,16 @@ public class NhanVienService {
                 String imageUrl = cloudinaryService.uploadImage(imageFile);
                 bean.setHinhAnh(imageUrl);
             } catch (Exception e) {
+                // Sử dụng logger
+                log.error("Không thể upload ảnh nhân viên lên Cloudinary: {}", e.getMessage(), e);
                 throw new RuntimeException("Không thể upload ảnh lên Cloudinary: " + e.getMessage());
             }
         }
 
+        // THAY ĐỔI 2: Cải thiện xử lý lỗi khi không tìm thấy VaiTro
         if (vO.getIdVaiTro() != null) {
-            VaiTro vaiTro = vaiTroRepository.findById(vO.getIdVaiTro()).orElse(null);
+            VaiTro vaiTro = vaiTroRepository.findById(vO.getIdVaiTro())
+                    .orElseThrow(() -> new NoSuchElementException("Không tìm thấy VaiTro với ID: " + vO.getIdVaiTro()));
             bean.setVaiTro(vaiTro);
         } else {
             bean.setVaiTro(null);
@@ -71,14 +78,16 @@ public class NhanVienService {
 
         bean = nhanVienRepository.save(bean);
 
+        // ---- PHẦN GỬI EMAIL GIỮ NGUYÊN LOGIC NHƯNG CẢI THIỆN LOGGING ----
         if (emailConfigService != null && bean.getEmail() != null && !bean.getEmail().trim().isEmpty()) {
             String subject = "🎉 Tài khoản nhân viên đã được tạo thành công! 🎉";
+            // Nội dung email được tạo trực tiếp tại đây theo yêu cầu
             String body = "<div style=\"font-family:'Segoe UI',Arial,sans-serif;background:#f9fafd;padding:32px 0;\">"
                     + "<div style=\"max-width:520px;margin:0 auto;background:#fff;border-radius:16px;box-shadow:0 4px 24px #e3e3ec;padding:40px 32px 32px 32px;\">"
                     + "<div style=\"text-align:center;\">"
                     + "    <img src=\"https://i.imgur.com/3fJ1P48.png\" alt=\"Logo Shop\" style=\"width:80px;margin-bottom:16px;\">"
                     + "    <h2 style=\"color:#1976d2;margin-bottom:8px;letter-spacing:1px;\">Chào mừng bạn gia nhập Fashion Shirt Shop!</h2>"
-                    + "    <p style=\"color:#444;font-size:17px;margin:0 0 20px 0;\">Xin chào <b style='color:#1976d2\">" + bean.getHoVaTen() + "</b>,</p>"
+                    + "    <p style=\"color:#444;font-size:17px;margin:0 0 20px 0;\">Xin chào <b style='color:#1976d2'>" + bean.getHoVaTen() + "</b>,</p>"
                     + "</div>"
                     + "<div style=\"background:#f7fbfd;border-radius:12px;padding:24px 18px;margin:18px 0 22px 0;border:1.5px solid #e3f3fc;\">"
                     + "    <div style=\"font-size:17px;\">"
@@ -105,8 +114,11 @@ public class NhanVienService {
                         subject,
                         body
                 );
+                // Ghi log khi gửi thành công
+                log.info("Đã gửi email tạo tài khoản tới nhân viên: {}", bean.getEmail());
             } catch (Exception ex) {
-                System.err.println("Gửi email nhân viên thất bại: " + ex.getMessage());
+                // THAY ĐỔI 3: Dùng logger thay vì System.err.println
+                log.error("Gửi email cho nhân viên {} thất bại. Lỗi: {}", bean.getEmail(), ex.getMessage(), ex);
             }
         }
 

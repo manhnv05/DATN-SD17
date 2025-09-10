@@ -159,21 +159,3 @@
   -webkit-appearance: none;
   margin: 0;
 }
-
-/* Sửa lại class đã có */
-.product-total-price {
-  display: flex;
-  flex-direction: column; /* Xếp các phần tử bên trong theo chiều dọc */
-  align-items: flex-end;   /* Căn các phần tử về bên phải */
-  justify-content: center;
-  min-width: 150px; /* Đảm bảo có đủ không gian */
-  padding-right: 1rem;
-}
-
-/* Thêm class mới cho nhãn "Thành tiền" */
-.total-price-label {
-  margin: 0; /* Bỏ khoảng cách mặc định của thẻ <p> */
-  font-size: 0.8rem;
-  color: #555; /* Cho chữ xám đi một chút */
-  font-weight: 500;
-}

@@ -11,14 +11,23 @@ import Order from "layouts/client/order";
 import OutletSales from "layouts/client/outlet-sales"; // chỉnh lại path cho đúng nếu cần
 import PaymentResultPage from "layouts/client/order/PaymentResultPage"; // THÊM DÒNG NÀY
 
-
+import ThankYouPage from "../client/order/ThankYouPage";
 import OrderLookup from "../admin/OrderLookup/OrderLookup"; 
+import ProfileLayout from "layouts/client/userDetail/sidebarUser";
 const routesClient = [
     {
         name: "Trang chủ",
         key: "home",
         route: "/home",
         component: <Home />,
+        noCollapse: true,
+        hidden: false,
+    },
+    {
+        name: "Profle",
+        key: "profile",
+        route: "/profile",
+        component: <ProfileLayout />,
         noCollapse: true,
         hidden: false,
     },
@@ -101,6 +110,14 @@ const routesClient = [
         component: <PaymentResultPage />, // THÊM DÒNG NÀY
         noCollapse: true,
         hidden: true,
+    },
+     {
+        name: "Trang Cảm Ơn",
+        key: "thank-you",
+        route: "/thank-you",
+        component: <ThankYouPage />,
+        noCollapse: true,
+        hidden: true, // Ẩn khỏi menu điều hướng
     },
     {
         name: "Đăng nhập",
