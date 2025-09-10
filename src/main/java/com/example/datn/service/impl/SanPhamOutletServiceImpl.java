@@ -123,7 +123,7 @@ public class SanPhamOutletServiceImpl implements SanPhamOutletService {
                                 ? maxDiscount.getDotGiamGia().getPhanTramGiamGia()
                                 : 0
                 );
-                dto.setMoTa(ctsp.getMoTa() != null ? ctsp.getMoTa() : "");
+                dto.setMoTa(sp.getMoTa() != null ? sp.getMoTa() : "");
                 voList.add(dto);
             }
         }

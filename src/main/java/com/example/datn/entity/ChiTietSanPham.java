@@ -60,9 +60,6 @@ public class ChiTietSanPham implements java.io.Serializable {
     @Column(name = "trong_luong")
     private Integer trongLuong;
 
-    @Column(name = "mo_ta", length = 50)
-    private String moTa;
-
     @Column(name = "trang_thai")
     private Integer trangThai;
 

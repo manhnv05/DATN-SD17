@@ -6,7 +6,7 @@ import App from "App";
 import { ToastContainer } from "react-toastify";
 import { AuthProvider } from "./layouts/admin/BanHangTaiQuay/AuthProvider.jsx";
 // Soft UI Dashboard React Context Provider
-import ChatlingWidget from "ChatlingWidget.js";
+// import ChatlingWidget from "ChatlingWidget.js";
 import { SoftUIControllerProvider } from "context";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
@@ -16,7 +16,6 @@ root.render(
       <AuthProvider>
         <App />
         <ToastContainer />
-        <ChatlingWidget />
       </AuthProvider>
     </SoftUIControllerProvider>
   </BrowserRouter>
