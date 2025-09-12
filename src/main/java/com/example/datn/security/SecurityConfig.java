@@ -91,7 +91,9 @@ public class SecurityConfig {
                                 "/api/hoa-don/luu-hoa-don-online-chua-dang-nhap",
                                 "/chiTietThanhToan",
                                 "/api/hoa-don/tra-cuu-hoa-don/**",
-                                "/api/hoa-don/get-all-so-luong-ton-kho"
+                                "/api/hoa-don/get-all-so-luong-ton-kho",
+                                "/api/vnpay/**",
+                                "/api/chatbot/**"
 
 
                         ).permitAll()

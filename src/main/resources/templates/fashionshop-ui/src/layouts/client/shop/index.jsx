@@ -552,7 +552,14 @@ const formatCurrency = (sliderValue) => {
                                             <Typography fontWeight={800} sx={{ fontSize: 17, mb: 0.5, color: "#205072", letterSpacing: 0.3 }}>
                                                 {item.name}
                                             </Typography>
-                                            
+                                            <Rating
+                                                size="small"
+                                                precision={0.5}
+                                                value={ratings[idx]}
+                                                sx={{ mb: 0.5 }}
+                                                onChange={(_, value) => handleChangeRating(idx, value)}
+                                                onClick={e => e.stopPropagation()}
+                                            />
                                             <Stack direction="row" spacing={1.1} alignItems="center" justifyContent="center" sx={{ mb: 1 }}>
                                                 {item.salePrice ? (
                                                     <>
@@ -575,7 +582,29 @@ const formatCurrency = (sliderValue) => {
                                             </Stack>
                                             <Box sx={{ mt: "auto", width: "100%" }}>
                                                 <Stack direction="row" justifyContent="center" alignItems="center" spacing={2}>
-                                                  
+                                                    <Tooltip title={favoriteIndexes.includes(idx) ? "Bỏ yêu thích" : "Yêu thích"}>
+                                                        <IconButton
+                                                            sx={{
+                                                                color: favoriteIndexes.includes(idx) ? "#e53935" : "#bbb",
+                                                                border: favoriteIndexes.includes(idx) ? "2px solid #e53935" : "2px solid #ececec",
+                                                                bgcolor: "#fff",
+                                                                borderRadius: "50%",
+                                                                boxShadow: favoriteIndexes.includes(idx) ? "0 4px 16px #ffe6e6" : "none",
+                                                                "&:hover": {
+                                                                    color: "#e53935",
+                                                                    border: "2px solid #e53935",
+                                                                    background: "#ffe6e6"
+                                                                },
+                                                                transition: "all 0.15s"
+                                                            }}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleToggleFavorite(idx);
+                                                            }}
+                                                        >
+                                                            {favoriteIndexes.includes(idx) ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+                                                        </IconButton>
+                                                    </Tooltip>
                                                     <Tooltip title="Mua ngay">
                                                         <Button
                                                             variant="contained"
