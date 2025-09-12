@@ -55,4 +55,11 @@ public interface PhieuGiamGiaRepository extends JpaRepository<PhieuGiamGia, Inte
     """)
     PhieuGiamGia findByMaPhieuGiamGia(@Param("ma") String maPhieuGiamGia);
 
+    @Query("SELECT pgg FROM PhieuGiamGia pgg WHERE " +
+            "pgg.loaiPhieu = 0 AND " +       // Điều kiện loại phiếu công khai
+            "pgg.trangThai = 1 AND " +      // Điều kiện đang hoạt động
+            "pgg.soLuong > 0 AND " +        // Điều kiện còn số lượng
+            ":now BETWEEN pgg.ngayBatDau AND pgg.ngayKetThuc") // Điều kiện còn hạn sử dụng
+    List<PhieuGiamGia> findActivePublicVouchers(@Param("now") LocalDateTime now);
+
 }

@@ -510,7 +510,36 @@ export default function OrderForm() {
       toast.warn("Giỏ hàng đang trống!");
       return;
     }
+try {
+        console.log("Kiểm tra tồn kho lần cuối trước khi đặt hàng...");
+        const inventoryResponse = await axios.get("http://localhost:8080/api/hoa-don/get-all-so-luong-ton-kho");
+        const inventoryData = inventoryResponse.data?.data || [];
+        const inventoryMap = new Map(
+            inventoryData.map(item => [item.idChitietSanPham, item.soLuongTonKho])
+        );
 
+        // Tìm sản phẩm đầu tiên trong giỏ hàng không đủ tồn kho
+        const outOfStockItem = cartItems.find(item => {
+            const currentStock = inventoryMap.get(item.id) || 0;
+            return item.qty > currentStock;
+        });
+        
+        // Nếu có sản phẩm không đủ, hiển thị lỗi và dừng lại
+        if (outOfStockItem) {
+            toast.error(
+              `Sản phẩm "${outOfStockItem.name}" (${outOfStockItem.size}/${outOfStockItem.tenMauSac}) không đủ số lượng. Vui lòng kiểm tra lại giỏ hàng.`
+            );
+            
+            // Tùy chọn: Tự động điều hướng về giỏ hàng để người dùng sửa
+            setTimeout(() => navigate("/card"), 3000); 
+            return;
+        }
+
+    } catch (err) {
+        toast.error("Không thể xác thực số lượng tồn kho. Vui lòng thử lại.");
+        console.error("Lỗi khi kiểm tra tồn kho lần cuối:", err);
+        return;
+    }
     const addressParts = [
       form.address, // Địa chỉ cụ thể (số nhà, tên đường)
       form.ward?.WardName, // Tên Phường/Xã
@@ -592,10 +621,9 @@ export default function OrderForm() {
         // 2. Lưu chi tiết thanh toán (COD)
         setSuccess(true);
         toast.success("Đặt hàng thành công!");
-        setTimeout(() => {
-          setSuccess(false);
-          navigate("/success");
-        }, 2000);
+       setTimeout(() => {
+        navigate("/thank-you");
+      }, 2000);
       } else if (form.payment === "vnpay") {
         // 2. Gửi sang VNPAY, KHÔNG lưu chi tiết thanh toán ở FE
         const payload = {

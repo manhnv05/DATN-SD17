@@ -83,6 +83,7 @@ setInitialData(recipientData);
  sdt: recipientData.sdt || "",
  diaChi: addressParts.chiTiet || "",
  province: null, district: null, ward: null,
+   ghiChu: recipientData.ghiChu || "",
  });
  if (addressParts.tinh) loadAddressFromData(addressParts);
  }
@@ -301,6 +302,7 @@ setInitialData(recipientData);
                     tenKhachHang: form.tenKhachHang,
                     sdt: form.sdt,
                     diaChi: newFullAddress,
+                    ghiChu: form.ghiChu,
                 },
                 newShippingFee, // Phí vận chuyển mới
                 logMessage: logMessage.trim(), // Nội dung log
@@ -331,7 +333,15 @@ setInitialData(recipientData);
                     value={form.diaChi} onChange={handleChange}
                     placeholder="Số nhà, tên đường..." required
                 />
-
+ <TextField
+                    margin="dense"
+                    label="Ghi chú"
+                    name="ghiChu"
+                    fullWidth
+                    value={form.ghiChu}
+                    onChange={handleChange}
+                    placeholder="Ghi chú cho đơn hàng (tùy chọn)..."
+                />
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mt: 2 }}>
                     <Autocomplete
                         options={provinces}

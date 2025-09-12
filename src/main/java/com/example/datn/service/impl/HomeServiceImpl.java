@@ -35,9 +35,16 @@ public class HomeServiceImpl implements HomeService {
             Optional<SanPham> spOpt = sanPhamRepository.findById(sanPhamId);
             if (spOpt.isEmpty()) continue;
             SanPham sp = spOpt.get();
+// ✅ Bước 1: Chỉ xử lý sản phẩm cha đang hoạt động (trangThai = 1)
+            if (sp.getTrangThai() != 1) {
+                continue; // Bỏ qua sản phẩm này nếu nó đã ngừng kinh doanh
+            }
 
+            // ✅ Bước 2: Chỉ lấy các chi tiết sản phẩm con đang hoạt động
+            // Gọi phương thức mới đã tạo trong Repository
+            List<ChiTietSanPham> listCtsp = chiTietSanPhamRepository.findBySanPhamIdAndTrangThai(sp.getId(), 1);
             // Lấy tất cả chi tiết sản phẩm để tính khoảng giá
-            List<ChiTietSanPham> listCtsp = chiTietSanPhamRepository.findBySanPhamId(sp.getId());
+
             if (listCtsp.isEmpty()) continue;
 
             // Tính giá min/max

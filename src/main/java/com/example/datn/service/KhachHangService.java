@@ -260,19 +260,7 @@ public class KhachHangService {
             if (vO.getTrangThai() != null && !"".equals(String.valueOf(vO.getTrangThai()))) {
                 predicates.add(cb.equal(root.get("trangThai"), vO.getTrangThai()));
             }
-            // Lọc theo khoảng tuổi (tính từ ngày sinh)
-            if (vO.getMinAge() != null || vO.getMaxAge() != null) {
-                // Tính ngày hiện tại
-                java.time.LocalDate today = java.time.LocalDate.now();
-                if (vO.getMinAge() != null) {
-                    java.time.LocalDate maxBirthDate = today.minusYears(vO.getMinAge());
-                    predicates.add(cb.lessThanOrEqualTo(root.get("ngaySinh"), java.sql.Date.valueOf(maxBirthDate)));
-                }
-                if (vO.getMaxAge() != null) {
-                    java.time.LocalDate minBirthDate = today.minusYears(vO.getMaxAge() + 1).plusDays(1);
-                    predicates.add(cb.greaterThanOrEqualTo(root.get("ngaySinh"), java.sql.Date.valueOf(minBirthDate)));
-                }
-            }
+
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 

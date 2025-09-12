@@ -52,6 +52,7 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [addCartStatus, setAddCartStatus] = useState({ loading: false, success: false, error: "" });
   const [user, setUser] = useState(null);
+  const [inventory, setInventory] = useState(new Map());
   // TẠO DANH SÁCH SIZE HỢP LỆ DỰA TRÊN MÀU ĐÃ CHỌN
 const isSizeDisabled = (size) => {
     // Nếu chưa chọn màu, không có size nào bị disable
@@ -102,78 +103,118 @@ useEffect(() => {
 
   // Fetch product detail
   useEffect(() => {
+    // Nếu không có ID trong URL, không làm gì cả
     if (!id) return;
-    setLoading(true);
-    axios
-      .get(`http://localhost:8080/api/shop/detail/${id}`)
-      .then((res) => {
-        const p = res.data;
-        const priceMin = p.giaMin || 0;
-        const priceMax = p.giaMax || 0;
-        let defaultColor = p.colors && p.colors.length > 0 ? p.colors[0] : null;
-        let defaultSize = p.sizes && p.sizes.length > 0 ? p.sizes[0] : null;
-        let defaultVariant =
-          p.variants && p.variants.length > 0
-            ? p.variants.find(
-                (v) =>
-                  (!defaultColor || v.maMau === defaultColor.maMau) &&
-                  (!defaultSize || v.kichThuoc === defaultSize)
-              ) || p.variants[0]
-            : null;
-        setProduct({
-          ...p,
-          name: p.tenSanPham,
-          priceMin,
-          priceMax,
-          variants: p.variants || [],
-          images:
-            defaultVariant && defaultVariant.images && defaultVariant.images.length > 0
-              ? defaultVariant.images
-              : p.images && p.images.length > 0
-              ? p.images
-              : [
-                  p.imageUrl ||
-                    "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=600&q=80",
-                ],
-          colors: p.colors && p.colors.length > 0 ? p.colors : [],
-          sizes: p.sizes && p.sizes.length > 0 ? p.sizes : [],
-          rating: p.rating || 4.5,
-          sold: p.sold || 0,
-          description: p.moTa || "",
-          shipping: p.shipping || "Miễn phí vận chuyển cho đơn hàng từ 500k",
-          voucher: p.voucher || null,
-          detailImg: sizeGuideImg,
-        });
-        setSelectedImage(0);
 
-        setLoading(false);
-      })
-      .catch(() => {
-        setProduct(null);
-        setLoading(false);
-      });
-  }, [id]);
+    setLoading(true);
+
+    // ✅ Bước 1: Tạo hai lời gọi API đồng thời
+    const productDetailPromise = axios.get(`http://localhost:8080/api/shop/detail/${id}`);
+    const inventoryPromise = axios.get("http://localhost:8080/api/hoa-don/get-all-so-luong-ton-kho");
+
+    // ✅ Bước 2: Dùng Promise.all để chờ cả hai hoàn tất
+    Promise.all([productDetailPromise, inventoryPromise])
+        .then(([productResponse, inventoryResponse]) => {
+            // --- Xử lý dữ liệu tồn kho ---
+            const inventoryData = inventoryResponse.data?.data || [];
+            const inventoryMap = new Map(
+                inventoryData.map(item => [item.idChitietSanPham, item.soLuongTonKho])
+            );
+
+            // --- Xử lý dữ liệu chi tiết sản phẩm ---
+            const p = productResponse.data;
+
+            // ✅ Gộp dữ liệu tồn kho vào từng biến thể (variant)
+            const variantsWithStock = (p.variants || []).map(variant => ({
+                ...variant,
+                soLuongTon: inventoryMap.get(variant.id) || 0, // Lấy tồn kho, mặc định là 0 nếu không tìm thấy
+            }));
+
+            const priceMin = p.giaMin || 0;
+            const priceMax = p.giaMax || 0;
+            const defaultColor = p.colors && p.colors.length > 0 ? p.colors[0] : null;
+            const defaultSize = p.sizes && p.sizes.length > 0 ? p.sizes[0] : null;
+
+            // Tìm variant mặc định từ danh sách đã có tồn kho
+            const defaultVariant =
+                variantsWithStock.length > 0
+                    ? variantsWithStock.find(
+                          (v) =>
+                              (!defaultColor || v.maMau === defaultColor.maMau) &&
+                              (!defaultSize || v.kichThuoc === defaultSize)
+                      ) || variantsWithStock[0]
+                    : null;
+            
+            // Cấu trúc lại và lưu dữ liệu vào state 'product'
+            setProduct({
+                ...p,
+                name: p.tenSanPham,
+                priceMin,
+                priceMax,
+                variants: variantsWithStock, // ✅ Sử dụng mảng variants đã có tồn kho
+                images:
+                    defaultVariant && defaultVariant.images && defaultVariant.images.length > 0
+                        ? defaultVariant.images
+                        : p.images && p.images.length > 0
+                        ? p.images
+                        : [
+                              p.imageUrl ||
+                                  "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=600&q=80",
+                          ],
+                colors: p.colors || [],
+                sizes: p.sizes || [],
+                rating: p.rating || 4.5,
+                sold: p.sold || 0,
+                description: p.moTa || "",
+                shipping: p.shipping || "Miễn phí vận chuyển cho đơn hàng từ 500k",
+                voucher: p.voucher || null,
+                detailImg: sizeGuideImg,
+            });
+
+            setSelectedImage(0);
+        })
+        .catch((error) => {
+            console.error("Lỗi khi tải dữ liệu chi tiết hoặc tồn kho:", error);
+            setProduct(null);
+        })
+        .finally(() => {
+            setLoading(false);
+        });
+}, [id]);
 
   // Fetch related products
   useEffect(() => {
     if (!id) return;
+
+    // ✅ Gọi API mới, chuyên dụng cho sản phẩm liên quan
     axios
-      .get("http://localhost:8080/api/outlet/products", {
-        params: { page: 0, pageSize: 6 },
+      .get(`http://localhost:8080/api/outlet/products/${id}/related`, {
+          params: { limit: 5 }, // Gửi tham số limit
       })
       .then((res) => {
-        const rel = (res.data.content || []).filter((item) => `${item.id}` !== `${id}`).slice(0, 5);
-        setRelatedProducts(
-          rel.map((item) => ({
-            id: item.id,
-            name: item.tenSanPham,
-            img: item.imageUrl,
-            price: item.giaSauKhiGiam ? item.giaSauKhiGiam.toLocaleString("vi-VN") : "",
-            rating: 4.5 + Math.random() * 0.5,
-          }))
-        );
+          // Dữ liệu trả về từ API mới đã là ShopProductVO
+          // nên có thể đã chứa đủ thông tin bạn cần.
+          const relatedData = res.data || [];
+
+          // ✅ Xử lý lại dữ liệu để khớp với cấu trúc hiển thị của bạn
+          setRelatedProducts(
+              relatedData.map((item) => ({
+                  id: item.id,
+                  name: item.name, // Dùng 'name' thay vì 'tenSanPham'
+                  img: item.imageUrl,
+                  // Định dạng lại giá tiền
+                  price: item.salePrice
+                      ? item.salePrice.toLocaleString("vi-VN")
+                      : item.price.toLocaleString("vi-VN"),
+                  rating: item.rating || 4.5, // Dùng rating từ API, nếu không có thì mặc định
+              }))
+          );
+      })
+      .catch(error => {
+          console.error("Lỗi khi tải sản phẩm liên quan:", error);
+          setRelatedProducts([]); // Đặt về mảng rỗng nếu có lỗi
       });
-  }, [id]);
+}, [id]);
 
   // Nếu FE chọn màu hoặc size, cập nhật ảnh tương ứng variant
   useEffect(() => {
@@ -249,6 +290,11 @@ useEffect(() => {
     if (!variant) {
       setAddCartStatus({ loading: false, success: false, error: "Vui lòng chọn đủ màu và size!" });
       return;
+    }
+      if (quantity > variant.soLuongTon) {
+        toast.error(`Chỉ còn ${variant.soLuongTon} sản phẩm có sẵn. Vui lòng giảm số lượng.`);
+        setAddCartStatus({ loading: false, success: false, error: `Chỉ còn ${variant.soLuongTon} sản phẩm.` });
+        return;
     }
     if (quantity < 1) {
       setAddCartStatus({ loading: false, success: false, error: "Số lượng phải lớn hơn 0!" });
@@ -335,6 +381,17 @@ useEffect(() => {
     );
   }
 
+ 
+  let stock = null;
+if (product && product.variants && selectedColor && selectedSize) {
+    variant = product.variants.find(
+        (v) => v.maMau === selectedColor.maMau && v.kichThuoc === selectedSize
+    );
+    if (variant) {
+        // ✅ LẤY TRỰC TIẾP TỪ VARIANT, KHÔNG CẦN TRA CỨU LẠI
+        stock = variant.soLuongTon; 
+    }
+}
   return (
     <Box sx={{ bgcolor: "#f9fbfc" }}>
       <Header />
@@ -523,6 +580,7 @@ useEffect(() => {
         );
     })}
 </Stack>
+ 
               </Stack>
             )}
             <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3 }}>
@@ -539,6 +597,7 @@ useEffect(() => {
                     fontWeight: 700,
                   }}
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                   disabled={!variant || quantity <=1 }
                 >
                   -
                 </Button>
@@ -557,12 +616,32 @@ useEffect(() => {
                     color: "#1976d2",
                     fontWeight: 700,
                   }}
-                  onClick={() => setQuantity((q) => q + 1)}
+                  onClick={() => {
+                if (quantity >= variant?.soLuongTon) {
+                    toast.warn("Số lượng trong kho không đủ.");
+                } else {
+                    setQuantity((q) => q + 1);
+                }
+            }}
+            disabled={!variant || quantity >= variant?.soLuongTon}
                 >
                   +
                 </Button>
               </Box>
             </Stack>
+            <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 3, minHeight: '24px' }}>
+                    <Typography sx={{ minWidth: 54, fontWeight: 500 }}></Typography>
+                    {/* ✅ Thêm khối hiển thị tồn kho */}
+                    {stock !== null ? (
+                        <Typography fontWeight={700} color={stock > 0 ? "green" : "red"}>
+                            {stock > 0 ? `Còn ${stock} sản phẩm` : "Hết hàng"}
+                        </Typography>
+                    ) : (
+                        <Typography color="text.secondary">
+                          
+                        </Typography>
+                    )}
+                </Stack>
             <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
               <Button
   variant="contained"
@@ -600,9 +679,11 @@ useEffect(() => {
     // --- KẾT THÚC CODE MỚI ---
   }}
   onClick={handleAddToCart}
-  disabled={addCartStatus.loading}
+  disabled={addCartStatus.loading || !variant || stock === 0}
 >
-  {addCartStatus.loading ? "Đang thêm..." : "Thêm vào giỏ hàng"}
+ {addCartStatus.loading 
+                            ? "Đang thêm..." 
+                            : (stock === 0 ? "Hết hàng" : "Thêm vào giỏ hàng")}
 </Button>
               
             </Stack>
@@ -662,71 +743,125 @@ useEffect(() => {
           </Grid>
         </Grid>
       </Box>
-      <Box sx={{ maxWidth: 1320, mx: "auto", px: 2, mt: 8 }}>
-        <Typography variant="h5" fontWeight={900} sx={{ mb: 2.7, letterSpacing: 1.2 }}>
-          Sản phẩm liên quan
-        </Typography>
-        <Grid container spacing={3}>
-          {relatedProducts.map((item, idx) => (
-            <Grid item xs={6} sm={4} md={2.4} key={idx}>
-              <Paper
-                elevation={3}
-                sx={{
-                  p: 1.5,
-                  textAlign: "center",
-                  borderRadius: 4,
-                  bgcolor: "#fff",
-                  height: 255,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "flex-start",
-                  boxShadow: "0 2px 14px 0 #bde0fe22",
-                  border: "1.5px solid #e3f0fa",
-                  transition: "box-shadow 0.18s, transform 0.16s",
-                  "&:hover": {
-                    boxShadow: "0 8px 32px 0 #bde0fe33",
-                    border: "1.5px solid #1976d2",
-                    transform: "translateY(-5px) scale(1.04)",
-                  },
-                }}
-                onClick={() => navigate(`/shop/detail/${item.id}`)}
-              >
-                {item.img && (
-                  <Box
-                    component="img"
-                    src={item.img}
-                    alt={item.name}
+     <Box sx={{ maxWidth: 1320, mx: "auto", px: 2, mt: 8, mb: 4 }}>
+    <Typography variant="h5" fontWeight={900} sx={{ mb: 2.7, letterSpacing: 1.2 }}>
+        Sản phẩm liên quan
+    </Typography>
+    <Grid container spacing={3}>
+        {relatedProducts.map((item) => (
+            // ✅ Sử dụng item.id cho key để tối ưu
+            <Grid item xs={6} sm={4} md={2.4} key={item.id}>
+                <Paper
+                    elevation={3}
                     sx={{
-                      width: "100%",
-                      height: 118,
-                      objectFit: "cover",
-                      borderRadius: 3,
-                      mb: 1.2,
+                        p: 1.5,
+                        textAlign: "center",
+                        borderRadius: 4,
+                        bgcolor: "#fff",
+                        height: "100%", // Chiều cao 100% để các thẻ bằng nhau
+                        display: "flex",
+                        flexDirection: "column",
+                        cursor: "pointer",
+                        position: "relative", // Cần cho việc định vị chip giảm giá
+                        boxShadow: "0 2px 14px 0 #bde0fe22",
+                        border: "1.5px solid #e3f0fa",
+                        transition: "box-shadow 0.18s, transform 0.16s",
+                        "&:hover": {
+                            boxShadow: "0 8px 32px 0 #bde0fe33",
+                            border: "1.5px solid #1976d2",
+                            transform: "translateY(-5px) scale(1.04)",
+                        },
                     }}
-                  />
-                )}
-                <Typography
-                  fontWeight={700}
-                  sx={{ fontSize: 15, mb: 0.5, color: "#205072", letterSpacing: 0.2 }}
+                    onClick={() => navigate(`/shop/detail/${item.id}`)}
                 >
-                  {item.name}
-                </Typography>
-                <Rating
-                  value={item.rating}
-                  precision={0.1}
-                  size="small"
-                  readOnly
-                  sx={{ mb: 0.6 }}
-                />
-                <Typography sx={{ fontWeight: 900, fontSize: 15.5, color: "#e53935" }}>
-                  {item.price}₫
-                </Typography>
-              </Paper>
+                    {/* ✅ Thêm huy hiệu giảm giá */}
+                    {item.discountPercent && (
+                        <Chip
+                            label={item.discountPercent}
+                            color="error"
+                            size="small"
+                            sx={{
+                                position: "absolute", top: 12, left: 12,
+                                fontWeight: 700, fontSize: '0.7rem'
+                            }}
+                        />
+                    )}
+
+                    {/* Phần hình ảnh */}
+                    <Box
+                        component="img"
+                        src={item.img || "https://via.placeholder.com/300"}
+                        alt={item.name}
+                        sx={{
+                            width: "100%", height: 118, objectFit: "cover",
+                            borderRadius: 3, mb: 1.2,
+                        }}
+                    />
+
+                    {/* Tên sản phẩm */}
+                    <Typography
+                        fontWeight={700}
+                        sx={{
+                            fontSize: 15, mb: 0.5, color: "#205072",
+                            // Giới hạn tên sản phẩm chỉ hiển thị 2 dòng
+                            display: '-webkit-box', overflow: 'hidden',
+                            WebkitBoxOrient: 'vertical', WebkitLineClamp: 2,
+                            minHeight: '45px' // Đảm bảo chiều cao tối thiểu cho tên
+                        }}
+                    >
+                        {item.name}
+                    </Typography>
+
+                    {/* Đánh giá */}
+                   
+                    
+                    {/* ✅ Cập nhật logic hiển thị giá */}
+                    <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                        justifyContent="center"
+                        sx={{ minHeight: '24px' }} // Đảm bảo chiều cao cho giá
+                    >
+                        {item.salePrice ? (
+                            <>
+                                <Typography sx={{ fontWeight: 900, fontSize: 15.5, color: "#e53935" }}>
+                                    {item.salePrice.toLocaleString("vi-VN")}₫
+                                </Typography>
+                                <Typography sx={{ color: "#aaa", textDecoration: "line-through", fontSize: 13 }}>
+                                    {item.price.toLocaleString("vi-VN")}₫
+                                </Typography>
+                            </>
+                        ) : (
+                            <Typography sx={{ fontWeight: 900, fontSize: 15.5, color: "#205072" }}>
+                                {item.price.toLocaleString("vi-VN")}₫
+                            </Typography>
+                        )}
+                    </Stack>
+
+                    {/* ✅ Thêm nút Mua Ngay */}
+                    <Box sx={{ mt: "auto", pt: 1.5, width: "100%" }}>
+                        <Button
+                            variant="contained"
+                            size="small"
+                            startIcon={<ShoppingCartIcon sx={{ fontSize: '1rem' }} />}
+                            onClick={() => navigate(`/shop/detail/${item.id}`)}
+                            sx={{
+                                fontWeight: 600,
+                                borderRadius: 2,
+                                fontSize: '0.75rem',
+                                bgcolor: '#1976d2',
+                                '&:hover': { bgcolor: '#1565c0' }
+                            }}
+                        >
+                            Mua ngay
+                        </Button>
+                    </Box>
+                </Paper>
             </Grid>
-          ))}
-        </Grid>
-      </Box>
+        ))}
+    </Grid>
+</Box>
       <Box mt={8}>
         <Footer />
       </Box>
