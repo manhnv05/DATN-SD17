@@ -293,7 +293,6 @@ export default function AddPhieuGiam() {
             { field: "tenPhieu", message: "Tên phiếu không để trống" },
             { field: "dieuKienGiam", message: "Điều kiện giảm không để trống" },
             { field: "soLuong", message: "Số lượng không để trống" },
-            { field: "giamToiDa", message: "Giảm tối đa không để trống" },
             { field: "loaiPhieu", message: "Loại phiếu không để trống" },
             { field: "ngayBatDau", message: "Ngày bắt đầu không để trống" },
             { field: "ngayKetThuc", message: "Ngày kết thúc không để trống" }
@@ -318,7 +317,7 @@ export default function AddPhieuGiam() {
             loaiPhieu: Number(duLieuNhapVao.loaiPhieu),
             phamTramGiamGia: statusPhieu === 1 ? Number(giaTriGiam) : null,
             soTienGiam: statusPhieu === 0 ? Number(giaTriGiam) : null,
-            giamToiDa: duLieuNhapVao.giamToiDa ? Number(duLieuNhapVao.giamToiDa) : 0,
+            giamToiDa: duLieuNhapVao.giamToiDa ? Number(duLieuNhapVao.giamToiDa) : statusPhieu === 0 ? Number(giaTriGiam) : null,
             ngayBatDau: dayjs(duLieuNhapVao.ngayBatDau).format("YYYY-MM-DDTHH:mm:ss"),
             ngayKetThuc: dayjs(duLieuNhapVao.ngayKetThuc).format("YYYY-MM-DDTHH:mm:ss"),
             ngayTao: null,
@@ -327,7 +326,6 @@ export default function AddPhieuGiam() {
             trangThai: 2,
             soLuong: duLieuNhapVao.soLuong ? Number(duLieuNhapVao.soLuong) : 0
         };
-        console.log(duLieuGuiLen)
 
         const ketQua = await addVouchers(duLieuGuiLen);
         console.log(ketQua)
@@ -621,6 +619,7 @@ export default function AddPhieuGiam() {
                                             <Input
                                                 placeholder="VD: 100.000 VNĐ"
                                                 fullWidth
+                                                disabled={statusPhieu !== 1}
                                                 type="text"
                                                 value={giamToiDaDisplay}
                                                 onChange={handleGiamToiDaChange}
@@ -634,18 +633,22 @@ export default function AddPhieuGiam() {
                                                 }}
                                             />
                                             {/* Hidden input để register với react-hook-form */}
-                                            <input
-                                                type="hidden"
-                                                {...register("giamToiDa", {
-                                                    required: "Vui lòng nhập giảm tối đa",
-                                                    validate: (value) => {
-                                                        if (!value || value === "0") return "Vui lòng nhập giảm tối đa";
-                                                        return /^\d+$/.test(value) || "Chỉ được nhập số";
-                                                    }
-                                                })}
-                                            />
-                                            {errors.giamToiDa && (
-                                                <FormHelperText>{errors.giamToiDa.message}</FormHelperText>
+                                            {statusPhieu == 1 && (
+                                                <>
+                                                    <input
+                                                        type="hidden"
+                                                        {...register("giamToiDa", {
+                                                            required: "Vui lòng nhập giảm tối đa",
+                                                            validate: (value) => {
+                                                                if (!value || value === "0") return "Vui lòng nhập giảm tối đa";
+                                                                return /^\d+$/.test(value) || "Chỉ được nhập số";
+                                                            }
+                                                        })}
+                                                    />
+                                                    {errors.giamToiDa && (
+                                                        <FormHelperText>{errors.giamToiDa.message}</FormHelperText>
+                                                    )}
+                                                </>
                                             )}
                                         </FormControl>
 
