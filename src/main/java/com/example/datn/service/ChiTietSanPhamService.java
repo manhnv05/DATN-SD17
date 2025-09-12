@@ -258,7 +258,7 @@ public class ChiTietSanPhamService {
         throw new UnsupportedOperationException();
     }
 
-    public List<ChiTietSanPhamDTO> searchByMaOrMoTa(String keyword) {
+    public List<ChiTietSanPhamDTO> searchByMa(String keyword) {
         List<ChiTietSanPham> list = chiTietSanPhamRepository
                 .findByMaSanPhamChiTietContainingIgnoreCase(keyword);
         return list.stream().map(this::toDTO).collect(Collectors.toList());

@@ -15,7 +15,7 @@ import java.util.List;
 @Repository
 public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, Integer>, JpaSpecificationExecutor<ChiTietSanPham> {
 
-    List<ChiTietSanPham> findByMaSanPhamChiTietContainingIgnoreCaseOrMoTaContainingIgnoreCase(String maSanPhamChiTiet, String moTa);
+    List<ChiTietSanPham> findByMaSanPhamChiTietContainingIgnoreCase(String maSanPhamChiTiet);
 
     List<ChiTietSanPham> findBySanPhamId(Integer idSanPham);
 
@@ -76,4 +76,7 @@ public interface ChiTietSanPhamRepository extends JpaRepository<ChiTietSanPham, 
                                 @Param("idMauSac") Integer idMauSac,
                                 @Param("idKichThuoc") Integer idKichThuoc);
 
+    @Query("SELECT MAX(ctsp.gia) FROM ChiTietSanPham ctsp WHERE ctsp.trangThai = 1")
+    Double findMaxPriceFromChiTiet();
+    List<ChiTietSanPham> findBySanPhamIdAndTrangThai(Integer sanPhamId, int trangThai);
 }

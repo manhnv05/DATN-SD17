@@ -65,7 +65,7 @@ public class ChiTietSanPhamController {
 
     @GetMapping("/search")
     public List<ChiTietSanPhamDTO> search(@RequestParam("keyword") String keyword) {
-        return chiTietSanPhamService.searchByMaOrMoTa(keyword);
+        return chiTietSanPhamService.searchByMa(keyword);
     }
 
     @GetMapping("/by-san-pham/{idSanPham}")
