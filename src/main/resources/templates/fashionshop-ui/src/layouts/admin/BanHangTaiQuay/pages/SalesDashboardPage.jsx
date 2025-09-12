@@ -118,7 +118,7 @@ function SalesDashboardPage() {
         });
         if (phieuGiamGiaId) {
           try {
-            const idKhachHang = latestPaymentData.customer?.id;
+            const idKhachHang = latestPaymentData.customer?.id ?? 0;
             const soLuongGiam = 1; // Mặc định là 1 như bạn yêu cầu
 
             console.log(`Thực hiện giảm số lượng cho PGG ID: ${phieuGiamGiaId}`);

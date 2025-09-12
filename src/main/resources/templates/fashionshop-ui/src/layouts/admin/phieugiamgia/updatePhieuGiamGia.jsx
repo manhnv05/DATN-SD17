@@ -30,6 +30,7 @@ import { addPDDKH, deletePDDKH, findAllPDDKH } from "./service/PhieuGiamGiaKhach
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
+import { FormHelperText } from "@mui/material";
 
 // Pagination logic function
 function getPaginationItems(current, total) {
@@ -64,6 +65,10 @@ export default function UpdatePhieuGiam() {
     const [selectedCustomerOld, setselectedCustomerOld] = useState([]);
     const [oldSelected, setoldSelected] = useState([]);
     const [isReadOnly, setIsReadOnly] = useState(false);
+    const [dieuKienGiamDisplay, setDieuKienGiamDisplay] = useState("");
+    const [giamToiDaDisplay, setGiamToiDaDisplay] = useState("");
+    const [giaTriGiamDisplay, setGiaTriGiamDisplay] = useState("");
+    const [giaTriGiam, setGiaTriGiam] = useState(""); // Fixed: Missing state declaration
 
     const navigate = useNavigate();
     const { id } = useParams();
@@ -83,6 +88,24 @@ export default function UpdatePhieuGiam() {
             setSelectedRows(allIds);
         }
     };
+
+    function thayDoiRadioLoaiGiamGia(event) {
+        const giaTri = Number(event.target.value);
+        setStatusPhieu(giaTri);
+        setGiaTriGiam("");
+        setGiaTriGiamDisplay(""); // Reset display value
+    }
+
+    function thayDoiLoaiGiamGia(event) {
+        setStatusPhieu(Number(event.target.value));
+        setGiaTriGiam("");
+        setGiaTriGiamDisplay(""); // Reset display value
+        if (event.target.value == 0) {
+            setValue("phamTramGiamGia", "");
+        } else {
+            setValue("soTienGiam", "");
+        }
+    }
 
     const handleSelectRow = (rowId) => {
         if (selectedRows.includes(rowId)) {
@@ -111,79 +134,141 @@ export default function UpdatePhieuGiam() {
         reset,
         setValue,
         getValues,
-    } = useForm();
+        formState: { errors }
+    } = useForm({
+        mode: "onChange", // 👈 validate mỗi khi thay đổi
+    });
 
     const loadKhachHangByidPhieu = async () => {
-        const PDDKH = {
-            phieuGiamGia: id,
-            khachHang: null,
-            trangThaiP: 1
+        try { // Fixed: Added try-catch block
+            const PDDKH = {
+                phieuGiamGia: id,
+                khachHang: null,
+                trangThaiP: 1
+            }
+            const data = await findAllPDDKH(0, 999, PDDKH)
+            setSelectedRows((prev) => [...prev, ...data.data.content.map((pdd) => pdd.khachHang.id)]);
+            setselectedCustomerOld(data.data.content)
+            console.log(data.data.content)
+            setoldSelected((prev) => [...prev, ...data.data.content.map((pdd) => pdd.khachHang.id)])
+        } catch (error) {
+            console.error("Error loading customer by voucher ID:", error);
+            toast.error("Lỗi khi tải danh sách khách hàng của phiếu");
         }
-        const data = await findAllPDDKH(0, 999, PDDKH)
-        setSelectedRows((prev) => [...prev, ...data.data.content.map((pdd) => pdd.khachHang.id)]);
-        setselectedCustomerOld(data.data.content)
-        console.log(data.data.content)
-        setoldSelected((prev) => [...prev, ...data.data.content.map((pdd) => pdd.khachHang.id)])
     }
 
     const onSubmit = async (data) => {
-        const requiredFields = [
-            { field: "maPhieuGiamGia", message: "Mã phiếu không để trống" },
-            { field: "tenPhieu", message: "Tên phiếu không để trống" },
-            { field: "dieuKienGiam", message: "Điều kiện giảm không để trống" },
-            { field: "soLuong", message: "Số lượng không để trống" },
-        ];
-        data.ngayBatDau = dayjs(data.ngayBatDau).format('YYYY-MM-DDTHH:mm:ss');
-        data.ngayKetThuc = dayjs(data.ngayKetThuc).format('YYYY-MM-DDTHH:mm:ss');
-        data.trangThai = 2
+        try { // Fixed: Added try-catch block
+            const requiredFields = [
+                { field: "maPhieuGiamGia", message: "Mã phiếu không để trống" },
+                { field: "tenPhieu", message: "Tên phiếu không để trống" },
+                { field: "dieuKienGiam", message: "Điều kiện giảm không để trống" },
+                { field: "soLuong", message: "Số lượng không để trống" },
+            ];
+            data.ngayBatDau = dayjs(data.ngayBatDau).format('YYYY-MM-DDTHH:mm:ss');
+            data.ngayKetThuc = dayjs(data.ngayKetThuc).format('YYYY-MM-DDTHH:mm:ss');
+            data.trangThai = 2
 
-        for (const item of requiredFields) {
-            if (!data[item.field]) {
-                toast.error(item.message);
-                return;
+            for (const item of requiredFields) {
+                if (!data[item.field]) {
+                    toast.error(item.message);
+                    return;
+                }
             }
-        }
-        if (!data.soTienGiam && !data.phamTramGiamGia) {
-            toast.error("Giá trị không để trống")
-            return
-        }
-        const dataDelete = selectedCustomerOld.filter((customerold) => (!selectedRows.includes(customerold.khachHang.id)))
-        const datacreate = selectedRows.filter((data) => (!oldSelected.includes(data)))
-        const dataPDDKH = datacreate.flatMap((data) => [
-            {
-                phieuGiamGia: id,
-                khachHang: data,
-                trangThai: 1
+            
+            // Fixed: Set proper values for discount amount fields
+            if (statusPhieu === 1) {
+                // Percentage discount
+                data.phamTramGiamGia = giaTriGiam;
+                data.soTienGiam = null;
+            } else {
+                // Fixed amount discount
+                data.soTienGiam = giaTriGiam;
+                data.phamTramGiamGia = null;
+                data.giamToiDa = data.soTienGiam
             }
-        ]);
+            
+            if (!data.soTienGiam && !data.phamTramGiamGia) {
+                toast.error("Giá trị không để trống")
+                return
+            }
+            
+            const dataDelete = selectedCustomerOld.filter((customerold) => (!selectedRows.includes(customerold.khachHang.id)))
+            const datacreate = selectedRows.filter((data) => (!oldSelected.includes(data)))
+            const dataPDDKH = datacreate.flatMap((data) => [
+                {
+                    phieuGiamGia: id,
+                    khachHang: data,
+                    trangThai: 1
+                }
+            ]);
 
-        const listKachHang = []
-        allKhachHang.filter((khachhang) => selectedRows.includes(khachhang.id)).map((khachhang) => (
-            listKachHang.push(khachhang.email)
-        ))
-        const datasendMail = {
-            phieuGiamGiaVO: data,
-            emails: listKachHang
-        }
-        if (dataPDDKH.length !== 0) {
-            await addPDDKH(dataPDDKH)
-        }
+            const listKachHang = []
+            allKhachHang.filter((khachhang) => selectedRows.includes(khachhang.id)).map((khachhang) => (
+                listKachHang.push(khachhang.email)
+            ))
+            const datasendMail = {
+                phieuGiamGiaVO: data,
+                emails: listKachHang
+            }
+            
+            if (dataPDDKH.length !== 0) {
+                await addPDDKH(dataPDDKH)
+            }
 
-        for (const data of dataDelete) {
-            await deletePDDKH(data.id);
-        }
-        const result = await updateVouchers(data);
-        if (result) {
-            sendMail(datasendMail)
-            navigate("/discount", {
-                state: {
-                    message: "Cập nhật voucher thành công!",
-                },
-            });
-        } else {
-            toast.error("Cập nhật voucher thất bại");
+            for (const data of dataDelete) {
+                await deletePDDKH(data.id);
+            }
+            // console.log(data)
+            const result = await updateVouchers(data);
+            if (result) {
+                sendMail(datasendMail)
+                navigate("/discount", {
+                    state: {
+                        message: "Cập nhật voucher thành công!",
+                    },
+                });
+            } else {
+                toast.error("Cập nhật voucher thất bại");
+            }
+        } catch (error) {
+            console.error("Error updating voucher:", error);
+            toast.error("Lỗi khi cập nhật voucher");
         }
     };
+
+    function handleGiaTriGiamChange(event) {
+        const inputValue = event.target.value;
+
+        // Nếu input rỗng, cho phép xóa hoàn toàn
+        if (inputValue === "") {
+            setGiaTriGiamDisplay("");
+            setGiaTriGiam("");
+            return;
+        }
+
+        if (statusPhieu === 1) {
+            // Nếu là phần trăm, chỉ cho phép số từ 0-50
+            let numericValue = inputValue.replace(/\D/g, "");
+            if (!numericValue) {
+                return;
+            }
+            if (Number(numericValue) > 50) {
+                numericValue = "50";
+            }
+            setGiaTriGiamDisplay(numericValue + "%");
+            setGiaTriGiam(numericValue);
+        } else {
+            // Nếu là tiền, format như tiền tệ
+            const numericValue = getNumericValue(inputValue);
+            if (!numericValue) {
+                return;
+            }
+            const formattedValue = formatCurrency(numericValue);
+            setGiaTriGiamDisplay(formattedValue);
+            setGiaTriGiam(numericValue);
+        }
+    }
 
     const loadKhachHang = async (pageIndex) => {
         setLoading(true);
@@ -202,28 +287,129 @@ export default function UpdatePhieuGiam() {
         }
     }
 
+    // Hàm xử lý khi thay đổi giảm tối đa (cải tiến)
+    function handleGiamToiDaChange(event) {
+        const inputValue = event.target.value;
+
+        // Nếu input rỗng, cho phép xóa hoàn toàn
+        if (inputValue === "") {
+            setGiamToiDaDisplay("");
+            setValue("giamToiDa", "");
+            return;
+        }
+
+        const numericValue = getNumericValue(inputValue);
+
+        // Nếu không có số nào, giữ nguyên trạng thái hiện tại
+        if (!numericValue) {
+            return;
+        }
+
+        const formattedValue = formatCurrency(numericValue);
+        setGiamToiDaDisplay(formattedValue);
+        setValue("giamToiDa", numericValue);
+    }
+
+    // Hàm xử lý khi thay đổi giá trị điều kiện giảm (cải tiến)
+    function handleDieuKienGiamChange(event) {
+        const inputValue = event.target.value;
+
+        // Nếu input rỗng, cho phép xóa hoàn toàn
+        if (inputValue === "") {
+            setDieuKienGiamDisplay("");
+            setValue("dieuKienGiam", "");
+            return;
+        }
+
+        const numericValue = getNumericValue(inputValue);
+
+        // Nếu không có số nào, giữ nguyên trạng thái hiện tại
+        if (!numericValue) {
+            return;
+        }
+
+        const formattedValue = formatCurrency(numericValue);
+        setDieuKienGiamDisplay(formattedValue);
+        setValue("dieuKienGiam", numericValue);
+    }
+
+    // Hàm lấy giá trị số từ chuỗi đã format
+    function getNumericValue(formattedValue) {
+        if (!formattedValue) return "";
+        return formattedValue.replace(/\D/g, "");
+    }
+
+
     async function fetchOneVoucher(id) {
-        const data = await fetchOneVouchers(id)
-        setStatusLoaiPhieu(data.loaiPhieu)
-        if (data.loaiPhieu == 0) {
-            setIsReadOnly(false)
+        try { // Fixed: Added try-catch block
+            const data = await fetchOneVouchers(id)
+            setStatusLoaiPhieu(data.loaiPhieu)
+            if (data.loaiPhieu == 0) {
+                setIsReadOnly(false)
+            }
+            else {
+                setIsReadOnly(true)
+            }
+            if (data.phamTramGiamGia) {
+                setStatusPhieu(1)
+                setvalueInput(data.phamTramGiamGia)
+            }
+            else {
+                setStatusPhieu(0)
+                setvalueInput(data.soTienGiam)
+            }
+            if (data.phamTramGiamGia) {
+                const giatriGiamPhamTram = getNumericValue(String(data.phamTramGiamGia));
+
+                // Nếu không có số nào, giữ nguyên trạng thái hiện tại
+                if (!giatriGiamPhamTram) {
+                    return;
+                }
+                const giatriGiamValue = formatCurrencyPhamTram(giatriGiamPhamTram);
+                setGiaTriGiamDisplay(giatriGiamValue);
+                setGiaTriGiam(giatriGiamPhamTram); // Fixed: Set giaTriGiam state
+            }
+            else {
+                const giatriGiamNumber = getNumericValue(String(data.soTienGiam));
+
+                // Nếu không có số nào, giữ nguyên trạng thái hiện tại
+                if (!giatriGiamNumber) {
+                    return;
+                }
+
+                const giatriGiamValue = formatCurrency(giatriGiamNumber);
+                setGiaTriGiamDisplay(giatriGiamValue);
+                setGiaTriGiam(giatriGiamNumber); // Fixed: Set giaTriGiam state
+            }
+
+            const dieukienGiamNumber = getNumericValue(String(data.dieuKienGiam));
+
+            // Nếu không có số nào, giữ nguyên trạng thái hiện tại
+            if (!dieukienGiamNumber) {
+                return;
+            }
+
+            const dieukineGimaValue = formatCurrency(dieukienGiamNumber);
+            setDieuKienGiamDisplay(dieukineGimaValue);
+
+            let numericValue = getNumericValue(String(data.giamToiDa)); // Fixed: Use let instead of const
+            // Nếu không có số nào, giữ nguyên trạng thái hiện tại
+            if (!numericValue) {
+                numericValue = "0"; // Fixed: Use string "0" instead of number 0
+            }
+
+            const formattedValue = formatCurrency(numericValue);
+            setGiamToiDaDisplay(formattedValue);
+
+            reset({
+                ...data,
+                ngayBatDau: dayjs(data.ngayBatDau),
+                ngayKetThuc: dayjs(data.ngayKetThuc),
+            });
+        } catch (error) {
+            console.error("Error fetching voucher:", error);
+            toast.error("Lỗi khi tải thông tin phiếu giảm giá");
         }
-        else {
-            setIsReadOnly(true)
-        }
-        if (data.phamTramGiamGia) {
-            setStatusPhieu(1)
-            setvalueInput(data.phamTramGiamGia)
-        }
-        else {
-            setStatusPhieu(0)
-            setvalueInput(data.soTienGiam)
-        }
-        reset({
-            ...data,
-            ngayBatDau: dayjs(data.ngayBatDau),
-            ngayKetThuc: dayjs(data.ngayKetThuc),
-        });
     }
 
     useEffect(() => {
@@ -232,10 +418,10 @@ export default function UpdatePhieuGiam() {
     }, [id])
 
     useEffect(() => {
-        if (statusLoaiPhieu == 1){
+        if (statusLoaiPhieu == 1) {
             setValue("soLuong", selectedRows.length)
         }
-    }, [selectedRows])
+    }, [selectedRows, setValue]) // Fixed: Added setValue to dependency array
 
     useEffect(() => {
         if (statusLoaiPhieu === 1) {
@@ -254,34 +440,104 @@ export default function UpdatePhieuGiam() {
         }
     }
 
-    function changeInputValue(e) {
-        let newValue = e.target.value;
+    // Hàm format số thành tiền tệ (cải tiến)
+    function formatCurrency(value) {
+        if (!value || value === "0") return "";
+        // Loại bỏ tất cả ký tự không phải số
+        const numericValue = value.toString().replace(/\D/g, "");
+        if (!numericValue) return "";
 
-        if (statusPhieu === 1) {
-            let numericValue = Number(newValue);
-            if (numericValue > 100) {
-                newValue = 100;
-            }
-        }
-        // changeInput(e)
-        setvalueInput(newValue)
+        // Format số với dấu phẩy phân cách hàng nghìn
+        const formatted = new Intl.NumberFormat('vi-VN').format(numericValue);
+        return formatted + " VNĐ";
     }
 
-    const handleChangeRadio = (event) => {
-        const value = event.target.value;
-        setStatusPhieu(value === "0" ? 0 : 1);
-    };
+    // Hàm format số thành tiền tệ (cải tiến)
+    function formatCurrencyPhamTram(value) {
+        if (!value || value === "0") return "";
+        // Loại bỏ tất cả ký tự không phải số
+        const numericValue = value.toString().replace(/\D/g, "");
+        if (!numericValue) return "";
 
-    // Function để render checkbox
-    const renderCheckbox = (row) => {
+        // Format số với dấu phẩy phân cách hàng nghìn
+        const formatted = new Intl.NumberFormat('vi-VN').format(numericValue);
+        return formatted + " %";
+    }
+
+    function handleKeyDown(event, fieldType, fieldType2) {
+        // Xử lý phím Backspace và Delete
+        if (event.key === 'Backspace' || event.key === 'Delete') {
+            const currentValue = event.target.value;
+
+            // Nếu đang ở cuối chuỗi và nhấn Backspace
+            if (event.key === 'Backspace' && event.target.selectionStart === currentValue.length) {
+                event.preventDefault();
+
+                if (fieldType === 'currency') {
+                    // Xóa từng ký tự số từ cuối
+                    const numericValue = getNumericValue(currentValue);
+                    if (numericValue.length > 1) {
+                        const newNumericValue = numericValue.slice(0, -1);
+                        const newValue = formatCurrency(newNumericValue);
+                        console.log(newValue, fieldType)
+                        // Cập nhật state tương ứng
+                        if (fieldType2 === 'dieuKienGiam') {
+                            setDieuKienGiamDisplay(newValue);
+                            setValue("dieuKienGiam", newNumericValue);
+                        } else if (fieldType2 === 'giamToiDa') {
+                            setGiamToiDaDisplay(newValue);
+                            setValue("giamToiDa", newNumericValue);
+                        } else if (fieldType2 === 'soTienGiam' && statusPhieu === 0) {
+                            setGiaTriGiamDisplay(newValue);
+                            setGiaTriGiam(newNumericValue);
+                            setValue("soTienGiam", newNumericValue);
+                            console.log(newNumericValue)
+                        }
+                    } else {
+                        // Xóa hết - cập nhật cho tất cả các trường currency
+                        if (currentValue.includes("VNĐ")) {
+                            if (currentValue === dieuKienGiamDisplay) {
+                                setDieuKienGiamDisplay("");
+                                setValue("dieuKienGiam", "");
+                            } else if (currentValue === giamToiDaDisplay) {
+                                setGiamToiDaDisplay("");
+                                setValue("giamToiDa", "");
+                            } else if (currentValue === giaTriGiamDisplay && statusPhieu === 0) {
+                                setGiaTriGiamDisplay("");
+                                setGiaTriGiam("");
+                            }
+                        }
+                    }
+                } else if (fieldType === 'percentage') {
+                    // Xử lý cho phần trăm
+                    const numericValue = currentValue.replace(/\D/g, "");
+                    if (numericValue.length > 1) {
+                        const newNumericValue = numericValue.slice(0, -1);
+                        setGiaTriGiamDisplay(newNumericValue + "%");
+                        setGiaTriGiam(newNumericValue);
+                    } else {
+                        setGiaTriGiamDisplay("");
+                        setGiaTriGiam("");
+                    }
+                }
+            }
+        }
+    }
+
+    // Fixed: Renamed and fixed function
+    function chonKhachHang(customerId) {
+        handleSelectRow(customerId);
+    }
+
+    function renderCheckbox(row) {
         return (
             <Checkbox
                 checked={row.selected}
-                onChange={() => handleSelectRow(row.id)}
+                onChange={function () { chonKhachHang(row.id); }}
                 size="small"
             />
         );
-    };
+    }
 
     // Prepare table data với checkbox được render sẵn
     const rows = khachHangs?.map((khachHang, index) => ({
@@ -366,18 +622,37 @@ export default function UpdatePhieuGiam() {
                                         <Box component="label" sx={{ display: "block", mb: 1, fontSize: "14px" }}>
                                             Điều kiện giảm
                                         </Box>
-                                        <Input
-                                            fullWidth
-                                            type="text"
-                                            {...register("dieuKienGiam")}
-                                            sx={{
-                                                fontWeight: 700,
-                                                color: "#1769aa",
-                                                background: "#f2f6fa",
-                                                borderRadius: 2,
-                                                pl: 1,
-                                            }}
-                                        />
+                                        <FormControl fullWidth error={!!errors.dieuKienGiam}>
+                                            <Input
+                                                placeholder="VD: 100.000 VNĐ"
+                                                fullWidth
+                                                type="text"
+                                                value={dieuKienGiamDisplay}
+                                                onChange={handleDieuKienGiamChange}
+                                                onKeyDown={(event) => handleKeyDown(event, 'currency', 'dieuKienGiam')}
+                                                sx={{
+                                                    fontWeight: 700,
+                                                    color: "#1769aa",
+                                                    background: "#f2f6fa",
+                                                    borderRadius: 2,
+                                                    paddingLeft: 1
+                                                }}
+                                            />
+                                            {/* Hidden input để register với react-hook-form */}
+                                            <input
+                                                type="hidden"
+                                                {...register("dieuKienGiam", {
+                                                    required: "Vui lòng nhập điều kiện giảm",
+                                                    validate: (value) => {
+                                                        if (!value || value === "0") return "Vui lòng nhập điều kiện giảm";
+                                                        return /^\d+$/.test(value) || "Chỉ được nhập số";
+                                                    }
+                                                })}
+                                            />
+                                            {errors.dieuKienGiam && (
+                                                <FormHelperText>{errors.dieuKienGiam.message}</FormHelperText>
+                                            )}
+                                        </FormControl>
                                     </Box>
                                     <Box sx={{ flex: 1 }}>
                                         <Box component="label" sx={{ display: "block", mb: 1, fontSize: "14px" }}>
@@ -419,17 +694,17 @@ export default function UpdatePhieuGiam() {
                                         </Box>
                                         <Input
                                             fullWidth
-                                            {...register(statusPhieu ? "phamTramGiamGia" : "soTienGiam")}
-                                            type="number"
-                                            value={valueInput}
-                                            onChange={changeInputValue}
-                                            placeholder={statusPhieu ? "Giảm theo phần trăm" : "Giảm theo số tiền"}
+                                            type="text"
+                                            value={giaTriGiamDisplay}
+                                            onChange={handleGiaTriGiamChange}
+                                            onKeyDown={(event) => handleKeyDown(event, statusPhieu === 1 ? 'percentage' : 'currency', 'soTienGiam')}
+                                            placeholder={statusPhieu ? "VD: 10%" : "VD: 100.000 VNĐ"}
                                             sx={{
                                                 fontWeight: 700,
                                                 color: "#1769aa",
                                                 background: "#f2f6fa",
                                                 borderRadius: 2,
-                                                pl: 1,
+                                                paddingLeft: 1
                                             }}
                                         />
                                     </Box>
@@ -440,12 +715,12 @@ export default function UpdatePhieuGiam() {
                                         <FormControl>
                                             <RadioGroup
                                                 value={statusPhieu === 0 ? "0" : "1"}
-                                                onChange={handleChangeRadio}
-                                                onClick={changeInput}
+                                                onChange={thayDoiRadioLoaiGiamGia}
+                                                onClick={thayDoiLoaiGiamGia}
                                                 row
-                                                sx={{ pl: 1 }}
+                                                sx={{ paddingLeft: 1 }}
                                             >
-                                                <FormControlLabel value="0" control={<Radio />} label="Giá tiền" />
+                                                <FormControlLabel sx={{ marginRight: 4 }} value="0" control={<Radio />} label="Giá tiền" />
                                                 <FormControlLabel value="1" control={<Radio />} label="Phần trăm" />
                                             </RadioGroup>
                                         </FormControl>
@@ -457,17 +732,39 @@ export default function UpdatePhieuGiam() {
                                         <Box component="label" sx={{ display: "block", mb: 1, fontSize: "14px" }}>
                                             Giảm tối đa
                                         </Box>
-                                        <Input
-                                            fullWidth
-                                            {...register("giamToiDa")}
-                                            sx={{
-                                                fontWeight: 700,
-                                                color: "#1769aa",
-                                                background: "#f2f6fa",
-                                                borderRadius: 2,
-                                                pl: 1,
-                                            }}
-                                        />
+                                        <FormControl fullWidth error={!!errors.giamToiDa}>
+                                            <Input
+                                                placeholder="VD: 100.000 VNĐ"
+                                                fullWidth
+                                                disabled={statusPhieu !== 1}
+                                                type="text"
+                                                value={giamToiDaDisplay}
+                                                onChange={handleGiamToiDaChange}
+                                                onKeyDown={(event) => handleKeyDown(event, 'currency', 'giamToiDa')}
+                                                sx={{
+                                                    fontWeight: 700,
+                                                    color: "#1769aa",
+                                                    background: "#f2f6fa",
+                                                    borderRadius: 2,
+                                                    paddingLeft: 1
+                                                }}
+                                            />
+                                            {/* Hidden input để register với react-hook-form */}
+                                            <input
+                                                type="hidden"
+                                                {...register("giamToiDa", {
+                                                    required: statusPhieu === 1 ? "Vui lòng nhập giảm tối đa" : false,
+                                                    validate: (value) => {
+                                                        if (statusPhieu === 1 && (!value || value === "0")) return "Vui lòng nhập giảm tối đa";
+                                                        if (value && !/^\d+$/.test(value)) return "Chỉ được nhập số";
+                                                        return true;
+                                                    }
+                                                })}
+                                            />
+                                            {errors.giamToiDa && (
+                                                <FormHelperText>{errors.giamToiDa.message}</FormHelperText>
+                                            )}
+                                        </FormControl>
                                     </Box>
                                     <Box sx={{ flex: 1 }}>
                                         <Box component="label" sx={{ display: "block", mb: 1, fontSize: "14px" }}>
