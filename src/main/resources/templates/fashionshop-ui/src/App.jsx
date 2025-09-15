@@ -150,7 +150,6 @@ export default function App() {
     const pathname = location.pathname;
     const role = localStorage.getItem("role");
     const [showChat1, setShowChat1] = useState(true);
-    const [showChat2, setShowChat2] = useState(true);
     const [openGeminiChat, setOpenGeminiChat] = useState(false);
 
 
