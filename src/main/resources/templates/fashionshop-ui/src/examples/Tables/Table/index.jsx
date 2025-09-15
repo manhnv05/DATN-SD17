@@ -84,7 +84,7 @@ function CustomTable({ columns, rows }) { // Đổi tên để tránh đè Table
                         variant="button"
                         fontWeight="regular"
                         color="black"
-                        sx={{ display: "inline-block", width: "max-content" }}
+                        sx={{ display: "inline-block", width: "max-content", userSelect: "text" }}
                     >
                         {row[name]}
                     </SoftTypography>
@@ -109,7 +109,7 @@ function CustomTable({ columns, rows }) { // Đổi tên để tránh đè Table
 
     return useMemo(
         () => (
-            <TableContainer>
+            <TableContainer sx={{ userSelect: "text" }}>
                 <Table>
                     <SoftBox component="thead">
                         <TableRow>{renderColumns}</TableRow>

@@ -15,7 +15,7 @@ import TextField from "@mui/material/TextField";
 import Box from "@mui/material/Box";
 import SoftBox from "components/SoftBox";
 import Table from "examples/Tables/Table";
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useForm, Controller } from "react-hook-form";
 import { updateVouchers, fetchOneVouchers, sendMail } from "./service/PhieuGiamService";
 import { toast } from 'react-toastify';
@@ -72,6 +72,9 @@ export default function UpdatePhieuGiam() {
 
     const navigate = useNavigate();
     const { id } = useParams();
+
+    const location = useLocation();
+    const currentPage = location.state?.page || 1;
 
     const allChecked = khachHangs?.length > 0 && selectedRows.length === khachHangs.length;
     const viewOptions = [5, 10, 20];
@@ -175,7 +178,7 @@ export default function UpdatePhieuGiam() {
                     return;
                 }
             }
-            
+
             // Fixed: Set proper values for discount amount fields
             if (statusPhieu === 1) {
                 // Percentage discount
@@ -187,12 +190,12 @@ export default function UpdatePhieuGiam() {
                 data.phamTramGiamGia = null;
                 data.giamToiDa = data.soTienGiam
             }
-            
+
             if (!data.soTienGiam && !data.phamTramGiamGia) {
                 toast.error("Giá trị không để trống")
                 return
             }
-            
+
             const dataDelete = selectedCustomerOld.filter((customerold) => (!selectedRows.includes(customerold.khachHang.id)))
             const datacreate = selectedRows.filter((data) => (!oldSelected.includes(data)))
             const dataPDDKH = datacreate.flatMap((data) => [
@@ -211,11 +214,10 @@ export default function UpdatePhieuGiam() {
                 phieuGiamGiaVO: data,
                 emails: listKachHang
             }
-            
+
             if (dataPDDKH.length !== 0) {
                 await addPDDKH(dataPDDKH)
             }
-
             for (const data of dataDelete) {
                 await deletePDDKH(data.id);
             }
@@ -223,7 +225,7 @@ export default function UpdatePhieuGiam() {
             const result = await updateVouchers(data);
             if (result) {
                 sendMail(datasendMail)
-                navigate("/discount", {
+                navigate(`/discount?page=${currentPage}`, {
                     state: {
                         message: "Cập nhật voucher thành công!",
                     },
