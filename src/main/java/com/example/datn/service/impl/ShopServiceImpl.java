@@ -50,6 +50,9 @@ public class ShopServiceImpl implements ShopService {
                 size,
                 brand,
                 category,
+                null, // material
+                null, // collar
+                null, // sleeve
                 priceMin,
                 priceMax,
                 pageable

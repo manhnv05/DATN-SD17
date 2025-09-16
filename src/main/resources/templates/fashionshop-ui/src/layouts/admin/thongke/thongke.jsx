@@ -126,7 +126,7 @@ StatCard.propTypes = {
 
 // Hàm format số thành tiền tệ (cải tiến)
 function formatCurrency(value) {
-    if (!value || value === "0") return "";
+    if (!value || value === "0") return "0 VNĐ";
     // Loại bỏ tất cả ký tự không phải số
     const numericValue = value.toString().replace(/\D/g, "");
     if (!numericValue) return "";

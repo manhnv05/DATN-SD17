@@ -253,7 +253,13 @@ export default function HomePage() {
                                     <Typography fontWeight={800} sx={{ fontSize: 18, mb: 0.5, color: "#205072", letterSpacing: 0.5 }}>
                                         {item.name}
                                     </Typography>
-                                  
+                                    <Rating
+                                        size="small"
+                                        precision={0.5}
+                                        value={ratings[index]}
+                                        sx={{ mb: 0.5 }}
+                                        onChange={(_, value) => handleChangeRating(index, value)}
+                                    />
                                     <Stack
                                         direction="row"
                                         spacing={1.2}
@@ -283,7 +289,29 @@ export default function HomePage() {
                                         )}
                                     </Stack>
                                     <Stack direction="row" justifyContent="center" spacing={2}>
-                                        
+                                        <Tooltip title={favoriteIndexes.includes(index) ? "Bỏ yêu thích" : "Yêu thích"}>
+                                            <IconButton
+                                                sx={{
+                                                    color: favoriteIndexes.includes(index) ? "#e53935" : "#bbb",
+                                                    border: favoriteIndexes.includes(index) ? "2px solid #e53935" : "2px solid #ececec",
+                                                    bgcolor: "#fff",
+                                                    borderRadius: "50%",
+                                                    boxShadow: favoriteIndexes.includes(index) ? "0 4px 16px #ffe6e6" : "none",
+                                                    "&:hover": {
+                                                        color: "#e53935",
+                                                        border: "2px solid #e53935",
+                                                        background: "#ffe6e6"
+                                                    },
+                                                    transition: "all 0.15s"
+                                                }}
+                                                onClick={e => {
+                                                    e.stopPropagation();
+                                                    handleToggleFavorite(index);
+                                                }}
+                                            >
+                                                {favoriteIndexes.includes(index) ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+                                            </IconButton>
+                                        </Tooltip>
                                         <Tooltip title="Mua ngay">
                                             <Button
                                                 variant="contained"

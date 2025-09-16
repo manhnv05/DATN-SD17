@@ -69,7 +69,7 @@ public class ChiTietSanPhamService {
             existing.setSoLuong(existing.getSoLuong() + vO.getSoLuong());
             existing.setGia(vO.getGia());
             existing.setTrongLuong(vO.getTrongLuong());
-            existing.setMoTa(vO.getMoTa());
+            //existing.setMoTa(vO.getMoTa());
             existing.setTrangThai(vO.getTrangThai());
             // Update mapping hình ảnh nếu có
             if (vO.getHinhAnhIds() != null) {
@@ -258,9 +258,9 @@ public class ChiTietSanPhamService {
         throw new UnsupportedOperationException();
     }
 
-    public List<ChiTietSanPhamDTO> searchByMaOrMoTa(String keyword) {
+    public List<ChiTietSanPhamDTO> searchByMa(String keyword) {
         List<ChiTietSanPham> list = chiTietSanPhamRepository
-                .findByMaSanPhamChiTietContainingIgnoreCaseOrMoTaContainingIgnoreCase(keyword, keyword);
+                .findByMaSanPhamChiTietContainingIgnoreCase(keyword);
         return list.stream().map(this::toDTO).collect(Collectors.toList());
     }
 
@@ -396,6 +396,7 @@ public class ChiTietSanPhamService {
         }
         // Gán danh sách URL ảnh vào DTO
         ctsp.setListUrlImage(listUrl);
+
         // Tính giá sau khi giảm
         BigDecimal originalPrice = BigDecimal.valueOf(c.getGia());
         BigDecimal discountAmount = originalPrice.multiply(BigDecimal.valueOf(pggLonNhat)).divide(BigDecimal.valueOf(100));

@@ -41,6 +41,9 @@ public class SanPham {
     @Column(name = "trang_thai")
     private Integer trangThai;
 
+    @Column(name = "mo_ta", length = 255)
+    private String moTa;
+
     @OneToMany(mappedBy = "sanPham", fetch = FetchType.LAZY)
     private List<ChiTietSanPham> chiTietSanPhams;
 
