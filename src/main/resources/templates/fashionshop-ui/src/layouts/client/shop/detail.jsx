@@ -50,7 +50,9 @@ export default function ProductDetail() {
   const [favorite, setFavorite] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [addCartStatus, setAddCartStatus] = useState({ loading: false, success: false, error: "" });
+    const [ratings, setRatings] = useState([]);
+    const [favoriteIndexes, setFavoriteIndexes] = useState([])
+    const [addCartStatus, setAddCartStatus] = useState({ loading: false, success: false, error: "" });
   const [user, setUser] = useState(null);
   const [inventory, setInventory] = useState(new Map());
   // TẠO DANH SÁCH SIZE HỢP LỆ DỰA TRÊN MÀU ĐÃ CHỌN
@@ -285,7 +287,20 @@ useEffect(() => {
     }
   }
 
-  // Thêm vào giỏ hàng (tự động switch Redis/DB)
+    const handleChangeRating = (index, value) => {
+        setRatings(prev => prev.map((r, i) => (i === index ? value : r)));
+    };
+
+    const handleToggleFavorite = (index) => {
+        setFavoriteIndexes((prev) =>
+            prev.includes(index)
+                ? prev.filter(i => i !== index)
+                : [...prev, index]
+        );
+    };
+
+
+    // Thêm vào giỏ hàng (tự động switch Redis/DB)
   const handleAddToCart = async () => {
     if (!variant) {
       setAddCartStatus({ loading: false, success: false, error: "Vui lòng chọn đủ màu và size!" });
@@ -381,7 +396,7 @@ useEffect(() => {
     );
   }
 
- 
+  let c = null;
   let stock = null;
 if (product && product.variants && selectedColor && selectedSize) {
     variant = product.variants.find(
@@ -479,6 +494,10 @@ if (product && product.variants && selectedColor && selectedSize) {
               <Typography variant="h5" fontWeight={900} sx={{ letterSpacing: 0.7, mb: 0.5 }}>
                 {product.name}
               </Typography>
+                <Stack direction="row" alignItems="center" spacing={1.5}>
+                    <Rating value={product.rating} precision={0.1} size="small" readOnly />
+                    <Typography sx={{ color: "#888", fontSize: 15 }}>({product.sold} đã bán)</Typography>
+                </Stack>
             </Box>
             <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2 }}>
               <Typography variant="h5" fontWeight={900} sx={{ color: "#e53935" }}>
@@ -643,48 +662,66 @@ if (product && product.variants && selectedColor && selectedSize) {
                     )}
                 </Stack>
             <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
-              <Button
-  variant="contained"
-  color="error"
-  startIcon={<ShoppingCartIcon />}
-  sx={{
-     backgroundColor: "#4fc3f7",
-    
-    // 2. Cập nhật màu bóng đổ theo màu nền mới (RGB của #4fc3f7 là 79, 195, 247)
-    boxShadow: "0 2px 10px 0 rgba(79, 195, 247, 0.25)",
-    
-    // 3. Đảm bảo chữ luôn màu trắng (quan trọng vì nền nhạt hơn)
-    color: "#fff", 
-    fontWeight: 800,
-    borderRadius: 3,
-    px: 3.5,
-    fontSize: 16.5,
-    transition: "all 0.3s ease-in-out",
-    // 2. Định nghĩa các thay đổi khi hover
-    "&:hover": {
+                <Button
+                    variant="contained"
+                    color="error"
+                    startIcon={<ShoppingCartIcon />}
+                    sx={{
+                        backgroundColor: "#4fc3f7",
 
-       backgroundColor: "#e3f2fd", // light blue A100 (MUI)
-     backgroundColor: "#29b6f6", 
-       // Giữ chữ trắng khi hover
-      // Nâng nút lên một chút
-      transform: "translateY(-3px)",
-      
-      // Tăng độ đậm và lan tỏa của bóng
-      boxShadow: "0 4px 14px 0 rgba(151, 131, 240, 0.35)",
-      
-      // (Tùy chọn) Làm màu nền đậm hơn một chút
-    
-    },
-    
-    // --- KẾT THÚC CODE MỚI ---
-  }}
-  onClick={handleAddToCart}
-  disabled={addCartStatus.loading || !variant || stock === 0}
->
- {addCartStatus.loading 
-                            ? "Đang thêm..." 
-                            : (stock === 0 ? "Hết hàng" : "Thêm vào giỏ hàng")}
-</Button>
+                        // Bóng đổ theo màu nền gốc
+                        boxShadow: "0 2px 10px 0 rgba(79, 195, 247, 0.25)",
+
+                        // Đảm bảo chữ luôn màu trắng
+                        color: "#fff",
+                        fontWeight: 800,
+                        borderRadius: 3,
+                        px: 3.5,
+                        fontSize: 16.5,
+                        transition: "all 0.3s ease-in-out",
+
+                        // Hover: đổi nền sáng hơn + nâng nút
+                        "&:hover": {
+                            backgroundColor: "#e3f2fd",
+                            transform: "translateY(-3px)",
+                            boxShadow: "0 4px 14px 0 rgba(151, 131, 240, 0.35)",
+                        },
+
+                        // Active: nền đậm hơn khi nhấn
+                        "&:active": {
+                            backgroundColor: "#29b6f6",
+                        },
+                    }}
+                    onClick={handleAddToCart}
+                    disabled={addCartStatus.loading || !variant || stock === 0}
+                >
+                    {addCartStatus.loading
+                        ? "Đang thêm..."
+                        : stock === 0
+                            ? "Hết hàng"
+                            : "Thêm vào giỏ hàng"}
+                </Button>
+
+                <Tooltip title={favorite ? "Bỏ yêu thích" : "Yêu thích"}>
+                    <IconButton
+                        sx={{
+                            color: favorite ? "#e53935" : "#bbb",
+                            border: favorite ? "2px solid #e53935" : "2px solid #ececec",
+                            bgcolor: "#fff",
+                            borderRadius: "50%",
+                            boxShadow: favorite ? "0 4px 16px #ffe6e6" : "none",
+                            "&:hover": {
+                                color: "#e53935",
+                                border: "2px solid #e53935",
+                                background: "#ffe6e6"
+                            },
+                            transition: "all 0.15s"
+                        }}
+                        onClick={() => setFavorite(fav => !fav)}
+                    >
+                        {favorite ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+                    </IconButton>
+                </Tooltip>
               
             </Stack>
             {/* Thông báo trạng thái thêm vào giỏ hàng */}
@@ -698,7 +735,55 @@ if (product && product.variants && selectedColor && selectedSize) {
                 {addCartStatus.error}
               </Alert>
             )}
-           
+              {product.voucher && (
+                  <Paper
+                      elevation={0}
+                      sx={{
+                          bgcolor: "#fff3f3",
+                          border: "1.5px solid #ffbebe",
+                          borderRadius: 3,
+                          px: 2.5,
+                          py: 1.7,
+                          mb: 2,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 2
+                      }}
+                  >
+                      <LocalOfferIcon sx={{ color: "#e53935", fontSize: 28 }} />
+                      <Box flex={1}>
+                          <Typography sx={{ fontWeight: 900, color: "#e53935", fontSize: 17 }}>
+                              {product.voucher.percent}% GIẢM
+                          </Typography>
+                          {/* SỬA: KHÔNG để Chip nằm trong Typography với component mặc định là "p" */}
+                          <Box sx={{ display: "inline-flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                              <Typography component="span" sx={{ color: "#222", fontSize: 15.5 }}>
+                                  Đơn tối thiểu {product.voucher.min}
+                              </Typography>
+                              <Chip label={product.voucher.expire} size="small" sx={{ bgcolor: "#ffbebe", color: "#e53935", ml: 1, fontWeight: 700, fontSize: 15 }} />
+                          </Box>
+                          <Typography sx={{ color: "#e53935", fontSize: 14, mt: 0.5, fontWeight: 700 }}>Mã: <b>{product.voucher.code}</b></Typography>
+                      </Box>
+                      <Button
+                          variant="outlined"
+                          color="error"
+                          size="small"
+                          sx={{
+                              fontWeight: 900,
+                              borderRadius: 2,
+                              px: 2,
+                              fontSize: 16,
+                              bgcolor: "#fff",
+                              color: "#e53935",
+                              borderColor: "#e53935",
+                              "&:hover": { bgcolor: "#ffe6e6", borderColor: "#e53935" }
+                          }}
+                          onClick={() => navigator.clipboard.writeText(product.voucher.code)}
+                      >
+                          Sao chép mã
+                      </Button>
+                  </Paper>
+              )}
             <Alert
               severity="info"
               sx={{
@@ -748,7 +833,7 @@ if (product && product.variants && selectedColor && selectedSize) {
         Sản phẩm liên quan
     </Typography>
     <Grid container spacing={3}>
-        {relatedProducts.map((item) => (
+        {relatedProducts.map((item, idx) => (
             // ✅ Sử dụng item.id cho key để tối ưu
             <Grid item xs={6} sm={4} md={2.4} key={item.id}>
                 <Paper
@@ -790,7 +875,7 @@ if (product && product.variants && selectedColor && selectedSize) {
                     {/* Phần hình ảnh */}
                     <Box
                         component="img"
-                        src={item.img || "https://via.placeholder.com/300"}
+                        src={item.img || "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=600&q=80"}
                         alt={item.name}
                         sx={{
                             width: "100%", height: 118, objectFit: "cover",
@@ -813,7 +898,15 @@ if (product && product.variants && selectedColor && selectedSize) {
                     </Typography>
 
                     {/* Đánh giá */}
-                   
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mb: 0.5 }}>
+                        <Rating
+                            size="small"
+                            precision={0.5}
+                            value={ratings[idx]}
+                            onChange={(_, value) => handleChangeRating(idx, value)}
+                            onClick={e => e.stopPropagation()}
+                        />
+                    </Box>
                     
                     {/* ✅ Cập nhật logic hiển thị giá */}
                     <Stack
@@ -841,21 +934,51 @@ if (product && product.variants && selectedColor && selectedSize) {
 
                     {/* ✅ Thêm nút Mua Ngay */}
                     <Box sx={{ mt: "auto", pt: 1.5, width: "100%" }}>
-                        <Button
-                            variant="contained"
-                            size="small"
-                            startIcon={<ShoppingCartIcon sx={{ fontSize: '1rem' }} />}
-                            onClick={() => navigate(`/shop/detail/${item.id}`)}
-                            sx={{
-                                fontWeight: 600,
-                                borderRadius: 2,
-                                fontSize: '0.75rem',
-                                bgcolor: '#1976d2',
-                                '&:hover': { bgcolor: '#1565c0' }
-                            }}
-                        >
-                            Mua ngay
-                        </Button>
+                        <Stack direction="row" justifyContent="center" alignItems="center" spacing={2}>
+                            <Tooltip title={favoriteIndexes.includes(idx) ? "Bỏ yêu thích" : "Yêu thích"}>
+                                <IconButton
+                                    sx={{
+                                        color: favoriteIndexes.includes(idx) ? "#e53935" : "#bbb",
+                                        border: favoriteIndexes.includes(idx) ? "2px solid #e53935" : "2px solid #ececec",
+                                        bgcolor: "#fff",
+                                        borderRadius: "50%",
+                                        boxShadow: favoriteIndexes.includes(idx) ? "0 4px 16px #ffe6e6" : "none",
+                                        "&:hover": {
+                                            color: "#e53935",
+                                            border: "2px solid #e53935",
+                                            background: "#ffe6e6"
+                                        },
+                                        transition: "all 0.15s"
+                                    }}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleToggleFavorite(idx);
+                                    }}
+                                >
+                                    {favoriteIndexes.includes(idx) ? <FavoriteIcon /> : <FavoriteBorderIcon />}
+                                </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Mua ngay">
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    startIcon={<ShoppingCartIcon sx={{ fontSize: '1rem' }} />}
+                                    sx={{
+                                        fontWeight: 700,
+                                        borderRadius: 3,
+                                        px: 2.2,
+                                        fontSize: 12,
+                                        boxShadow: "0 2px 8px 0 #bde0fe33",
+                                        background: "#6cacec",
+                                        color: '#fff',
+                                        "&:hover": { background: "#49a3f1" }
+                                    }}
+                                    onClick={() => navigate(`/shop/detail/${item.id}`)}
+                                >
+                                    Mua ngay
+                                </Button>
+                            </Tooltip>
+                        </Stack>
                     </Box>
                 </Paper>
             </Grid>

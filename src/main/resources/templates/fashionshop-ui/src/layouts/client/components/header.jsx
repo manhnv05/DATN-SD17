@@ -19,8 +19,32 @@ import { useNavigate, Link as RouterLink } from "react-router-dom";
 import logoImg from "assets/images/logo4.png";
 import { logout } from "../data/logout";
 
+// Số lượng sản phẩm yêu thích demo (nên lấy từ API thực tế)
 const demoFavoriteCount = 4;
 
+// SubNav cho dưới header
+const subNavItems = [
+    "New Arrivals",
+    "Best Selling",
+    "Tops",
+    "Bottoms",
+    "Outerwear",
+    "Accessories",
+    "Sale Off"
+];
+
+// Nav chính
+const navItems = [
+    { label: "OUTLET", red: true, route: "/outlet-sales" },
+    { label: "Trang chủ", route: "/home" },
+    { label: "Cửa hàng", route: "/shop" },
+    { label: "Giới thiệu", route: "/about" },
+    { label: "Bài viết", route: "/blog" },
+    { label: "Liên hệ", route: "/contact" },
+    { label: "Theo Dõi Đơn Hàng", route: "/tra-cuu-don-hang" }
+];
+
+// Logo component
 function Logo() {
     return (
         <Box display="flex" alignItems="center" gap={1}>
@@ -40,16 +64,7 @@ function Logo() {
     );
 }
 
-const navItems = [
-    { label: "OUTLET", red: true, route: "/outlet-sales" },
-    { label: "Trang chủ", route: "/home" },
-    { label: "Cửa hàng", route: "/shop" },
-    { label: "Giới thiệu", route: "/about" },
-    { label: "Bài viết", route: "/blog" },
-    { label: "Liên hệ", route: "/contact" },
-     { label: "Theo Dõi Đơn Hàng", route: "/tra-cuu-don-hang" },
-];
-
+// Header component
 export default function Header() {
     const isMobile = useMediaQuery('(max-width:900px)');
     const navigate = useNavigate();
@@ -64,78 +79,63 @@ export default function Header() {
     // CART COUNT STATE
     const [cartCount, setCartCount] = useState(0);
 
-    // Lấy user info qua localStorage (KHÔNG dùng API /me)
-  useEffect(() => {
-    // --- BƯỚC 1: Tải thông tin ban đầu từ localStorage để UI hiển thị ngay lập tức ---
-    const localRole = localStorage.getItem("role");
-    const localUsername = localStorage.getItem("username");
-    const localEmail = localStorage.getItem("email");
-    const localAvatar = localStorage.getItem("avatar") || "";
-    const localUserId = localStorage.getItem("userId") || localStorage.getItem("id");
+    // --- Lấy user info qua localStorage và cập nhật từ API /me ---
+    useEffect(() => {
+        // --- Bước 1: Đọc từ localStorage ---
+        const localRole = localStorage.getItem("role");
+        const localUsername = localStorage.getItem("username");
+        const localEmail = localStorage.getItem("email");
+        const localAvatar = localStorage.getItem("avatar") || "";
+        const localUserId = localStorage.getItem("userId") || localStorage.getItem("id");
 
-    // Chỉ thực hiện nếu có thông tin đăng nhập trong localStorage
-    if (localRole && localUsername) {
-        // Set state ban đầu với dữ liệu từ localStorage
-        const initialUser = {
-            id: localUserId,
-            username: localUsername,
-            role: localRole,
-            email: localEmail,
-            avatar: localAvatar,
-        };
-        setUser(initialUser);
-        setIsLoggedIn(true);
-        setIsAdmin(localRole === "NHANVIEN" || localRole === "QUANLY" || localRole === "QUANTRIVIEN");
+        if (localRole && localUsername) {
+            // Bước 2: Set state ban đầu từ localStorage
+            const initialUser = {
+                id: localUserId,
+                username: localUsername,
+                role: localRole,
+                email: localEmail,
+                avatar: localAvatar,
+            };
+            setUser(initialUser);
+            setIsLoggedIn(true);
+            setIsAdmin(localRole === "NHANVIEN" || localRole === "QUANLY" || localRole === "QUANTRIVIEN");
 
-        // --- BƯỚC 2: Gọi API trong nền để cập nhật lại TÊN và AVATAR mới nhất ---
-        const fetchLatestUserData = async () => {
-            try {
-                const response = await fetch("http://localhost:8080/api/auth/me", {
-                    credentials: "include",
-                });
-
-                if (response.ok) {
-            const data = await response.json();
-
-            // ✅ BẮT ĐẦU LOGIC MỚI DỰA TRÊN ROLE
-            let latestUsername;
-            // Giả sử biến localRole đã có sẵn ở scope bên ngoài của hàm này
-            
-            if (localRole === "KHACHHANG") {
-                // Nếu là khách hàng, ưu tiên lấy 'tenKh', nếu không có thì giữ lại tên cũ
-                latestUsername = data.tenKh || localUsername; 
-            } else if (localRole === "NHANVIEN") {
-                // Nếu là nhân viên, ưu tiên lấy 'tenNhanVien'
-                latestUsername = data.tenNhanVien || localUsername;
-            } else {
-                // Các role còn lại (QUANLY, QUANTRIVIEN, etc.) sẽ hiển thị là Admin
-                latestUsername = "Admin";
-            }
-            // KẾT THÚC LOGIC MỚI
-
-            const latestAvatar = data.hinhAnh || localAvatar;
-
-            // --- BƯỚC 3: Cập nhật state, nhưng GIỮ NGUYÊN ROLE từ localStorage ---
-            setUser(currentUser => ({
-                ...currentUser,
-                username: latestUsername,
-                avatar: latestAvatar,
-            }));
+            // Bước 3: Gọi API lấy tên và avatar mới nhất
+            const fetchLatestUserData = async () => {
+                try {
+                    const response = await fetch("http://localhost:8080/api/auth/me", {
+                        credentials: "include",
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        let latestUsername;
+                        if (localRole === "KHACHHANG") {
+                            latestUsername = data.tenKh || localUsername;
+                        } else if (localRole === "NHANVIEN") {
+                            latestUsername = data.tenNhanVien || localUsername;
+                        } else {
+                            latestUsername = "Admin";
+                        }
+                        const latestAvatar = data.hinhAnh || localAvatar;
+                        setUser(currentUser => ({
+                            ...currentUser,
+                            username: latestUsername,
+                            avatar: latestAvatar,
+                        }));
+                    }
+                } catch (error) {
+                    console.error("Lỗi khi làm mới thông tin người dùng:", error);
+                }
+            };
+            fetchLatestUserData();
+        } else {
+            setUser(null);
+            setIsLoggedIn(false);
+            setIsAdmin(false);
         }
-            } catch (error) {
-                console.error("Lỗi khi làm mới thông tin người dùng:", error);
-            }
-        };
+    }, []);
 
-        fetchLatestUserData();
-        
-    } else {
-        // Nếu không có gì trong localStorage, xác định là người dùng chưa đăng nhập
-        setUser(null);
-        setIsLoggedIn(false);
-        setIsAdmin(false);
-    }
-}, []);
     // Hàm fetch số lượng sản phẩm giỏ hàng theo user hoặc guest
     const fetchCartCount = async (userObj = user) => {
         let count = 0;
@@ -460,7 +460,8 @@ export default function Header() {
                         </Stack>
                     )}
                     <Stack direction="row" spacing={1.1} alignItems="center" minWidth={isMobile ? 0 : 180}>
-                          {!isMobile && isLoggedIn && user && (
+                        {/* Tên người dùng chào hỏi */}
+                        {!isMobile && isLoggedIn && user && (
                             <Typography
                                 sx={{
                                     fontWeight: 600,
@@ -477,6 +478,38 @@ export default function Header() {
                                 Chào, {user.username}
                             </Typography>
                         )}
+
+                        <IconButton
+                            sx={{
+                                bgcolor: "#fff",
+                                border: "1.5px solid #e3f0fa",
+                                color: "#e53935",
+                                borderRadius: 2.5,
+                                width: 42,
+                                height: 42,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                transition: "all 0.13s",
+                                "&:hover": { bgcolor: "#ffe6e6", borderColor: "#e53935" }
+                            }}
+                            onClick={handleGoFavorites}
+                        >
+                            <Badge badgeContent={demoFavoriteCount} color="error" sx={{
+                                "& .MuiBadge-badge": {
+                                    background: "#e53935",
+                                    color: "#fff",
+                                    fontWeight: 700,
+                                    fontSize: 13,
+                                    minWidth: 20,
+                                    height: 20,
+                                    borderRadius: 2.5,
+                                    boxShadow: "0 1px 8px 0 #e5393522"
+                                }
+                            }}>
+                                <FavoriteIcon sx={{ fontSize: 23 }} />
+                            </Badge>
+                        </IconButton>
                         {!isLoggedIn ? (
                             <>
                                 <IconButton
@@ -585,6 +618,7 @@ export default function Header() {
                     </Stack>
                 </Toolbar>
             </AppBar>
+            {/* SubNavItems - Dưới header */}
             {!isMobile && (
                 <Box
                     sx={{
@@ -596,6 +630,40 @@ export default function Header() {
                         justifyContent: "center"
                     }}
                 >
+                    <Stack
+                        direction="row"
+                        spacing={2.7}
+                        sx={{ py: 0.85 }}
+                        justifyContent="center"
+                        alignItems="center"
+                    >
+                        {subNavItems.map(function (item, idx) {
+                            return (
+                                <Typography
+                                    key={item}
+                                    variant="caption"
+                                    sx={{
+                                        color: idx === 0 ? "#1976d2" : "#205072",
+                                        fontWeight: idx === 0 ? 700 : 500,
+                                        textTransform: "capitalize",
+                                        fontSize: 15.2,
+                                        letterSpacing: 0.5,
+                                        cursor: "pointer",
+                                        px: 1.1,
+                                        borderRadius: 1.5,
+                                        "&:hover": {
+                                            color: "#1769aa",
+                                            background: "#bde0fe44",
+                                            textDecoration: "underline"
+                                        },
+                                        transition: "all 0.14s"
+                                    }}
+                                >
+                                    {item}
+                                </Typography>
+                            );
+                        })}
+                    </Stack>
                 </Box>
             )}
         </Box>

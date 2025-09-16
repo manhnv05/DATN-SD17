@@ -32,6 +32,11 @@ public class SanPhamService {
     @Autowired
     private ChiTietSanPhamRepository chiTietSanPhamRepository;
 
+    public List<SanPhamDTO> getLatestActive(int limit) {
+        List<SanPham> list = sanPhamRepository.findActiveSanPhamOrderByIdDesc();
+        return list.stream().limit(limit).map(this::toDTO).collect(Collectors.toList());
+    }
+
     public Integer save(@Valid SanPhamVO vO) {
         SanPham bean = new SanPham();
         bean.setMaSanPham(vO.getMaSanPham());
@@ -69,7 +74,10 @@ public class SanPhamService {
     }
 
     public List<SanPhamDTO> searchByMaSanPhamOrTenSanPham(String keyword) {
-        List<SanPham> sanPhams = sanPhamRepository.findByMaSanPhamOrTenSanPham(keyword, keyword);
+        if (keyword == null) keyword = "";
+        String k = keyword.trim();
+        List<SanPham> sanPhams = sanPhamRepository
+                .findByMaSanPhamContainingIgnoreCaseOrTenSanPhamContainingIgnoreCase(k, k);
         return sanPhams.stream()
                 .filter(sp -> sp.getTrangThai() != null && (sp.getTrangThai() == 0 || sp.getTrangThai() == 1))
                 .map(this::toDTO)
@@ -121,6 +129,36 @@ public class SanPhamService {
 
     public List<String> getAllMaSanPham() {
         return sanPhamRepository.findAllMaSanPham();
+    }
+
+    public List<SanPhamDTO> searchWithFilter(String keyword,
+                                             String color,
+                                             String size,
+                                             String brand,
+                                             String category,
+                                             String material,
+                                             String collar,
+                                             String sleeve,
+                                             Integer priceMin,
+                                             Integer priceMax,
+                                             int limit) {
+        if (limit <= 0) limit = 5;
+        Page<SanPham> page = sanPhamRepository.searchWithFilter(
+                keyword == null ? null : keyword.trim().toLowerCase(),
+                color,
+                size,
+                brand,
+                category,
+                material,
+                collar,
+                sleeve,
+                priceMin,
+                priceMax,
+                PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "id"))
+        );
+        return page.getContent().stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
     private SanPhamDTO toDTO(SanPham original) {

@@ -98,7 +98,7 @@ export default function Footer() {
                             </Typography>
                             <Stack direction="row" spacing={1.7} sx={{ mt: 1.2 }}>
                                 <MuiLink
-                                    href="https://facebook.com/streetweareasy"
+                                    href="https://facebook.com/streetweareazy"
                                     underline="hover"
                                     color="#1976d2"
                                     fontSize={15}
@@ -109,7 +109,7 @@ export default function Footer() {
                                     <Facebook sx={{ fontSize: 18, mr: 0.5 }} /> Facebook
                                 </MuiLink>
                                 <MuiLink
-                                    href="https://instagram.com"
+                                    href="https://instagram.com/streetweareazy"
                                     underline="hover"
                                     color="#1769aa"
                                     fontSize={15}
@@ -173,8 +173,8 @@ export default function Footer() {
                                         0357 420 420
                                     </Typography>
                                 </Stack>
-                                <MuiLink href="mailto:streetweareasy@gmail.com" color="#1976d2" underline="hover" fontSize={15.1} fontWeight={700}>
-                                    streetweareasy@gmail.com
+                                <MuiLink href="mailto:streetweareazy@gmail.com" color="#1976d2" underline="hover" fontSize={15.1} fontWeight={700}>
+                                    streetweareazy@gmail.com
                                 </MuiLink>
                             </Stack>
                         </Box>
@@ -196,16 +196,57 @@ export default function Footer() {
                                     overflow: "hidden",
                                     mb: 1.5,
                                     display: "flex",
+                                    flexDirection: "column",
                                     alignItems: "center",
                                     justifyContent: "center",
                                     boxShadow: "0 1px 8px 0 #bde0fe"
                                 }}
                             >
-                                <img
-                                    src="https://scontent.xx.fbcdn.net/v/t1.15752-9/434090986_1849507995509672_5221086778541462272_n.png?stp=dst-png_s261x260&_nc_cat=109&ccb=1-7&_nc_sid=510075&_nc_ohc=DYXz2b4J9hsAX9k6m5N&_nc_ad=z-m&_nc_cid=0&_nc_ht=scontent.xx&oh=03_AdQYb3IYw4vflGdKZx1e7J4Z6HkXk3nWpJzQwId2U2yFWA&oe=6502A2B0"
-                                    alt="Fanpage"
-                                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                                />
+                                {/* Ảnh đại diện Fanpage và nút dẫn */}
+                                <Box
+                                    sx={{
+                                        width: 54,
+                                        height: 54,
+                                        borderRadius: "50%",
+                                        overflow: "hidden",
+                                        boxShadow: "0 2px 8px #1769aa30",
+                                        mb: 1,
+                                    }}
+                                >
+                                    <img
+                                        src="https://scontent.xx.fbcdn.net/v/t39.30808-6/453189382_478499491593956_2197418138307732318_n.jpg?stp=dst-jpg_p370x247_tt6&_nc_cat=1&ccb=1-7&_nc_sid=d0a8c7&_nc_ohc=Z4OYmcHf4uUQ7kNvwHq3jjw&_nc_oc=AdkeNzTdX9VpzQnuNLUvcVFh-yDVvLzL2z52880YpIO0xdoAoJfbVrqeX5Ar2eklAx4&_nc_zt=23&_nc_ht=scontent.xx&edm=AN6CN6oEAAAA&_nc_gid=ZBTa8zTBrdAuGZsaeL1awA&oh=00_AfYFRAiYFwy3VWaMC1nQqkGaGacid7s3TZtf4K4txGfZdA&oe=68C8E54A"
+                                        alt="Fanpage SWE"
+                                        style={{
+                                            width: "100%",
+                                            height: "100%",
+                                            objectFit: "cover"
+                                        }}
+                                    />
+                                </Box>
+                                <Box
+                                    component="a"
+                                    href="https://facebook.com/streetweareazy"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    sx={{
+                                        fontWeight: 700,
+                                        fontSize: 15,
+                                        color: "#1976d2",
+                                        textDecoration: "none",
+                                        bgcolor: "#fff",
+                                        px: 2,
+                                        py: 0.7,
+                                        borderRadius: 2,
+                                        boxShadow: "0 1px 6px #bde0fe70",
+                                        transition: "0.2s",
+                                        "&:hover": {
+                                            bgcolor: "#1976d2",
+                                            color: "#fff"
+                                        }
+                                    }}
+                                >
+                                    Xem Fanpage SWE
+                                </Box>
                             </Box>
                         </Box>
                     </Grid>
@@ -228,34 +269,7 @@ export default function Footer() {
                     boxShadow: "0 -2px 8px 0 #1769aa18"
                 }}
             >
-                <Box component="span" sx={{ fontWeight: 700 }}>Copyright &copy; 2025 SWE (STREETWEAREASY)</Box>. Powered by Hanxan.
-                <Box
-                    sx={{
-                        position: "absolute",
-                        right: { xs: 11, md: 37 },
-                        bottom: 13,
-                    }}
-                >
-                    <Box
-                        sx={{
-                            width: 46,
-                            height: 46,
-                            borderRadius: "50%",
-                            bgcolor: "#1976d2",
-                            display: "flex",
-                            justifyContent: "center",
-                            alignItems: "center",
-                            boxShadow: "0 2px 12px rgba(25,118,210,0.13)",
-                            cursor: "pointer",
-                            transition: "background 0.2s",
-                            "&:hover": { bgcolor: "#125ea7" }
-                        }}
-                    >
-                        <svg width="24" height="24" fill="#fff" viewBox="0 0 24 24">
-                            <path d="M12 3C7.031 3 3 6.617 3 11.012c0 2.223 1.07 4.242 2.906 5.703-.16.732-.638 2.244-1.595 3.116a.75.75 0 0 0 .797 1.24c2.049-.65 3.728-1.782 4.474-2.309A11.56 11.56 0 0 0 12 18.025c4.969 0 9-3.617 9-8.013C21 6.617 16.969 3 12 3zm0 15.025c-.699 0-1.378-.055-2.033-.159a.75.75 0 0 0-.555.125c-.537.408-1.737 1.175-3.03 1.655.387-.567.699-1.235.894-1.78a.75.75 0 0 0-.278-.867C5.236 16.176 4 13.715 4 11.012 4 7.188 7.589 4 12 4s8 3.188 8 7.012-3.589 7.013-8 7.013z" />
-                        </svg>
-                    </Box>
-                </Box>
+                <Box component="span" sx={{ fontWeight: 700 }}>Copyright &copy; 2025 SWETER (FASHIONSHOP)</Box>. Powered by SD-17.
             </Box>
         </Box>
     );

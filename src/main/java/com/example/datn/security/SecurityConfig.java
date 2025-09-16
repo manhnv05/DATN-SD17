@@ -91,8 +91,10 @@ public class SecurityConfig {
                                 "/api/hoa-don/luu-hoa-don-online-chua-dang-nhap",
                                 "/chiTietThanhToan",
                                 "/api/hoa-don/tra-cuu-hoa-don/**",
+                                "/api/hoa-don/get-all-so-luong-ton-kho",
                                 "/api/vnpay/**",
-                                "/api/hoa-don/get-all-so-luong-ton-kho"
+                                "/api/chatbot/**"
+
 
                         ).permitAll()
                         // CHẶN QUYỀN TRUY CẬP API QUẢN TRỊ: chỉ cho phép các role quản trị
