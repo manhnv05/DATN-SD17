@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { Grid, TextField, Divider, Box, Autocomplete } from "@mui/material";
 import PropTypes from 'prop-types';
-
+import Ghn from "../../../../assets/images/ghn.png"
 // Import components
 import SoftBox from "../../../../components/SoftBox";
 import SoftTypography from "../../../../components/SoftTypography";
@@ -238,8 +238,8 @@ function ShippingForm({ initialCustomer, initialAddress, onOpenAddressModal, onF
 
       <Divider sx={{ my: 3 }} />
 
-      <Box display="flex" alignItems="center" gap={2}>
-        <DeliveryDiningIcon color="info" fontSize="large" />
+      <Box display="flex" alignItems="center" >
+        <img src={Ghn} alt="Giao hàng nhanh" style={{ width: 300, height: 100, objectFit: "contain" ,margin: 0 }} />
         <Box>
           <SoftTypography variant="body1" fontWeight="medium">
             Đơn vị vận chuyển: Giao hàng nhanh

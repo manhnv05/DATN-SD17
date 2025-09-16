@@ -55,6 +55,7 @@ public class ShopServiceImpl implements ShopService {
                 null, // sleeve
                 priceMin,
                 priceMax,
+
                 pageable
         );
 

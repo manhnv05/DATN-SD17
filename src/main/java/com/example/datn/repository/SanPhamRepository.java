@@ -56,7 +56,8 @@ public interface SanPhamRepository extends JpaRepository<SanPham, Integer>, JpaS
             "AND (:sleeve IS NULL OR :sleeve = '' OR LOWER(ta.tenTayAo) = LOWER(:sleeve) OR LOWER(ta.ma) = LOWER(:sleeve)) " +
             "AND (:priceMin IS NULL OR ctsp.gia >= :priceMin) " +
             "AND (:priceMax IS NULL OR ctsp.gia <= :priceMax) " +
-            "AND sp.trangThai IN (0, 1) " +
+            "AND sp.trangThai = 1 "+
+
             "AND (ctsp IS NULL OR ctsp.trangThai = 1)")
     Page<SanPham> searchWithFilter(
             @Param("keyword") String keyword,

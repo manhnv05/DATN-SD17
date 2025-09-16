@@ -1,6 +1,21 @@
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  TextField,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  FormControl,
+  FormLabel,
+  Alert,
+  IconButton,
+  Box,
+} from '@mui/material';
 // --- BƯỚC 1: IMPORT CÁC COMPONENT GIAO DIỆN CHUẨN ---
 import Grid from "@mui/material/Grid";
 import SoftBox from "components/SoftBox";
@@ -15,7 +30,7 @@ import Icon from "@mui/material/Icon";
 import QRCodeScanner from "../../BanHangTaiQuay/QRCodeScanner/QRCodeScanner";
 import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
 import { toast } from "react-toastify";
-
+import { FaPlus, FaEye, FaFileExcel, FaFilePdf } from "react-icons/fa";
 // Helper function để lấy ngày hiện tại dưới định dạng YYYY-MM-DD
 const getTodayDateString = () => {
     const today = new Date();
@@ -26,7 +41,10 @@ const getTodayDateString = () => {
 };
 
 // --- BƯỚC 2: THAY ĐỔI LOGIC ĐỂ NHẬN PROPS TỪ COMPONENT CHA ---
-function OrderFilter({ onFilterChange, filterValues, onClearFilters }) {
+function OrderFilter({ onFilterChange, filterValues, onClearFilters, onExportExcel,
+    onExportAllExcel,
+    loading = false,
+    hasData = false }) {
     // Lấy ngày hôm nay dưới dạng chuỗi YYYY-MM-DD
     const todayString = getTodayDateString();
 
@@ -101,6 +119,9 @@ function OrderFilter({ onFilterChange, filterValues, onClearFilters }) {
         // });
     };
 
+    useEffect(() => {
+    console.log("loading:", loading, "hasData:", hasData);
+}, [loading, hasData]);
     return (
         <Card>
             <SoftBox p={3}>
@@ -231,7 +252,50 @@ function OrderFilter({ onFilterChange, filterValues, onClearFilters }) {
                         </SoftButton>
                     </Grid>
                 </Grid>
+                    <SoftBox display="flex" gap={2} mt={3} mb={0}>
+                    <Button
+                        
+                        onClick={onExportExcel}
+                        disabled={loading || !hasData}
+                         variant="outlined"
+                                                        size="small"
+                                                        startIcon={<FaFileExcel />}
+                                                        sx={{
+                                                            borderRadius: 2,
+                                                            textTransform: "none",
+                                                            fontWeight: 400,
+                                                            color: "#43a047",
+                                                            borderColor: "#43a047",
+                                                            boxShadow: "none",
+                                                            "&:hover": { borderColor: "#1769aa", background: "#e8f5e9", color: "#1769aa" },
+                                                        }}
+                       
+                    >
+                        Xuất Excel (Trang hiện tại)
+                    </Button>
+                    
+                    <Button
+                     
+                        onClick={onExportAllExcel}
+                        disabled={loading}
+                        variant="outlined"
+                                                       size="small"
+                                                       startIcon={<FaFileExcel />}
+                                                       sx={{
+                                                           borderRadius: 2,
+                                                           textTransform: "none",
+                                                           fontWeight: 400,
+                                                           color: "#43a047",
+                                                           borderColor: "#43a047",
+                                                           boxShadow: "none",
+                                                           "&:hover": { borderColor: "#1769aa", background: "#e8f5e9", color: "#1769aa" },
+                                                       }}
+                    >
+                        Xuất tất cả Excel
+                    </Button>
+                </SoftBox>
             </SoftBox>
+            
             <QRCodeScanner
                 open={isScannerOpen}
                 onClose={() => setIsScannerOpen(false)}
@@ -253,6 +317,10 @@ OrderFilter.propTypes = {
         loaiHoaDon: PropTypes.string,
     }).isRequired,
     onClearFilters: PropTypes.func.isRequired,
+    onExportExcel: PropTypes.func.isRequired,
+    onExportAllExcel: PropTypes.func.isRequired,
+    loading: PropTypes.bool,
+    hasData: PropTypes.bool,
 };
 
 export default OrderFilter;

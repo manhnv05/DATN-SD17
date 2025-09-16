@@ -396,7 +396,7 @@ useEffect(() => {
     );
   }
 
- 
+  let c = null;
   let stock = null;
 if (product && product.variants && selectedColor && selectedSize) {
     variant = product.variants.find(
