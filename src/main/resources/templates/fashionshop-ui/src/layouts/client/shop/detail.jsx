@@ -26,7 +26,7 @@ import Footer from "../components/footer";
 import sizeGuideImg from "../../../assets/images/size.jpg";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
-
+import ProductSlideshow from "../../admin/BanHangTaiQuay/component/ProductSlideshow";
 // Hàm lấy user hiện tại
 async function fetchCurrentUser() {
   try {
@@ -556,7 +556,9 @@ if (product && product.variants && selectedColor && selectedSize) {
                         height: 32,
                         opacity:  1,
                         cursor: 'pointer',
-                        
+                        "&:hover": {
+      bgcolor: color.maMau, // giữ nguyên màu khi hover
+    },
                     }}
                 />
             </Tooltip>
@@ -663,43 +665,48 @@ if (product && product.variants && selectedColor && selectedSize) {
                 </Stack>
             <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: 2 }}>
                 <Button
-                    variant="contained"
-                    color="error"
-                    startIcon={<ShoppingCartIcon />}
-                    sx={{
-                        backgroundColor: "#4fc3f7",
+                size="large"
+                  variant="contained"
+  startIcon={<ShoppingCartIcon />}
+  sx={{
+    backgroundColor: "#4fc3f7", // màu nền chính
+    boxShadow: "0 4px 12px rgba(79, 195, 247, 0.3)",
 
-                        // Bóng đổ theo màu nền gốc
-                        boxShadow: "0 2px 10px 0 rgba(79, 195, 247, 0.25)",
+    color: "#fff", // chữ luôn trắng
+    fontWeight: 600,
+    borderRadius: "12px",
+    px: 3,
+    py: 1.2,
+    fontSize: 15,
+    textTransform: "none", // 👉 chữ thường, không in hoa
+    transition: "all 0.25s ease-in-out",
 
-                        // Đảm bảo chữ luôn màu trắng
-                        color: "#fff",
-                        fontWeight: 800,
-                        borderRadius: 3,
-                        px: 3.5,
-                        fontSize: 16.5,
-                        transition: "all 0.3s ease-in-out",
+    "&:hover": {
+      backgroundColor: "#29b6f6",
+      transform: "translateY(-2px)",
+      boxShadow: "0 6px 16px rgba(79, 195, 247, 0.4)",
+    },
 
-                        // Hover: đổi nền sáng hơn + nâng nút
-                        "&:hover": {
-                            backgroundColor: "#e3f2fd",
-                            transform: "translateY(-3px)",
-                            boxShadow: "0 4px 14px 0 rgba(151, 131, 240, 0.35)",
-                        },
+    "&:active": {
+      backgroundColor: "#039be5",
+      transform: "translateY(0)",
+      boxShadow: "0 3px 8px rgba(79, 195, 247, 0.3)",
+    },
 
-                        // Active: nền đậm hơn khi nhấn
-                        "&:active": {
-                            backgroundColor: "#29b6f6",
-                        },
-                    }}
-                    onClick={handleAddToCart}
-                    disabled={addCartStatus.loading || !variant || stock === 0}
-                >
-                    {addCartStatus.loading
-                        ? "Đang thêm..."
-                        : stock === 0
-                            ? "Hết hàng"
-                            : "Thêm vào giỏ hàng"}
+    "&.Mui-disabled": {
+      backgroundColor: "#bdbdbd",
+      color: "#fff",
+      boxShadow: "none",
+    },
+  }}
+  onClick={handleAddToCart}
+  disabled={addCartStatus.loading || !variant || stock === 0}
+>
+  {addCartStatus.loading
+    ? "Đang thêm..."
+    : stock === 0
+    ? "Hết hàng"
+    : "Thêm vào giỏ hàng"}
                 </Button>
 
                 <Tooltip title={favorite ? "Bỏ yêu thích" : "Yêu thích"}>
@@ -874,14 +881,14 @@ if (product && product.variants && selectedColor && selectedSize) {
 
                     {/* Phần hình ảnh */}
                     <Box
-                        component="img"
-                        src={item.img || "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=600&q=80"}
-                        alt={item.name}
-                        sx={{
-                            width: "100%", height: 118, objectFit: "cover",
-                            borderRadius: 3, mb: 1.2,
-                        }}
+                      
                     />
+                        <ProductSlideshow product={{ listUrlImage: item.img }} sx={{
+                                                                     width: "100%",
+                                                                     height: "100%",
+                                                                   }} />
+                    <Box/>
+                  
 
                     {/* Tên sản phẩm */}
                     <Typography

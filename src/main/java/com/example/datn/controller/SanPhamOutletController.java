@@ -3,6 +3,8 @@ package com.example.datn.controller;
 import com.example.datn.dto.SanPhamOutletDTO;
 import com.example.datn.service.SanPhamOutletService;
 import com.example.datn.vo.clientVO.ShopProductVO;
+import com.example.datn.vo.hoaDonVO.SanPhamOutletHinhAnhDTO;
+import com.example.datn.vo.hoaDonVO.ShopProductHinhAnhVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -18,18 +20,18 @@ public class SanPhamOutletController {
     private final SanPhamOutletService outletService;
 
     @GetMapping("/products")
-    public Page<SanPhamOutletDTO> getOutletProducts(
+    public Page<SanPhamOutletHinhAnhDTO> getOutletProducts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "12") int pageSize
     ) {
         return outletService.getOutletProducts(page, pageSize);
     }
     @GetMapping("/products/{id}/related")
-    public ResponseEntity<List<ShopProductVO>> getRelatedProducts(
+    public ResponseEntity<List<ShopProductHinhAnhVO>> getRelatedProducts(
             @PathVariable("id") Integer productId,
             @RequestParam(defaultValue = "5") int limit) {
 
-        List<ShopProductVO> relatedProducts = outletService.findRelatedProducts(productId, limit);
+        List<ShopProductHinhAnhVO> relatedProducts = outletService.findRelatedProducts(productId, limit);
         return ResponseEntity.ok(relatedProducts);
     }
 

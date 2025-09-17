@@ -10,7 +10,7 @@ const ProductSlideshow = ({ product }) => {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
-
+  console.log(product.listUrlImage);
   useEffect(() => {
     let interval;
     if (isHovered) {

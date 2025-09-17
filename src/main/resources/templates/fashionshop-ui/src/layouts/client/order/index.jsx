@@ -30,6 +30,7 @@ import RemoveIcon from "@mui/icons-material/Remove";
 import AddIcon from "@mui/icons-material/Add";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import VNPAY_LOGO from "../../../assets/images/vnPay.png";
+import LoadingOverlay from './LoadingOverlay '; 
 import {
   cartItem,
   SIZE_OPTIONS,
@@ -47,7 +48,7 @@ import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { toast } from "react-toastify";
 import AddressDialogClient from "../components/AddressDialog";
-
+import CircularProgress from "@mui/material/CircularProgress";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 // --- GHN CONFIG ---
 const GHN_API_BASE_URL = "https://online-gateway.ghn.vn/shiip/public-api";
@@ -136,7 +137,7 @@ export default function OrderForm() {
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
 
   const [hasSelectedAddress, setHasSelectedAddress] = useState(false);
-
+  const [loading, setLoading] = useState(false);
   const addressSelect = (select) => {
     console.log("Địa chỉ đã chọn:", select);
     setHasSelectedAddress(true);
@@ -511,6 +512,7 @@ export default function OrderForm() {
       return;
     }
 try {
+  setLoading(true);
         console.log("Kiểm tra tồn kho lần cuối trước khi đặt hàng...");
         const inventoryResponse = await axios.get("http://localhost:8080/api/hoa-don/get-all-so-luong-ton-kho");
         const inventoryData = inventoryResponse.data?.data || [];
@@ -654,7 +656,9 @@ try {
       }
     } catch (err) {
       toast.error("Lỗi khi xử lý đơn hàng!");
-    }
+    } finally {
+    setLoading(false); // ✅ tắt loading dù thành công hay lỗi
+  }
   };
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -684,6 +688,7 @@ try {
   return (
     <Box sx={{ bgcolor: LIGHT_BLUE_BG, minHeight: "100vh", py: 0 }}>
       {/* ...Banner giữ nguyên... */}
+      <LoadingOverlay open={loading} />
       <Box
         sx={{
           width: "100%",
@@ -1290,77 +1295,81 @@ try {
         onClose={() => setAddressDialogOpen(false)}
         onAddressSelect={addressSelect}
       />
-      <Dialog
-        open={confirmDialogOpen}
-        onClose={() => setConfirmDialogOpen(false)}
-        PaperProps={{
-          sx: {
-            borderRadius: "16px", // Bo góc dialog
-            width: "100%",
-            maxWidth: "400px",
+     <Dialog
+  open={confirmDialogOpen}
+  onClose={() => setConfirmDialogOpen(false)}
+  PaperProps={{
+    sx: {
+      borderRadius: "16px",
+      width: "100%",
+      maxWidth: "400px",
+    },
+  }}
+>
+  <DialogTitle sx={{ p: 2.5, pb: 0 }}>
+    <Stack direction="row" alignItems="center" spacing={1.5}>
+      <HelpOutlineIcon sx={{ color: "primary.main", fontSize: "28px" }} />
+      <Typography variant="h6" sx={{ fontWeight: 700 }}>
+        Xác nhận đơn hàng
+      </Typography>
+    </Stack>
+  </DialogTitle>
+  <DialogContent sx={{ p: 2.5 }}>
+    <DialogContentText sx={{ fontSize: "1rem", color: "#424242" }}>
+      Hệ thống sẽ tiến hành tạo đơn hàng của bạn. Bạn có chắc chắn muốn tiếp tục
+      không?
+    </DialogContentText>
+  </DialogContent>
+  <DialogActions sx={{ p: 2.5, pt: 1 }}>
+    <Stack direction="row" spacing={1.5} sx={{ width: "100%" }}>
+      <Button
+        onClick={() => setConfirmDialogOpen(false)}
+        variant="outlined"
+        color="secondary"
+        fullWidth
+        sx={{
+          borderRadius: 2,
+          fontWeight: 600,
+          textTransform: "none",
+          fontSize: "1rem",
+          color: "grey.800",
+          borderColor: "grey.400",
+          "&:hover": {
+            borderColor: "grey.800",
+            bgcolor: "grey.100",
           },
         }}
+        disabled={loading} // Khi loading thì cũng disable luôn nút này
       >
-        <DialogTitle sx={{ p: 2.5, pb: 0 }}>
-          <Stack direction="row" alignItems="center" spacing={1.5}>
-            <HelpOutlineIcon sx={{ color: "primary.main", fontSize: "28px" }} />
-            <Typography variant="h6" sx={{ fontWeight: 700 }}>
-              Xác nhận đơn hàng
-            </Typography>
-          </Stack>
-        </DialogTitle>
-        <DialogContent sx={{ p: 2.5 }}>
-          <DialogContentText sx={{ fontSize: "1rem", color: "#424242" }}>
-            Hệ thống sẽ tiến hành tạo đơn hàng của bạn. Bạn có chắc chắn muốn tiếp tục không?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions sx={{ p: 2.5, pt: 1 }}>
-          <Stack direction="row" spacing={1.5} sx={{ width: "100%" }}>
-            <Button
-              onClick={() => setConfirmDialogOpen(false)}
-              variant="outlined"
-              color="secondary"
-              fullWidth
-              sx={{
-                borderRadius: 2,
-                fontWeight: 600,
-                textTransform: 'none',
-                fontSize: '1rem',
-                // Đặt màu cụ thể để dễ đọc hơn
-                color: "grey.800",
-                borderColor: "grey.400",
-                '&:hover': {
-                  borderColor: "grey.800",
-                  bgcolor: "grey.100"
-                }
-              }}
-            >
-              Xem lại
-            </Button>
-            <Button
-              onClick={handleConfirmOrder}
-              variant="contained"
-
-              fullWidth
-              sx={{
-                borderRadius: 2,
-                fontWeight: 600,
-                textTransform: 'none',
-                fontSize: '1rem',
-                color: 'white !important',
-                // Ghi đè màu nền để đồng bộ với icon
-                bgcolor: '#1976d2', // Xanh đậm
-                '&:hover': {
-                  bgcolor: '#1565c0' // Đậm hơn một chút khi hover
-                },
-                boxShadow: 'none'
-              }}
-            >
-              Xác nhận
-            </Button>
-          </Stack>
-        </DialogActions>
-      </Dialog>
+        Xem lại
+      </Button>
+      <Button
+        onClick={handleConfirmOrder}
+        variant="contained"
+        disabled={loading}
+        fullWidth
+        sx={{
+          borderRadius: 2,
+          fontWeight: 600,
+          textTransform: "none",
+          fontSize: "1rem",
+          color: "white !important",
+          bgcolor: "#1976d2",
+          "&:hover": {
+            bgcolor: "#1565c0",
+          },
+          boxShadow: "none",
+        }}
+      >
+        {loading ? (
+          <CircularProgress size={24} color="inherit" />
+        ) : (
+          "Xác nhận"
+        )}
+      </Button>
+    </Stack>
+  </DialogActions>
+</Dialog>
     </Box>
   );
 }

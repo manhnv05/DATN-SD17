@@ -53,23 +53,22 @@ function ConfirmationModal({ open, onClose, onConfirm, product, quantity, setQua
       setQuantity(value);
     }
   };
-    if (!product) return null;
+  if (!product) return null;
   const handleConfirmClick = async () => {
     setIsLoading(true);
     try {
       // BƯỚC 1: GỌI API ĐỂ GIẢM SỐ LƯỢNG TRONG KHO
       await axios.put(
-          `http://localhost:8080/api/hoa-don/giam-so-luong-san-pham/${product.idChiTietSanPham}`,
-          null,
-          {
-            params: {
-              soLuong: quantity,
-            },
-            withCredentials: true // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
-          }
+        `http://localhost:8080/api/hoa-don/giam-so-luong-san-pham/${product.idChiTietSanPham}`,
+        null,
+        {
+          params: {
+            soLuong: quantity,
+          },
+          withCredentials: true, // <-- SỬA ở đây: gửi kèm cookie/session khi gọi API backend
+        }
       );
 
-  
       onConfirm({ ...product, quantity });
 
       // BƯỚC 3: ĐÓNG MODAL
@@ -134,7 +133,7 @@ function ConfirmationModal({ open, onClose, onConfirm, product, quantity, setQua
               {product.soLuongTonKho ?? "N/A"}
             </SoftTypography>
           </Typography>
-           <Box textAlign="center" my={2}>
+          <Box textAlign="center" my={2}>
             {product.phanTramGiam > 0 && product.giaTienSauKhiGiam < product.gia ? (
               <>
                 {/* Giá gốc bị gạch ngang */}
@@ -153,7 +152,7 @@ function ConfirmationModal({ open, onClose, onConfirm, product, quantity, setQua
               </>
             ) : (
               // Nếu không giảm giá, chỉ hiển thị giá gốc
-              <SoftTypography variant="h4" color="info" fontWeight="bold">
+              <SoftTypography variant="h4" sx={{ color: "#000" }} fontWeight="bold">
                 {formatCurrency(product.gia)}
               </SoftTypography>
             )}

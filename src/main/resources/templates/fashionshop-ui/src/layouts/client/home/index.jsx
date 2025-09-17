@@ -27,6 +27,7 @@ import axios from "axios";
 import VoucherList from"./VoucherList"
 import "slick-carousel/slick/slick.css"; 
 import "slick-carousel/slick/slick-theme.css";
+import ProductSlideshow from "../../admin/BanHangTaiQuay/component/ProductSlideshow";
 function useCountdown(targetDate) {
     const calculateTimeLeft = () => {
         const now = new Date();
@@ -239,16 +240,20 @@ export default function HomePage() {
                                         }}
                                     >
                                         <Box
-                                            component="img"
-                                            src={item.imageUrl || "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=600&q=80"}
-                                            alt={item.name}
-                                            sx={{
-                                                width: "100%",
-                                                height: "100%",
-                                                objectFit: "cover",
-                                                display: "block"
-                                            }}
+                                            // component="img"
+                                            // src={item.imageUrl || "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=600&q=80"}
+                                            // alt={item.name}
+                                            // sx={{
+                                            //     width: "100%",
+                                            //     height: "100%",
+                                            //     objectFit: "cover",
+                                            //     display: "block"
+                                            // }}
                                         />
+                                         <ProductSlideshow product={{ listUrlImage: item.imageUrl }} sx={{
+                                            width: "100%",
+                                            height: "100%",
+                                          }} />
                                     </Box>
                                     <Typography fontWeight={800} sx={{ fontSize: 18, mb: 0.5, color: "#205072", letterSpacing: 0.5 }}>
                                         {item.name}

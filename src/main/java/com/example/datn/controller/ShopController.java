@@ -2,6 +2,7 @@ package com.example.datn.controller;
 
 import com.example.datn.service.ShopService;
 import com.example.datn.vo.clientVO.ShopProductVO;
+import com.example.datn.vo.hoaDonVO.ShopProductHinhAnhVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +19,7 @@ public class ShopController {
     private ShopService shopService;
 
     @GetMapping("/products")
-    public Page<ShopProductVO> getShopProducts(
+    public Page<ShopProductHinhAnhVO> getShopProducts(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String color,
             @RequestParam(required = false) String size,
