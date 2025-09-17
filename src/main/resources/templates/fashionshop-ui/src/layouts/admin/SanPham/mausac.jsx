@@ -245,14 +245,14 @@ function ColorTable() {
                     >
                         <FaEdit />
                     </IconButton>
-                    <IconButton
+                    {/* <IconButton
                         size="small"
                         sx={{ color: "#4acbf2" }}
                         title="Xóa"
                         onClick={() => handleDelete(row.id)}
                     >
                         <FaTrash />
-                    </IconButton>
+                    </IconButton> */}
                 </SoftBox>
             ),
         },

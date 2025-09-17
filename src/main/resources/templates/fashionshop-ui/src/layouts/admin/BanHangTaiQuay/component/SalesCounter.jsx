@@ -906,6 +906,7 @@ function SalesCounter({ onTotalChange, onInvoiceIdChange, onProductsChange, comp
                                     borderRadius: "4px",
                                     fontSize: "0.7rem",
                                     lineHeight: 1.2,
+                                       color: "#fff",
                                   }}
                                 >
                                   {product.phanTramGiam}% OFF

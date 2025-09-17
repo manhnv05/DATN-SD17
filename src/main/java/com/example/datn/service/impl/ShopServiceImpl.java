@@ -4,6 +4,7 @@ import com.example.datn.entity.*;
 import com.example.datn.repository.*;
 import com.example.datn.service.ShopService;
 import com.example.datn.vo.clientVO.ShopProductVO;
+import com.example.datn.vo.hoaDonVO.ShopProductHinhAnhVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
@@ -32,7 +33,7 @@ public class ShopServiceImpl implements ShopService {
     private ChiTietDotGiamGiaRepository chiTietDotGiamGiaRepository;
 
     @Override
-    public Page<ShopProductVO> getShopProducts(
+    public Page<ShopProductHinhAnhVO> getShopProducts(
             String keyword,
             String color,
             String size,
@@ -59,7 +60,7 @@ public class ShopServiceImpl implements ShopService {
                 pageable
         );
 
-        List<ShopProductVO> voList = sanPhamPage.getContent().stream().map(sp -> {
+        List<ShopProductHinhAnhVO> voList = sanPhamPage.getContent().stream().map(sp -> {
             List<ChiTietSanPham> ctspList = sp.getChiTietSanPhams();
             if (ctspList == null || ctspList.isEmpty())
                 return null;
@@ -85,18 +86,15 @@ public class ShopServiceImpl implements ShopService {
 
             String imageUrl = "";
             List<HinhAnh> imgList = hinhAnhRepository.findBySpctHinhAnhs_ChiTietSanPham_Id(ctsp.getId());
-            if (!imgList.isEmpty()) {
-                Optional<HinhAnh> defaultImg = imgList.stream().filter(
-                        i -> i.getAnhMacDinh() != null && i.getAnhMacDinh() == 1
-                ).findFirst();
-                imageUrl = defaultImg.map(HinhAnh::getDuongDanAnh).orElse(imgList.get(0).getDuongDanAnh());
-            }
+            List<String> imageUrls = imgList.stream()
+                    .map(HinhAnh::getDuongDanAnh)
+                    .collect(Collectors.toList());
 
-            return ShopProductVO.builder()
+            return ShopProductHinhAnhVO.builder()
                     .id(sp.getId())
                     .name(sp.getTenSanPham())
                     .code(sp.getMaSanPham())
-                    .imageUrl(imageUrl)
+                    .imageUrl(imageUrls)
                     .price(price)
                     .salePrice(salePrice)
                     .discountPercent(discountPercent)

@@ -21,7 +21,7 @@ import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
 import { styled } from "@mui/material/styles";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-
+import ProductSlideshow from "../../admin/BanHangTaiQuay/component/ProductSlideshow";
 const OutletBlock = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(2.5),
     borderRadius: 18,
@@ -239,16 +239,12 @@ export default function OutletSalePage() {
                                             }}
                                         >
                                             <Box
-                                                component="img"
-                                                src={item.imageUrl || "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=600&q=80"}
-                                                alt={item.tenSanPham}
-                                                sx={{
-                                                    width: "100%",
-                                                    height: "100%",
-                                                    objectFit: "cover",
-                                                    display: "block"
-                                                }}
+                                               
                                             />
+                                             <ProductSlideshow product={{ listUrlImage: item.imageUrl }} sx={{
+                                                width: "100%",
+                                                height: "100%",
+                                              }} />
                                         </Box>
                                         <Typography fontWeight={900} sx={{ fontSize: 17.2, mb: 0.6, color: "#b71c1c", letterSpacing: 0.3 }}>
                                             {item.tenSanPham}

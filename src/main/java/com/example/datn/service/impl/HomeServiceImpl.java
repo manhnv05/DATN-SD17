@@ -4,11 +4,13 @@ import com.example.datn.entity.*;
 import com.example.datn.repository.*;
 import com.example.datn.service.HomeService;
 import com.example.datn.vo.clientVO.HomeProductVO;
+import com.example.datn.vo.hoaDonVO.HomeProductHinhAnhVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class HomeServiceImpl implements HomeService {
@@ -25,9 +27,9 @@ public class HomeServiceImpl implements HomeService {
     private HoaDonChiTietRepository hoaDonChiTietRepository;
 
     @Override
-    public List<HomeProductVO> getBestSellingProducts(int limit) {
+    public List<HomeProductHinhAnhVO> getBestSellingProducts(int limit) {
         List<Object[]> bestSelling = hoaDonChiTietRepository.findBestSellingProductIds();
-        List<HomeProductVO> result = new ArrayList<>();
+        List<HomeProductHinhAnhVO> result = new ArrayList<>();
 
         int count = 0;
         for (Object[] obj : bestSelling) {
@@ -74,19 +76,19 @@ public class HomeServiceImpl implements HomeService {
 
             // Lấy ảnh đại diện
             String imageUrl = "";
-            List<HinhAnh> imgList = hinhAnhRepository.findByChiTietSanPhamId(ctsp.getId());
-            if (!imgList.isEmpty()) {
-                Optional<HinhAnh> defaultImg = imgList.stream().filter(i -> i.getAnhMacDinh() != null && i.getAnhMacDinh() == 1).findFirst();
-                imageUrl = defaultImg.map(HinhAnh::getDuongDanAnh).orElse(imgList.get(0).getDuongDanAnh());
-            }
+            List<HinhAnh> imgList = hinhAnhRepository.findBySpctHinhAnhs_ChiTietSanPham_Id(ctsp.getId());
+            List<String> imageUrls = imgList.stream()
+                    .map(HinhAnh::getDuongDanAnh)
+                    .collect(Collectors.toList());
+
 
             double rating = 4 + Math.random(); // hoặc lấy từ feedback thực tế nếu có
 
-            HomeProductVO vo = HomeProductVO.builder()
+            HomeProductHinhAnhVO vo = HomeProductHinhAnhVO.builder()
                     .id(sp.getId())
                     .name(sp.getTenSanPham())
                     .code(sp.getMaSanPham())
-                    .imageUrl(imageUrl)
+                    .imageUrl(imageUrls)
                     .price(price)
                     .salePrice(salePrice)
                     .discountPercent(discountPercent)

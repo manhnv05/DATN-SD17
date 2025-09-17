@@ -2,6 +2,7 @@ package com.example.datn.controller;
 
 import com.example.datn.service.HomeService;
 import com.example.datn.vo.clientVO.HomeProductVO;
+import com.example.datn.vo.hoaDonVO.HomeProductHinhAnhVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,7 +16,7 @@ public class HomeController {
     private HomeService homeService;
 
     @GetMapping("/best-selling")
-    public List<HomeProductVO> getBestSellingProducts(@RequestParam(defaultValue = "8") int limit) {
+    public List<HomeProductHinhAnhVO> getBestSellingProducts(@RequestParam(defaultValue = "8") int limit) {
         return homeService.getBestSellingProducts(limit);
     }
 }
