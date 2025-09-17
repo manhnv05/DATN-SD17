@@ -17,6 +17,8 @@ import colors from "assets/theme/base/colors";
 import typography from "assets/theme/base/typography";
 import borders from "assets/theme/base/borders";
 
+import ProductSlideshow from "layouts/admin/BanHangTaiQuay/component/ProductSlideshow";
+
 function CustomTable({ columns, rows }) { // Đổi tên để tránh đè Table của MUI
     const { light } = colors;
     const { size, fontWeightBold } = typography;
@@ -61,6 +63,8 @@ function CustomTable({ columns, rows }) { // Đổi tên để tránh đè Table
     const renderRows = rows.map((row, rowIdx) => {
         const rowKey = row.id ? `row-${row.id}` : `row-${rowIdx}`;
 
+        console.log(row["anh"])
+
         const tableRow = columns.map((col, colIdx) => {
             const { name, align, render } = col;
             let cellContent;
@@ -71,11 +75,11 @@ function CustomTable({ columns, rows }) { // Đổi tên để tránh đè Table
                 cellContent = (
                     <SoftBox display="flex" alignItems="center" py={0.5} px={1}>
                         <SoftBox mr={2}>
-                            <SoftAvatar src={row[name][0]} name={row[name][1]} variant="rounded" size="sm" />
+                            <ProductSlideshow product={{listUrlImage:row["anh"]}} />
                         </SoftBox>
-                        <SoftTypography variant="button" fontWeight="medium" sx={{ width: "max-content" }}>
-                            {row[name][1]}
-                        </SoftTypography>
+                        {/* <SoftTypography variant="button" fontWeight="medium" sx={{ width: "max-content" }}>
+                            {row[name]}
+                        </SoftTypography> */}
                     </SoftBox>
                 );
             } else {

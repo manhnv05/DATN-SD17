@@ -6,6 +6,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { TextField } from '@mui/material';
 import Alert from "@mui/material/Alert";
 import Table from "../../../examples/Tables/Table";
+import CustomTable from 'examples/Tables/Table/tableSlideShow';
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import { DateTimePicker } from "@mui/x-date-pickers";
@@ -30,7 +31,7 @@ import SoftBox from "../../../components/SoftBox";
 import { useState, useEffect } from 'react';
 import { fetchThongKeAlternative, loadThongKe, loadBieuDo } from './thongkeService';
 import TrangThaiPieChart from './bieudo';
-import { da } from 'date-fns/locale';
+import * as XLSX from "xlsx";
 
 function getPaginationItems(current, total) {
     if (total <= 7) {
@@ -214,6 +215,13 @@ export default function DashboardStats() {
         last: true,
     });
 
+    const [pagination, setPagination] = useState({
+        totalPages: 0,
+        pageNo: 1,
+        pageSize: 5,
+        totalElements: 0,
+    });
+
     const [vouchersData, setvouchersData] = useState({
         content: [],
         totalPages: 0,
@@ -267,6 +275,7 @@ export default function DashboardStats() {
         { name: "soLuong", label: "Số lượng", align: "left" },
         { name: "giaTien", label: "Giá tiền", align: "left" },
         { name: "kichCo", label: "Kích cơ", align: "left" },
+        { name: "mauSac", label: "Màu sắc", align: "left" },
     ];
 
     // Columns cho bảng sản phẩm sắp hết hàng
@@ -286,7 +295,15 @@ export default function DashboardStats() {
                 soLuong: item.soLuong,
                 giaTien: item.giaTien,
                 kichCo: item.kichCo,
+                anh: item.hinhAnh,
+                mauSac: item.mauSac,
             }));
+            setPagination({
+                totalPages: data.data.totalPages,
+                pageNo: data.data.number + 1,
+                pageSize: data.data.size,
+                totalElements: data.data.totalElements,
+            });
 
             setRows(mapped);
             setvouchersData({
@@ -468,6 +485,34 @@ export default function DashboardStats() {
     const displayStatsData = [...statsData];
     if (customStatsData) {
         displayStatsData.push(customStatsData);
+    }
+
+    function exportTableData() {
+        return rows.map((item, idx) => [
+            (pagination.pageNo - 1) * pagination.pageSize + idx + 1,
+            item.tensp,
+            item.soLuong,
+            item.giaTien,
+            item.kichCo,
+            item.mauSac,
+        ]);
+    }
+
+    const exportExcel = async () => {
+        const sheetData = [
+            [
+                "STT",
+                "Tên sản phẩm",
+                "Số lượng",
+                "Giá tiền",
+                "Kích cỡ",
+                "Màu sắc",
+            ],
+        ].concat(exportTableData());
+        const workbook = XLSX.utils.book_new();
+        const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+        XLSX.utils.book_append_sheet(workbook, worksheet, "KhachHang");
+        XLSX.writeFile(workbook, "SanPhamBanChay.xlsx");
     }
 
     return (
@@ -713,6 +758,7 @@ export default function DashboardStats() {
                             <Button
                                 variant="outlined"
                                 size="small"
+                                onClick={exportExcel}
                                 sx={{
                                     borderRadius: 2,
                                     textTransform: "none",
@@ -748,7 +794,7 @@ export default function DashboardStats() {
                                         </Alert>
                                     )}
                                     <SoftBox>
-                                        <Table columns={columns} rows={rows} loading={loading} />
+                                        <CustomTable columns={columns} rows={rows} loading={loading} />
                                     </SoftBox>
 
                                     <SoftBox
