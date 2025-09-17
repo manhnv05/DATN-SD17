@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 public class ThongKeServiceImpl implements ThongKeService {
@@ -185,8 +186,11 @@ public class ThongKeServiceImpl implements ThongKeService {
                     newCtsp.setId(chiTietSanPham.getId());
                     newCtsp.setSanPham(chiTietSanPham.getSanPham());
                     newCtsp.setKichThuoc(chiTietSanPham.getKichThuoc());
+                    newCtsp.setMauSac(chiTietSanPham.getMauSac());
                     newCtsp.setGia(chiTietSanPham.getGia());
                     newCtsp.setSoLuong(hdct.getSoLuong());
+                    newCtsp.setMaSanPhamChiTiet(chiTietSanPham.getMaSanPhamChiTiet());
+                    newCtsp.setSpctHinhAnhs(chiTietSanPham.getSpctHinhAnhs());
                     mapChiTietSanPham.put(id, newCtsp);
                 }
             }
@@ -207,10 +211,16 @@ public class ThongKeServiceImpl implements ThongKeService {
         List<ThongKeSPBanChayDTO> pagedList = mergedList.subList(start, end).stream()
                 .map(ctsp -> {
                     ThongKeSPBanChayDTO dto = new ThongKeSPBanChayDTO();
-                    dto.setTenSp(ctsp.getSanPham().getTenSanPham());
+                    dto.setTenSp(ctsp.getSanPham().getTenSanPham() + "-" + ctsp.getMaSanPhamChiTiet());
                     dto.setGiaTien(ctsp.getGia());
                     dto.setKichCo(ctsp.getKichThuoc().getTenKichCo());
                     dto.setSoLuong(ctsp.getSoLuong());
+                    dto.setMauSac(ctsp.getMauSac().getTenMauSac());
+                    dto.setHinhAnh(ctsp.getSpctHinhAnhs() != null ?
+                            ctsp.getSpctHinhAnhs().stream()
+                                    .map(ctspHa -> ctspHa.getHinhAnh().getDuongDanAnh())
+                                    .collect(Collectors.toList())
+                            : new ArrayList<>());
                     return dto;
                 })
                 .toList();
@@ -226,7 +236,7 @@ public class ThongKeServiceImpl implements ThongKeService {
         int cancelledOrders = 0;
         for (HoaDon hd : hoaDons) {
             if (hd.getTrangThai() == TrangThai.HOAN_THANH) {
-                totalRevenue = totalRevenue.add(hd.getTongTien() != null ? BigDecimal.valueOf(hd.getTongTien()) : BigDecimal.ZERO);
+                totalRevenue = totalRevenue.add(hd.getTongTien() != null ? BigDecimal.valueOf(hd.getTongHoaDon()) : BigDecimal.ZERO);
                 List<HoaDonChiTiet> hoaDonChiTietList = hoaDonChiTietRepository.findAllByHoaDon_Id(hd.getId());
                 for (HoaDonChiTiet item : hoaDonChiTietList) {
                     totalProducts += item.getSoLuong();
