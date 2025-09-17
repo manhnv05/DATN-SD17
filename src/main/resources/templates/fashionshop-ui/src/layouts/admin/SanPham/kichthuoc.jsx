@@ -309,7 +309,8 @@ function SizeTable() {
             <DialogContent>
                 <FormControl fullWidth sx={{ mb: 2 }}>
                     <Input
-                        placeholder="Tên kích thước"
+                        type="number"
+                        placeholder="Nhập kích thước"
                         value={newSize.tenKichCo}
                         onChange={(e) => setNewSize({ ...newSize, tenKichCo: e.target.value })}
                     />

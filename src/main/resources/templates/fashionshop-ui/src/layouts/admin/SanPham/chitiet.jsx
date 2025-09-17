@@ -155,7 +155,7 @@ function ProductDetailTable() {
 
         fetchOptions();
         fetchProductAndDetails();
-    }, [id]);
+    }, [id, openUpdateModal]);
 
     function handleEdit(detail) {
         setSelectedDetail(detail);

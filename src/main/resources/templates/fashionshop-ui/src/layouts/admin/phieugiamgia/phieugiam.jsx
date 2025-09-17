@@ -57,7 +57,10 @@ export default function PhieuGiamPage() {
     // States
     const [statusFilter, setStatusFilter] = useState("Tất cả");
     const statusList = ["Tất cả", "Đang diễn ra", "Đã kết thúc", "Tạm dừng"];
-    const [page, setPage] = useState(1);
+    const searchParams = new URLSearchParams(location.search);
+    const pageParam = parseInt(searchParams.get("page") || "1", 10);
+
+    const [page, setPage] = useState(pageParam);
     const [viewCount, setViewCount] = useState(5);
 
     const statusListVoucher = ["Tạm Dừng", "Bắt đầu", "Kết thúc"];
@@ -84,6 +87,10 @@ export default function PhieuGiamPage() {
             window.history.replaceState({}, document.title);
         }
     }, [location.state]);
+
+    useEffect(() => {
+        setPage(pageParam); // cập nhật khi user đổi url thủ công
+    }, [pageParam]);
 
     // Handlers cho view count menu
     const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
@@ -114,6 +121,7 @@ export default function PhieuGiamPage() {
             typeof newPage === "number"
         )
             setPage(newPage);
+        navigate(`/discount?page=${newPage}`); // ✅ đổi URL
     };
 
     const viewOptions = [5, 10, 20];
@@ -287,7 +295,7 @@ export default function PhieuGiamPage() {
                         size="small"
                         sx={{ color: "#4acbf2" }}
                         title="Sửa"
-                        onClick={() => navigate(`/PhieuGiam/update/${row.id}`)}
+                        onClick={() => navigate(`/PhieuGiam/update/${row.id}`, { state: { page: page } })}
                     >
                         <FaEdit />
                     </IconButton>
