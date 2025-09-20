@@ -84,13 +84,8 @@ function SleeveTable() {
     const [editSleeve, setEditSleeve] = useState(null);
     const [showEditModal, setShowEditModal] = useState(false);
 
-    const [deleteId, setDeleteId] = useState(null);
-    const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
     const [anchorEl, setAnchorEl] = useState(null);
-
-    const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
-    const handleMenuClose = () => setAnchorEl(null);
 
     useEffect(() => {
         if (showModal && sleevesData.content) {
@@ -194,29 +189,6 @@ function SleeveTable() {
             .finally(() => setLoading(false));
     };
 
-    const handleDelete = (id) => {
-        setDeleteId(id);
-        setShowDeleteDialog(true);
-    };
-    const handleConfirmDelete = () => {
-        setLoading(true);
-        fetch(`http://localhost:8080/tayAo/${deleteId}`, {
-            method: "DELETE",
-            credentials: "include",
-        })
-            .then((res) => {
-                if (!res.ok) throw new Error("Lỗi khi xóa tay áo");
-                setShowDeleteDialog(false);
-                setDeleteId(null);
-                setQueryParams({ ...queryParams });
-                toast.success("Xóa tay áo thành công!");
-            })
-            .catch((err) => {
-                setError(err.message || "Lỗi không xác định");
-                toast.error(err.message || "Lỗi không xác định");
-            })
-            .finally(() => setLoading(false));
-    };
 
     const handlePageChange = (newPage) => {
         setQueryParams({ ...queryParams, page: newPage });
@@ -265,14 +237,6 @@ function SleeveTable() {
                     >
                         <FaEdit />
                     </IconButton>
-                    {/* <IconButton
-                        size="small"
-                        sx={{ color: "#4acbf2" }}
-                        title="Xóa"
-                        onClick={() => handleDelete(row.id)}
-                    >
-                        <FaTrash />
-                    </IconButton> */}
                 </SoftBox>
             ),
         },
@@ -383,76 +347,6 @@ function SleeveTable() {
         </Dialog>
     );
 
-    const renderDeleteDialog = () => (
-        <Dialog open={showDeleteDialog} onClose={() => setShowDeleteDialog(false)}>
-            <DialogTitle
-                sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    pr: 2,
-                    fontWeight: 700,
-                    fontSize: 20,
-                    pb: 1,
-                    pt: 2,
-                }}
-            >
-                <span>Bạn chắc chắn muốn xóa tay áo này?</span>
-                <IconButton
-                    aria-label="close"
-                    onClick={() => setShowDeleteDialog(false)}
-                    sx={{
-                        color: (theme) => theme.palette.grey[500],
-                        ml: 2,
-                    }}
-                    size="large"
-                >
-                    <CloseIcon sx={{ fontSize: 26 }} />
-                </IconButton>
-            </DialogTitle>
-            <DialogActions sx={{ pb: 3, pt: 1, justifyContent: "center" }}>
-                <Button
-                    variant="outlined"
-                    onClick={() => setShowDeleteDialog(false)}
-                    disabled={loading}
-                    sx={{
-                        borderRadius: 2,
-                        textTransform: "none",
-                        fontWeight: 400,
-                        color: "#49a3f1",
-                        borderColor: "#49a3f1",
-                        boxShadow: "none",
-                        background: "#fff",
-                        mr: 1.5,
-                        "&:hover": {
-                            borderColor: "#1769aa",
-                            background: "#f0f6fd",
-                            color: "#1769aa",
-                        },
-                        "&.Mui-disabled": {
-                            color: "#49a3f1",
-                            borderColor: "#49a3f1",
-                            opacity: 0.7,
-                            background: "#fff",
-                        },
-                    }}
-                >
-                    Hủy
-                </Button>
-                <Button
-                    variant="contained"
-                    color="error"
-                    onClick={handleConfirmDelete}
-                    disabled={loading}
-                    sx={{ borderRadius: 2, minWidth: 90, fontWeight: 500 }}
-                >
-                    {loading && <CircularProgress size={18} sx={{ mr: 1 }} />}
-                    Xóa
-                </Button>
-            </DialogActions>
-        </Dialog>
-    );
-
     return (
         <DashboardLayout>
             <DashboardNavbar />
@@ -508,17 +402,6 @@ function SleeveTable() {
                             </FormControl>
                         </SoftBox>
                         <SoftBox display="flex" alignItems="center" gap={1}>
-                            <IconButton onClick={handleMenuOpen} sx={{ color: "#495057" }}>
-                                <Icon fontSize="small">menu</Icon>
-                            </IconButton>
-                            <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-                                <MenuItem onClick={handleMenuClose} sx={{ color: "#384D6C" }}>
-                                    <FaQrcode className="me-2" style={{ color: "#0d6efd" }} /> Quét mã
-                                </MenuItem>
-                                <MenuItem onClick={handleMenuClose} sx={{ color: "#384D6C" }}>
-                                    <span style={{ color: "#27ae60", marginRight: 8 }}>📥</span> Export Excel
-                                </MenuItem>
-                            </Menu>
                             <Button
                                 variant="outlined"
                                 size="small"
@@ -640,7 +523,6 @@ function SleeveTable() {
                 </Card>
                 {renderAddSleeveModal()}
                 {renderEditSleeveModal()}
-                {renderDeleteDialog()}
             </SoftBox>
             <Footer />
         </DashboardLayout>
