@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -84,7 +85,13 @@ public class ChiTietDotGiamGiaService {
 
             int giaTruoc = ctsp.getGia();
             int giaSau = (int) Math.round(giaTruoc * (1 - dot.getPhanTramGiamGia() / 100.0));
-
+            List<ChiTietDotGiamGia> listChiTietDGG = chiTietDotGiamGiaRepository.findChiTietDotGiamGiasByDotGiamGiaId(vO.getIdDotGiamGia());
+            List<Integer> listAllIdCtsp = new ArrayList<>();
+            for (ChiTietDotGiamGia chiTiet : listChiTietDGG) {
+                listAllIdCtsp.add(chiTiet.getChiTietSanPham().getId());
+            }
+            List<Integer> listRemove = new ArrayList<>(listAllIdCtsp);
+            listRemove.removeAll(vO.getIdSanPhamChiTietList());
             ChiTietDotGiamGia entity = chiTietDotGiamGiaRepository
                     .findByDotGiamGiaIdAndChiTietSanPhamId(dot.getId(), ctsp.getId())
                     .orElse(new ChiTietDotGiamGia());
@@ -94,6 +101,9 @@ public class ChiTietDotGiamGiaService {
             entity.setGiaSauKhiGiam(giaSau);
             entity.setTrangThai(1);
             chiTietDotGiamGiaRepository.save(entity);
+            for (Integer idCtsp : listRemove) {
+                chiTietDotGiamGiaRepository.deleteChiTietDotGiamGiaBy(idCtsp, vO.getIdDotGiamGia());
+            }
         }
     }
 
