@@ -207,29 +207,28 @@ function BrandTable() {
   };
 
 
-  const handleDelete = (id) => {
-    setDeleteId(id);
-    setShowDeleteDialog(true);
-  };
-  const handleConfirmDelete = () => {
-    setLoading(true);
-    fetch(`http://localhost:8080/thuongHieu/${deleteId}`, {
-      method: "DELETE",
-      credentials: "include",
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error("Lỗi khi xóa thương hiệu");
-        setShowDeleteDialog(false);
-        setDeleteId(null);
-        setQueryParams({ ...queryParams });
-        toast.success("Xóa thương hiệu thành công!");
-      })
-      .catch((err) => {
-        setError(err.message || "Lỗi không xác định");
-        toast.error(err.message || "Lỗi không xác định");
-      })
-      .finally(() => setLoading(false));
-  };
+const paginationItems = React.useMemo(() => {
+  return getPaginationItems(brandsData.number || 0, brandsData.totalPages || 1);
+}, [brandsData.number, brandsData.totalPages]);
+//   const handleConfirmDelete = () => {
+//     setLoading(true);
+//     fetch(`http://localhost:8080/thuongHieu/${deleteId}`, {
+//       method: "DELETE",
+//       credentials: "include",
+//     })
+//       .then((res) => {
+//         if (!res.ok) throw new Error("Lỗi khi xóa thương hiệu");
+//         setShowDeleteDialog(false);
+//         setDeleteId(null);
+//         setQueryParams({ ...queryParams });
+//         toast.success("Xóa thương hiệu thành công!");
+//       })
+//       .catch((err) => {
+//         setError(err.message || "Lỗi không xác định");
+//         toast.error(err.message || "Lỗi không xác định");
+//       })
+//       .finally(() => setLoading(false));
+//   };
 
   const handlePageChange = (newPage) => {
     setQueryParams({ ...queryParams, page: newPage });
@@ -551,27 +550,21 @@ function BrandTable() {
                                     </Button>
                                 )
                             )}
-                            <Button
-                                variant="text"
-                                size="small"
-                                disabled={brandsData.last}
-                                onClick={() => handlePageChange(queryParams.page + 1)}
-                                sx={{ color: brandsData.last ? "#bdbdbd" : "#49a3f1" }}
-                            >
-                                Sau
-                            </Button>
-                        </SoftBox>
-                    </SoftBox>
-                </Card>
-                {renderAddBrandModal()}
-                {renderEditBrandModal()}
-
+                          <Button
+                variant="text"
+                size="small"
+                disabled={brandsData.last}
+                onClick={() => handlePageChange(queryParams.page + 1)}
+                sx={{ color: brandsData.last ? "#bdbdbd" : "#49a3f1" }}
+              >
+                Sau
+              </Button>
             </SoftBox>
           </SoftBox>
         </Card>
         {renderAddBrandModal()}
         {renderEditBrandModal()}
-        {renderDeleteDialog()}
+
       </SoftBox>
       <Footer />
     </DashboardLayout>
