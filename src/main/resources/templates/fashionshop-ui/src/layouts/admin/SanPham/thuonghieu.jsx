@@ -84,12 +84,9 @@ function BrandTable() {
   const [editBrand, setEditBrand] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
 
-  const [deleteId, setDeleteId] = useState(null);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  const [anchorEl, setAnchorEl] = useState(null);
-  const handleMenuOpen = (event) => setAnchorEl(event.currentTarget);
-  const handleMenuClose = () => setAnchorEl(null);
+    const [anchorEl, setAnchorEl] = useState(null);
+
 
   useEffect(() => {
     if (showModal && brandsData.content) {
@@ -153,6 +150,7 @@ function BrandTable() {
           throw new Error(message);
         }
 
+
         return responseBody;
       })
       .then(() => {
@@ -208,6 +206,7 @@ function BrandTable() {
       .finally(() => setLoading(false));
   };
 
+
   const handleDelete = (id) => {
     setDeleteId(id);
     setShowDeleteDialog(true);
@@ -236,63 +235,56 @@ function BrandTable() {
     setQueryParams({ ...queryParams, page: newPage });
   };
 
-  const paginationItems = getPaginationItems(brandsData.number, brandsData.totalPages || 1);
 
-  const columns = [
-    { name: "stt", label: "STT", align: "center", width: "60px" },
-    { name: "maThuongHieu", label: "Mã", align: "left", width: "100px" },
-    { name: "tenThuongHieu", label: "Tên", align: "left", width: "180px" },
-    {
-      name: "trangThai",
-      label: "Trạng thái",
-      align: "center",
-      width: "120px",
-      render: (value) => (
-        <span
-          style={{
-            background: getTrangThaiText(value) === "Hiển thị" ? "#e6f4ea" : "#f4f6fb",
-            color: getTrangThaiText(value) === "Hiển thị" ? "#219653" : "#bdbdbd",
-            border: `1px solid ${getTrangThaiText(value) === "Hiển thị" ? "#219653" : "#bdbdbd"}`,
-            borderRadius: 6,
-            fontWeight: 500,
-            padding: "2px 12px",
-            fontSize: 13,
-            display: "inline-block",
-            minWidth: 60,
-            textAlign: "center",
-          }}
-        >
-          {getTrangThaiText(value)}
-        </span>
-      ),
-    },
-    {
-      name: "actions",
-      label: "Thao tác",
-      align: "center",
-      width: "110px",
-      render: (_, row) => (
-        <SoftBox display="flex" gap={0.5} justifyContent="center">
-          <IconButton
-            size="small"
-            sx={{ color: "#4acbf2" }}
-            title="Sửa"
-            onClick={() => handleEditClick(row)}
-          >
-            <FaEdit />
-          </IconButton>
-          {/* <IconButton
+    const columns = [
+        { name: "stt", label: "STT", align: "center", width: "60px" },
+        { name: "maThuongHieu", label: "Mã", align: "left", width: "100px" },
+        { name: "tenThuongHieu", label: "Tên", align: "left", width: "180px" },
+        {
+            name: "trangThai",
+            label: "Trạng thái",
+            align: "center",
+            width: "120px",
+            render: (value) => (
+                <span
+                    style={{
+                        background: getTrangThaiText(value) === "Hiển thị" ? "#e6f4ea" : "#f4f6fb",
+                        color: getTrangThaiText(value) === "Hiển thị" ? "#219653" : "#bdbdbd",
+                        border: `1px solid ${getTrangThaiText(value) === "Hiển thị" ? "#219653" : "#bdbdbd"}`,
+                        borderRadius: 6,
+                        fontWeight: 500,
+                        padding: "2px 12px",
+                        fontSize: 13,
+                        display: "inline-block",
+                        minWidth: 60,
+                        textAlign: "center",
+                    }}
+                >
+                    {getTrangThaiText(value)}
+                </span>
+            ),
+        },
+        {
+            name: "actions",
+            label: "Thao tác",
+            align: "center",
+            width: "110px",
+            render: (_, row) => (
+                <SoftBox display="flex" gap={0.5} justifyContent="center">
+                    <IconButton
                         size="small"
                         sx={{ color: "#4acbf2" }}
-                        title="Xóa"
-                        onClick={() => handleDelete(row.id)}
+                        title="Sửa"
+                        onClick={() => handleEditClick(row)}
                     >
-                        <FaTrash />
-                    </IconButton> */}
-        </SoftBox>
-      ),
-    },
-  ];
+                        <FaEdit />
+                    </IconButton>
+
+                </SoftBox>
+            ),
+        },
+    ];
+
 
   const rows =
     brandsData.content && brandsData.content.length
@@ -397,258 +389,183 @@ function BrandTable() {
     </Dialog>
   );
 
-  const renderDeleteDialog = () => (
-    <Dialog open={showDeleteDialog} onClose={() => setShowDeleteDialog(false)}>
-      <DialogTitle
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          pr: 2,
-          fontWeight: 700,
-          fontSize: 20,
-          pb: 1,
-          pt: 2,
-        }}
-      >
-        <span>Bạn chắc chắn muốn xóa thương hiệu này?</span>
-        <IconButton
-          aria-label="close"
-          onClick={() => setShowDeleteDialog(false)}
-          sx={{
-            color: (theme) => theme.palette.grey[500],
-            ml: 2,
-          }}
-          size="large"
-        >
-          <CloseIcon sx={{ fontSize: 26 }} />
-        </IconButton>
-      </DialogTitle>
-      <DialogActions sx={{ pb: 3, pt: 1, justifyContent: "center" }}>
-        <Button
-          variant="outlined"
-          onClick={() => setShowDeleteDialog(false)}
-          disabled={loading}
-          sx={{
-            borderRadius: 2,
-            textTransform: "none",
-            fontWeight: 400,
-            color: "#49a3f1",
-            borderColor: "#49a3f1",
-            boxShadow: "none",
-            background: "#fff",
-            mr: 1.5,
-            "&:hover": {
-              borderColor: "#1769aa",
-              background: "#f0f6fd",
-              color: "#1769aa",
-            },
-            "&.Mui-disabled": {
-              color: "#49a3f1",
-              borderColor: "#49a3f1",
-              opacity: 0.7,
-              background: "#fff",
-            },
-          }}
-        >
-          Hủy
-        </Button>
-        <Button
-          variant="contained"
-          color="error"
-          onClick={handleConfirmDelete}
-          disabled={loading}
-          sx={{ borderRadius: 2, minWidth: 90, fontWeight: 500 }}
-        >
-          {loading && <CircularProgress size={18} sx={{ mr: 1 }} />}
-          Xóa
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
+    return (
+        <DashboardLayout>
+            <DashboardNavbar />
+            <SoftBox py={3} sx={{ background: "#F4F6FB", minHeight: "100vh", userSelect: "none" }}>
+                <Card sx={{ p: { xs: 2, md: 3 }, mb: 2 }}>
+                    <SoftBox
+                        display="flex"
+                        flexDirection={{ xs: "column", md: "row" }}
+                        alignItems="center"
+                        justifyContent="space-between"
+                        gap={2}
+                    >
+                        <SoftBox flex={1} display="flex" alignItems="center" gap={2} maxWidth={600}>
+                            <Input
+                                fullWidth
+                                placeholder="Tìm thương hiệu"
+                                value={queryParams.tenThuongHieu}
+                                onChange={(e) =>
+                                    setQueryParams({
+                                        ...queryParams,
+                                        tenThuongHieu: e.target.value,
+                                        page: 0,
+                                    })
+                                }
+                                startAdornment={
+                                    <InputAdornment position="start">
+                                        <Icon fontSize="small" sx={{ color: "#868686" }}>
+                                            search
+                                        </Icon>
+                                    </InputAdornment>
+                                }
+                                sx={{ background: "#f5f6fa", borderRadius: 2, p: 0.5, color: "#222" }}
+                            />
+                            <FormControl sx={{ minWidth: 140 }}>
+                                <Select
+                                    value={queryParams.trangThai}
+                                    onChange={(e) =>
+                                        setQueryParams({
+                                            ...queryParams,
+                                            trangThai: e.target.value,
+                                            page: 0,
+                                        })
+                                    }
+                                    size="small"
+                                    displayEmpty
+                                    sx={{ borderRadius: 2, background: "#f5f6fa", height: 40 }}
+                                    inputProps={{ "aria-label": "Trạng thái" }}
+                                >
+                                    <MenuItem value="Tất cả">Tất cả</MenuItem>
+                                    <MenuItem value="Hiển thị">Hiển thị</MenuItem>
+                                    <MenuItem value="Ẩn">Ẩn</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </SoftBox>
+                        <SoftBox display="flex" alignItems="center" gap={1}>
+                            <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<FaPlus />}
+                                sx={{
+                                    borderRadius: 2,
+                                    textTransform: "none",
+                                    fontWeight: 400,
+                                    color: "#49a3f1",
+                                    borderColor: "#49a3f1",
+                                    boxShadow: "none",
+                                    "&:hover": {
+                                        borderColor: "#1769aa",
+                                        background: "#f0f6fd",
+                                        color: "#1769aa",
+                                    },
+                                }}
+                                onClick={() => setShowModal(true)}
+                            >
+                                Thêm thương hiệu
+                            </Button>
+                        </SoftBox>
+                    </SoftBox>
+                </Card>
+                <Card sx={{ p: { xs: 2, md: 3 }, mb: 2 }}>
+                    {error && (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                            {error}
+                        </Alert>
+                    )}
+                    <SoftBox>
+                        <Table columns={columns} rows={rows} loading={loading} />
+                    </SoftBox>
+                    <SoftBox
+                        display="flex"
+                        justifyContent="space-between"
+                        alignItems="center"
+                        mt={2}
+                        flexWrap="wrap"
+                        gap={2}
+                    >
+                        <SoftBox>
+                            <FormControl sx={{ minWidth: 120 }}>
+                                <Select
+                                    value={queryParams.size}
+                                    onChange={(e) =>
+                                        setQueryParams({
+                                            ...queryParams,
+                                            size: Number(e.target.value),
+                                            page: 0,
+                                        })
+                                    }
+                                    size="small"
+                                >
+                                    {viewOptions.map((n) => (
+                                        <MenuItem key={n} value={n}>
+                                            Xem {n}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </SoftBox>
+                        <SoftBox display="flex" alignItems="center" gap={1}>
+                            <Button
+                                variant="text"
+                                size="small"
+                                disabled={brandsData.first}
+                                onClick={() => handlePageChange(queryParams.page - 1)}
+                                sx={{ color: brandsData.first ? "#bdbdbd" : "#49a3f1" }}
+                            >
+                                Trước
+                            </Button>
+                            {paginationItems.map((item, idx) =>
+                                item === "..." ? (
+                                    <Button
+                                        key={`ellipsis-${idx}`}
+                                        variant="text"
+                                        size="small"
+                                        disabled
+                                        sx={{
+                                            minWidth: 32,
+                                            borderRadius: 2,
+                                            color: "#bdbdbd",
+                                            pointerEvents: "none",
+                                            fontWeight: 700,
+                                        }}
+                                    >
+                                        ...
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        key={item}
+                                        variant={brandsData.number === item ? "contained" : "text"}
+                                        color={brandsData.number === item ? "info" : "inherit"}
+                                        size="small"
+                                        onClick={() => handlePageChange(item)}
+                                        sx={{
+                                            minWidth: 32,
+                                            borderRadius: 2,
+                                            color: brandsData.number === item ? "#fff" : "#495057",
+                                            background: brandsData.number === item ? "#49a3f1" : "transparent",
+                                        }}
+                                    >
+                                        {item + 1}
+                                    </Button>
+                                )
+                            )}
+                            <Button
+                                variant="text"
+                                size="small"
+                                disabled={brandsData.last}
+                                onClick={() => handlePageChange(queryParams.page + 1)}
+                                sx={{ color: brandsData.last ? "#bdbdbd" : "#49a3f1" }}
+                            >
+                                Sau
+                            </Button>
+                        </SoftBox>
+                    </SoftBox>
+                </Card>
+                {renderAddBrandModal()}
+                {renderEditBrandModal()}
 
-  return (
-    <DashboardLayout>
-      <DashboardNavbar />
-      <SoftBox py={3} sx={{ background: "#F4F6FB", minHeight: "100vh", userSelect: "none" }}>
-        <Card sx={{ p: { xs: 2, md: 3 }, mb: 2 }}>
-          <SoftBox
-            display="flex"
-            flexDirection={{ xs: "column", md: "row" }}
-            alignItems="center"
-            justifyContent="space-between"
-            gap={2}
-          >
-            <SoftBox flex={1} display="flex" alignItems="center" gap={2} maxWidth={600}>
-              <Input
-                fullWidth
-                placeholder="Tìm thương hiệu"
-                value={queryParams.tenThuongHieu}
-                onChange={(e) =>
-                  setQueryParams({
-                    ...queryParams,
-                    tenThuongHieu: e.target.value,
-                    page: 0,
-                  })
-                }
-                startAdornment={
-                  <InputAdornment position="start">
-                    <Icon fontSize="small" sx={{ color: "#868686" }}>
-                      search
-                    </Icon>
-                  </InputAdornment>
-                }
-                sx={{ background: "#f5f6fa", borderRadius: 2, p: 0.5, color: "#222" }}
-              />
-              <FormControl sx={{ minWidth: 140 }}>
-                <Select
-                  value={queryParams.trangThai}
-                  onChange={(e) =>
-                    setQueryParams({
-                      ...queryParams,
-                      trangThai: e.target.value,
-                      page: 0,
-                    })
-                  }
-                  size="small"
-                  displayEmpty
-                  sx={{ borderRadius: 2, background: "#f5f6fa", height: 40 }}
-                  inputProps={{ "aria-label": "Trạng thái" }}
-                >
-                  <MenuItem value="Tất cả">Tất cả</MenuItem>
-                  <MenuItem value="Hiển thị">Hiển thị</MenuItem>
-                  <MenuItem value="Ẩn">Ẩn</MenuItem>
-                </Select>
-              </FormControl>
-            </SoftBox>
-            <SoftBox display="flex" alignItems="center" gap={1}>
-              <IconButton onClick={handleMenuOpen} sx={{ color: "#495057" }}>
-                <Icon fontSize="small">menu</Icon>
-              </IconButton>
-              <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-                <MenuItem onClick={handleMenuClose} sx={{ color: "#384D6C" }}>
-                  <FaQrcode className="me-2" style={{ color: "#0d6efd" }} /> Quét mã
-                </MenuItem>
-                <MenuItem onClick={handleMenuClose} sx={{ color: "#384D6C" }}>
-                  <span style={{ color: "#27ae60", marginRight: 8 }}>📥</span> Export Excel
-                </MenuItem>
-              </Menu>
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<FaPlus />}
-                sx={{
-                  borderRadius: 2,
-                  textTransform: "none",
-                  fontWeight: 400,
-                  color: "#49a3f1",
-                  borderColor: "#49a3f1",
-                  boxShadow: "none",
-                  "&:hover": {
-                    borderColor: "#1769aa",
-                    background: "#f0f6fd",
-                    color: "#1769aa",
-                  },
-                }}
-                onClick={() => setShowModal(true)}
-              >
-                Thêm thương hiệu
-              </Button>
-            </SoftBox>
-          </SoftBox>
-        </Card>
-        <Card sx={{ p: { xs: 2, md: 3 }, mb: 2 }}>
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
-            </Alert>
-          )}
-          <SoftBox>
-            <Table columns={columns} rows={rows} loading={loading} />
-          </SoftBox>
-          <SoftBox
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-            mt={2}
-            flexWrap="wrap"
-            gap={2}
-          >
-            <SoftBox>
-              <FormControl sx={{ minWidth: 120 }}>
-                <Select
-                  value={queryParams.size}
-                  onChange={(e) =>
-                    setQueryParams({
-                      ...queryParams,
-                      size: Number(e.target.value),
-                      page: 0,
-                    })
-                  }
-                  size="small"
-                >
-                  {viewOptions.map((n) => (
-                    <MenuItem key={n} value={n}>
-                      Xem {n}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </SoftBox>
-            <SoftBox display="flex" alignItems="center" gap={1}>
-              <Button
-                variant="text"
-                size="small"
-                disabled={brandsData.first}
-                onClick={() => handlePageChange(queryParams.page - 1)}
-                sx={{ color: brandsData.first ? "#bdbdbd" : "#49a3f1" }}
-              >
-                Trước
-              </Button>
-              {paginationItems.map((item, idx) =>
-                item === "..." ? (
-                  <Button
-                    key={`ellipsis-${idx}`}
-                    variant="text"
-                    size="small"
-                    disabled
-                    sx={{
-                      minWidth: 32,
-                      borderRadius: 2,
-                      color: "#bdbdbd",
-                      pointerEvents: "none",
-                      fontWeight: 700,
-                    }}
-                  >
-                    ...
-                  </Button>
-                ) : (
-                  <Button
-                    key={item}
-                    variant={brandsData.number === item ? "contained" : "text"}
-                    color={brandsData.number === item ? "info" : "inherit"}
-                    size="small"
-                    onClick={() => handlePageChange(item)}
-                    sx={{
-                      minWidth: 32,
-                      borderRadius: 2,
-                      color: brandsData.number === item ? "#fff" : "#495057",
-                      background: brandsData.number === item ? "#49a3f1" : "transparent",
-                    }}
-                  >
-                    {item + 1}
-                  </Button>
-                )
-              )}
-              <Button
-                variant="text"
-                size="small"
-                disabled={brandsData.last}
-                onClick={() => handlePageChange(queryParams.page + 1)}
-                sx={{ color: brandsData.last ? "#bdbdbd" : "#49a3f1" }}
-              >
-                Sau
-              </Button>
             </SoftBox>
           </SoftBox>
         </Card>
