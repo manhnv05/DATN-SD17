@@ -138,10 +138,23 @@ function CategoryTable() {
                 trangThai: newCategory.trangThai === "Hiển thị" ? 1 : 0,
             }),
         })
-            .then((res) => {
-                if (!res.ok) throw new Error("Có lỗi xảy ra khi thêm danh mục!");
-                return res.text();
-            })
+          .then(async (res) => {
+            let responseBody;
+
+            try {
+                responseBody = await res.json(); // 👈 đọc body JSON kể cả khi lỗi
+            } catch (err) {
+                throw new Error("Không đọc được phản hồi từ server");
+            }
+
+            if (!res.ok) {
+               let message =
+            responseBody?.errors?.tenDanhMuc || responseBody?.message || "Lỗi không xác định";
+                throw new Error(message);
+            }
+
+            return responseBody;
+        })
             .then(() => {
                 setShowModal(false);
                 setNewCategory({ maDanhMuc: "", tenDanhMuc: "", trangThai: "Hiển thị" });

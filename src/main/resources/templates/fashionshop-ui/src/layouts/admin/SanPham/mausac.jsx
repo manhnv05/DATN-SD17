@@ -107,10 +107,23 @@ function ColorTable() {
             }),
             credentials: "include",
         })
-            .then((res) => {
-                if (!res.ok) throw new Error("Lỗi khi thêm màu sắc");
-                return res.text();
-            })
+            .then(async (res) => {
+        let responseBody;
+
+        try {
+          responseBody = await res.json(); // 👈 Đọc body JSON
+        } catch (err) {
+          throw new Error("Không thể đọc phản hồi từ server");
+        }
+        
+        if (!res.ok) {
+           let message =
+            responseBody?.errors?.tenMauSac || responseBody?.message || "Lỗi không xác định";
+                throw new Error(message);
+        }
+
+        return responseBody;
+      })
             .then(() => {
                 setShowModal(false);
                 setNewColor({ maMau: "", tenMauSac: "", trangThai: "Hiển thị" });

@@ -132,10 +132,24 @@ function SleeveTable() {
             }),
             credentials: "include",
         })
-            .then((res) => {
-                if (!res.ok) throw new Error("Lỗi khi thêm tay áo");
-                return res.text();
-            })
+            .then(async (res) => {
+        let responseBody;
+
+        try {
+          responseBody = await res.json(); // 👈 Đọc body JSON
+        } catch (err) {
+          throw new Error("Không thể đọc phản hồi từ server");
+        }
+        
+        if (!res.ok) {
+          // 👇 Lấy message từ các trường phù hợp
+           let message =
+            responseBody?.errors?.tenTayAo || responseBody?.message || "Lỗi không xác định";
+                throw new Error(message);
+        }
+
+        return responseBody;
+      })
             .then(() => {
                 setShowModal(false);
                 setNewSleeve({ ma: "", tenTayAo: "", trangThai: "Hiển thị" });

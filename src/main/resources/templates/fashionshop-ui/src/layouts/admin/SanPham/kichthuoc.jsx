@@ -134,10 +134,24 @@ function SizeTable() {
             }),
             credentials: "include",
         })
-            .then((res) => {
-                if (!res.ok) throw new Error("Có lỗi xảy ra khi thêm kích thước!");
-                return res.text();
-            })
+           .then(async (res) => {
+        let responseBody;
+
+        try {
+          responseBody = await res.json(); // 👈 Đọc body JSON
+        } catch (err) {
+          throw new Error("Không thể đọc phản hồi từ server");
+        }
+        
+        if (!res.ok) {
+          // 👇 Lấy message từ các trường phù hợp
+            let message =
+            responseBody?.errors?.tenKichThuoc || responseBody?.message || "Lỗi không xác định";
+                throw new Error(message);
+            }
+
+        return responseBody;
+      })
             .then(() => {
                 setShowModal(false);
                 setNewSize({ ma: "", tenKichCo: "", trangThai: "Hiển thị" });
